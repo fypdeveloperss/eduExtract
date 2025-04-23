@@ -28,7 +28,7 @@ app.post("/generate", async (req, res) => {
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map(item => item.text).join(" ");
 
-    // Send transcript to AI API
+    // Send transcript to AI API with improved prompt
     const aiResponse = await axios.post(
       modelUrl,
       {
@@ -36,22 +36,32 @@ app.post("/generate", async (req, res) => {
         messages: [
           {
             role: "system",
-            content: `Generate a blog post of at least 1000 words in valid HTML format. 
-            - Use <h1> for the title, <h2> for main sections, and <h3> for sub-sections.
-            - Structure the content properly using <p> for paragraphs and <ul><li> for lists where needed.
-            - Use <b> and <i> for emphasis when necessary.
-            - Do not include any CSS styling, only pure HTML.`
+            content: `You are a professional content writer. Based on the following YouTube transcript, generate a detailed and well-structured blog post of at least 1000 words in valid HTML format.
+
+Guidelines:
+- Begin with a compelling <h1> title that reflects the main topic.
+- Use <h2> tags for main sections and <h3> tags for sub-sections where appropriate.
+- Organize the content into clear sections with logical flow and transitions.
+- Write in a professional, engaging, and informative tone suited for blog readers.
+- Use <p> tags for paragraphs and include <ul><li> lists for key points or summaries when relevant.
+- Highlight key ideas with <b> for bold and <i> for italics, only where it improves readability or emphasis.
+- Ensure the HTML is clean and minimal—no inline styles, CSS, or JavaScript.
+- Do not include any code blocks or markdown syntax.
+
+Make sure the blog:
+- Includes an introduction, main content body, and a conclusion or takeaway.
+- Reflects the core message and tone of the transcript accurately.
+- Is suitable for publishing directly on a blog platform.`
           },
           { role: "user", content: transcriptText }
         ]
       },
       { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
     );
-    
 
     let formattedBlog = aiResponse.data.choices[0].message.content;
 
-    // Remove unwanted "```html" from AI response (if it appears)
+    // Remove unwanted markdown formatting (if it appears)
     formattedBlog = formattedBlog.replace(/```html/g, "").replace(/```/g, "");
 
     res.json({ blogPost: formattedBlog });
