@@ -1,5 +1,5 @@
 import { useState } from "react";
-import "./Home.css";
+import "./YtBlogs.css";
 
 const Home = () => {
   const [url, setUrl] = useState("");
