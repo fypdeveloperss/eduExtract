@@ -15,7 +15,7 @@ app.use(cors());
 const apiKey = process.env.AIML_API_KEY;
 const modelUrl = "https://api.aimlapi.com/v1/chat/completions";
 
-app.post("/generate", async (req, res) => {
+app.post("/blog", async (req, res) => {
   const { url } = req.body;
 
   try {
@@ -70,6 +70,48 @@ Make sure the blog:
     res.status(500).json({ error: "Error processing the request" });
   }
 });
+
+app.post("/summary", async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) {
+      return res.status(400).json({ error: "Invalid YouTube URL" });
+    }
+
+    // Fetch transcript
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    const transcriptText = transcript.map(item => item.text).join(" ");
+
+    // Send transcript to AI API with summary prompt
+    const aiResponse = await axios.post(
+      modelUrl,
+      {
+        model: "gpt-4o",
+        messages: [
+          {
+            role: "system",
+            content: `You are a helpful assistant. Based on the transcript provided, write a concise, accurate, and informative summary (150–300 words). 
+- Do not include any HTML or markdown.
+- Focus on the main points, ideas, and takeaways.
+- Keep it easy to understand for a general audience.`
+          },
+          { role: "user", content: transcriptText }
+        ]
+      },
+      { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
+    );
+
+    const summary = aiResponse.data.choices[0].message.content.trim();
+
+    res.json({ summary });
+  } catch (error) {
+    console.error("Error:", error.response ? error.response.data : error.message);
+    res.status(500).json({ error: "Error processing the summary" });
+  }
+});
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
