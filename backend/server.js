@@ -1,8 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const axios = require("axios");
 const { YoutubeTranscript } = require("youtube-transcript");
+const { Groq } = require("groq-sdk");
 
 dotenv.config();
 
@@ -12,10 +12,55 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cors());
 
-const apiKey = process.env.AIML_API_KEY;
-const modelUrl = "https://api.aimlapi.com/v1/chat/completions";
+// Initialize Groq client
+const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+/**
+ * BLOG GENERATION ENDPOINT
+ */
 app.post("/generate", async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    const transcriptText = transcript.map(item => item.text).join(" ");
+
+    const chatCompletion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      temperature: 1,
+      max_tokens: 2048,
+      top_p: 1,
+      stream: false,
+      messages: [
+        {
+          role: "system",
+          content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the transcript.
+          - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+          - Include an engaging introduction and a thoughtful conclusion.
+          - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+          - Return only valid HTML without CSS or markdown.`
+        },
+        {
+          role: "user",
+          content: transcriptText
+        }
+      ]
+    });
+
+    let blogPost = chatCompletion.choices[0].message.content;
+    blogPost = blogPost.replace(/```html/g, "").replace(/```/g, "");
+
+    res.json({ blogPost });
+  } catch (error) {
+    console.error("Error generating blog:", error.response?.data || error.message);
+    res.status(500).json({ error: "Error generating blog post" });
+  }
+});
+
+app.post("/generate-flashcards", async (req, res) => {
   const { url } = req.body;
 
   try {
@@ -24,40 +69,82 @@ app.post("/generate", async (req, res) => {
       return res.status(400).json({ error: "Invalid YouTube URL" });
     }
 
-    // Fetch transcript
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map(item => item.text).join(" ");
 
-    // Send transcript to AI API
-    const aiResponse = await axios.post(
-      modelUrl,
-      {
-        model: "gpt-4o",
-        messages: [
-          {
-            role: "system",
-            content: `Generate a blog post of at least 1000 words in valid HTML format. 
-            - Use <h1> for the title, <h2> for main sections, and <h3> for sub-sections.
-            - Structure the content properly using <p> for paragraphs and <ul><li> for lists where needed.
-            - Use <b> and <i> for emphasis when necessary.
-            - Do not include any CSS styling, only pure HTML.`
-          },
-          { role: "user", content: transcriptText }
-        ]
-      },
-      { headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" } }
-    );
-    
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [
+        {
+          role: "system",
+          content: `Based on the provided transcript, generate 5-10 educational flashcards as a JSON array.
+Each flashcard should have a "question" and an "answer" field.
+Only return a JSON array. Do NOT include markdown, explanations, or formatting like triple backticks.`
+        },
+        {
+          role: "user",
+          content: transcriptText
+        }
+      ]
+    });
 
-    let formattedBlog = aiResponse.data.choices[0].message.content;
+    let content = completion.choices[0].message.content;
 
-    // Remove unwanted "```html" from AI response (if it appears)
-    formattedBlog = formattedBlog.replace(/```html/g, "").replace(/```/g, "");
+    // Remove triple backticks if they sneak in
+    content = content.replace(/```json/g, "").replace(/```/g, "");
 
-    res.json({ blogPost: formattedBlog });
+    const flashcards = JSON.parse(content);
+    res.json({ flashcards });
   } catch (error) {
-    console.error("Error:", error.response ? error.response.data : error.message);
-    res.status(500).json({ error: "Error processing the request" });
+    console.error("Flashcard generation error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to generate flashcards" });
+  }
+});
+
+
+/**
+ * SLIDES GENERATION ENDPOINT
+ */
+app.post("/generate-slides", async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    const transcriptText = transcript.map(item => item.text).join(" ");
+
+    const chatCompletion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      temperature: 1,
+      max_tokens: 2048,
+      top_p: 1,
+      stream: false,
+      messages: [
+        {
+          role: "system",
+          content: `Generate a Reveal.js-compatible presentation in raw HTML.
+          - Each slide should be inside a <section>.
+          - Use <h2> for slide titles and <p> for content.
+          - Add 8-12 slides including a title and a conclusion.
+          - Do not include CSS or markdown.
+          - Only return raw HTML using <section> tags.`
+        },
+        {
+          role: "user",
+          content: transcriptText
+        }
+      ]
+    });
+
+    let slideContent = chatCompletion.choices[0].message.content;
+    slideContent = slideContent.replace(/```html/g, "").replace(/```/g, "");
+
+    res.json({ slides: slideContent });
+  } catch (error) {
+    console.error("Error generating slides:", error.response?.data || error.message);
+    res.status(500).json({ error: "Error generating presentation slides" });
   }
 });
 
