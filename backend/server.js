@@ -139,6 +139,9 @@ app.post("/generate-slides", async (req, res) => {
     });
 
     let slideContent = chatCompletion.choices[0].message.content;
+
+
+    // Remove code block markers (```html and ```)
     slideContent = slideContent.replace(/```html/g, "").replace(/```/g, "");
 
     res.json({ slides: slideContent });
@@ -147,6 +150,7 @@ app.post("/generate-slides", async (req, res) => {
     res.status(500).json({ error: "Error generating presentation slides" });
   }
 });
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

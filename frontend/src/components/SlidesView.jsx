@@ -1,24 +1,20 @@
 import { useEffect, useRef, useState } from "react";
 
 /**
- * A component that renders HTML slides content using iframes to ensure isolation
- * This component expands to fill the available screen space
+ * A component that renders HTML slides using Reveal.js inside an iframe.
  */
 const SlidesView = ({ html }) => {
   const iframeRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  
-  // Create a complete HTML document for the iframe
+
   const generateIframeContent = (htmlContent) => {
-    // Validate and clean the HTML content
     let cleanedContent = htmlContent.trim();
-    
-    // Ensure content contains section tags
-    if (!cleanedContent.includes('<section')) {
-      // If no section tags, wrap the entire content in a section
-      cleanedContent = `<section>${cleanedContent}</section>`;
-    }
-    
+
+// Extract only <section>...</section> content, discarding anything outside
+const matches = cleanedContent.match(/<section[\s\S]*?<\/section>/gi);
+cleanedContent = matches ? matches.join("\n") : "<section><h2>No valid slides found</h2></section>";
+
+
     return `
       <!DOCTYPE html>
       <html>
@@ -26,43 +22,17 @@ const SlidesView = ({ html }) => {
           <meta charset="utf-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
           <title>Presentation Slides</title>
-          
-          <!-- Include Reveal.js from CDN -->
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.min.css">
           <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/theme/white.min.css">
-          
           <style>
-            body { 
-              margin: 0;
-              padding: 0;
-              height: 100vh;
-              overflow: hidden;
-            }
-            .reveal {
-              height: 100vh;
-              width: 100vw;
-            }
-            .reveal .slides {
-              text-align: left;
-            }
-            .reveal h1, .reveal h2, .reveal h3 {
-              text-transform: none;
-              margin-bottom: 20px;
-            }
-            .reveal p {
-              margin-bottom: 12px;
-            }
-            .reveal ul, .reveal ol {
-              display: block;
-              margin-left: 20px;
-            }
-            .reveal li {
-              margin-bottom: 8px;
-            }
-            /* Ensure slides fill the available space */
-            .reveal .slides section {
-              padding: 20px;
-            }
+            body { margin: 0; height: 100vh; overflow: hidden; }
+            .reveal { height: 100vh; width: 100vw; }
+            .reveal .slides { text-align: left; }
+            .reveal h1, .reveal h2, .reveal h3 { text-transform: none; margin-bottom: 20px; }
+            .reveal p { margin-bottom: 12px; }
+            .reveal ul, .reveal ol { margin-left: 20px; }
+            .reveal li { margin-bottom: 8px; }
+            .reveal .slides section { padding: 20px; }
           </style>
         </head>
         <body>
@@ -71,13 +41,11 @@ const SlidesView = ({ html }) => {
               ${cleanedContent}
             </div>
           </div>
-          
           <script src="https://cdn.jsdelivr.net/npm/reveal.js@4.3.1/dist/reveal.min.js"></script>
           <script>
-            // Initialize immediately - no need to wait for DOMContentLoaded
             try {
               const deck = new Reveal({
-                embedded: false, // Set to false for full-screen experience
+                embedded: false,
                 hash: false,
                 history: false,
                 controls: true,
@@ -87,21 +55,16 @@ const SlidesView = ({ html }) => {
                 slideNumber: true,
                 width: "100%",
                 height: "100%",
-                margin: 0.05, // Reduced margin to maximize content space
-                // Add plugins that might be helpful
+                margin: 0.05,
                 plugins: []
               });
-              
+
               deck.initialize().then(() => {
-                console.log('Reveal.js initialized successfully');
-                // Send message to parent when ready
                 window.parent.postMessage('slides-initialized', '*');
-              }).catch(err => {
-                console.error('Failed to initialize Reveal.js:', err);
+              }).catch(() => {
                 window.parent.postMessage('slides-error', '*');
               });
-            } catch (e) {
-              console.error('Error setting up Reveal.js:', e);
+            } catch {
               window.parent.postMessage('slides-critical-error', '*');
             }
           </script>
@@ -110,109 +73,69 @@ const SlidesView = ({ html }) => {
     `;
   };
 
-  // Toggle fullscreen mode
   const toggleFullscreen = () => {
     const container = document.getElementById('slides-container');
-    
     if (!document.fullscreenElement) {
-      if (container.requestFullscreen) {
-        container.requestFullscreen();
-      } else if (container.webkitRequestFullscreen) {
-        container.webkitRequestFullscreen();
-      } else if (container.msRequestFullscreen) {
-        container.msRequestFullscreen();
-      }
+      container?.requestFullscreen?.() ||
+      container?.webkitRequestFullscreen?.() ||
+      container?.msRequestFullscreen?.();
       setIsFullscreen(true);
     } else {
-      if (document.exitFullscreen) {
-        document.exitFullscreen();
-      } else if (document.webkitExitFullscreen) {
-        document.webkitExitFullscreen();
-      } else if (document.msExitFullscreen) {
-        document.msExitFullscreen();
-      }
+      document.exitFullscreen?.() ||
+      document.webkitExitFullscreen?.() ||
+      document.msExitFullscreen?.();
       setIsFullscreen(false);
     }
   };
 
   useEffect(() => {
-    // Skip if there's no html content or iframe reference
     if (!html || !iframeRef.current) return;
-    
-    // Create a unique key for this instance to avoid potential conflicts
-    const instanceId = `slides-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
-    
-    // Write content to the iframe
+
     const iframe = iframeRef.current;
     const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
-    
+
     try {
-      // Clear any existing content
       iframeDoc.open();
       iframeDoc.write(generateIframeContent(html));
       iframeDoc.close();
-    } catch (error) {
-      console.error("Error injecting content into iframe:", error);
+    } catch {
       return;
     }
-    
-    // Set up message listener for iframe communication
+
     const messageHandler = (event) => {
-      // Handle different messages from the iframe
-      switch(event.data) {
-        case 'slides-initialized':
-          console.log('Slides successfully initialized');
-          // Hide loading indicator when slides are ready
-          const loadingIndicator = document.getElementById('loading-indicator');
-          if (loadingIndicator) {
-            loadingIndicator.style.display = 'none';
-          }
-          break;
-        case 'slides-error':
-          console.warn('Error initializing slides in iframe');
-          break;
-        case 'slides-critical-error':
-          console.error('Critical error in slides iframe');
-          break;
+      if (event.data === 'slides-initialized') {
+        const loadingIndicator = document.getElementById('loading-indicator');
+        if (loadingIndicator) loadingIndicator.style.display = 'none';
       }
     };
-    
-    window.addEventListener('message', messageHandler);
-    
-    // Add fullscreen change detection
+
     const fullscreenChangeHandler = () => {
       setIsFullscreen(!!document.fullscreenElement);
     };
-    
+
+    window.addEventListener('message', messageHandler);
     document.addEventListener('fullscreenchange', fullscreenChangeHandler);
     document.addEventListener('webkitfullscreenchange', fullscreenChangeHandler);
     document.addEventListener('mozfullscreenchange', fullscreenChangeHandler);
     document.addEventListener('MSFullscreenChange', fullscreenChangeHandler);
-    
-    // Clean up
+
     return () => {
       window.removeEventListener('message', messageHandler);
       document.removeEventListener('fullscreenchange', fullscreenChangeHandler);
       document.removeEventListener('webkitfullscreenchange', fullscreenChangeHandler);
       document.removeEventListener('mozfullscreenchange', fullscreenChangeHandler);
       document.removeEventListener('MSFullscreenChange', fullscreenChangeHandler);
-      
-      // Clear iframe content on unmount
+
       try {
-        if (iframe && iframe.contentWindow) {
-          iframeDoc.open();
-          iframeDoc.write('');
-          iframeDoc.close();
-        }
-      } catch (e) {
-        console.warn('Failed to clear iframe:', e);
-      }
+        iframeDoc.open();
+        iframeDoc.write('');
+        iframeDoc.close();
+      } catch {}
     };
   }, [html]);
 
   return (
     <div className="slides-wrapper w-full flex flex-col">
-      {/* Fullscreen button */}
       <div className="flex justify-end mb-2">
         <button 
           onClick={toggleFullscreen}
@@ -235,8 +158,7 @@ const SlidesView = ({ html }) => {
           )}
         </button>
       </div>
-      
-      {/* Main slides container - now takes up more vertical space */}
+
       <div 
         id="slides-container"
         className="slides-container w-full relative" 
@@ -245,7 +167,6 @@ const SlidesView = ({ html }) => {
           maxHeight: isFullscreen ? '100vh' : '80vh'
         }}
       >
-        {/* Loading indicator that shows until iframe is ready */}
         {html && (
           <div 
             id="loading-indicator"
@@ -260,7 +181,6 @@ const SlidesView = ({ html }) => {
             </div>
           </div>
         )}
-        
         <iframe
           ref={iframeRef}
           title="Presentation Slides"
