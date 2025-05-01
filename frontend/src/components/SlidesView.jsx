@@ -1,8 +1,5 @@
 import { useEffect, useRef, useState } from "react";
 
-/**
- * A component that renders HTML slides using Reveal.js inside an iframe.
- */
 const SlidesView = ({ html }) => {
   const iframeRef = useRef(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -10,7 +7,6 @@ const SlidesView = ({ html }) => {
   const generateIframeContent = (htmlContent) => {
     let cleanedContent = htmlContent.trim();
 
-// Extract only <section>...</section> content, discarding anything outside
 const matches = cleanedContent.match(/<section[\s\S]*?<\/section>/gi);
 cleanedContent = matches ? matches.join("\n") : "<section><h2>No valid slides found</h2></section>";
 

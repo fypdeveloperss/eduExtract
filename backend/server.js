@@ -151,6 +151,56 @@ app.post("/generate-slides", async (req, res) => {
   }
 });
 
+/**
+ * QUIZ GENERATION ENDPOINT
+ */
+app.post("/generate-quiz", async (req, res) => {
+  const { url } = req.body;
+
+  try {
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+    const transcriptText = transcript.map(item => item.text).join(" ");
+
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      temperature: 1,
+      max_tokens: 2048,
+      top_p: 1,
+      stream: false,
+      messages: [
+        {
+          role: "system",
+          content: `Generate 5-10 multiple-choice quiz questions based on the following YouTube transcript.
+Return a JSON array where each object has:
+- "question": the question string
+- "options": an array of 4 answer choices
+- "answer": the correct answer string
+Do NOT include explanations or formatting like triple backticks. Only return valid JSON.`
+        },
+        {
+          role: "user",
+          content: transcriptText
+        }
+      ]
+    });
+
+    let quizContent = completion.choices[0].message.content;
+
+    // Clean up any formatting if present
+    quizContent = quizContent.replace(/```json/g, "").replace(/```/g, "");
+
+    const quiz = JSON.parse(quizContent);
+    res.json({ quiz });
+  } catch (error) {
+    console.error("Quiz generation error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to generate quiz" });
+  }
+});
+
+
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

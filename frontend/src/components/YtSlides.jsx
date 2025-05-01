@@ -1,8 +1,5 @@
 import { useState, useCallback } from "react";
 import SlidesView from "./SlidesView";
-import InputWithButton from "./InputWithButton";
-import ErrorMessage from "./ErrorMessage";
-import LoadingSpinner from "./LoadingSpinner";
 
 const YtSlides = (props) => {
 

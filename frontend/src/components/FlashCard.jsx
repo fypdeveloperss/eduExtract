@@ -5,7 +5,7 @@ function Flashcard({ question, answer }) {
 
   return (
     <div
-      className={`w-64 max-h-60 p-5 rounded-xl shadow-md cursor-pointer transition-transform duration-300 ease-in-out bg-white hover:scale-105 overflow-auto ${
+      className={`w-64 max-h-60 p-5 rounded-xl shadow-md cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105 overflow-auto ${
         flipped ? "bg-blue-50" : "bg-white"
       }`}
       onClick={() => setFlipped(!flipped)}

@@ -2,6 +2,7 @@ import { useState } from "react";
 import BlogView from "../components/YtBlogs";
 import SlidesView from "../components/YtSlides";
 import FlashCardGallery from "../components/FlashCardGallery";
+import QuizView from "../components/QuizView";
 import axios from "axios";
 
 function Home() {
@@ -11,21 +12,24 @@ function Home() {
   const [slides, setSlides] = useState("");
   const [flashcards, setFlashcards] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [quiz, setQuiz] = useState([]);
 
   const handleGenerate = async () => {
     if (!url) return alert("Enter a YouTube URL");
     setLoading(true);
 
     try {
-      const [blogRes, slidesRes, flashRes] = await Promise.all([
+      const [blogRes, slidesRes, flashRes, quizRes] = await Promise.all([
         axios.post("http://localhost:5000/generate", { url }),
         axios.post("http://localhost:5000/generate-slides", { url }),
-        axios.post("http://localhost:5000/generate-flashcards", { url })
+        axios.post("http://localhost:5000/generate-flashcards", { url }),
+        axios.post("http://localhost:5000/generate-quiz", { url }),
       ]);
 
       setBlog(blogRes.data.blogPost || "");
       setSlides(slidesRes.data.slides || "");
       setFlashcards(flashRes.data.flashcards || []);
+      setQuiz(quizRes.data.quiz || []);
     } catch (error) {
       console.error("Error generating resources:", error);
     } finally {
@@ -33,13 +37,11 @@ function Home() {
     }
   };
 
-
-
-
-
   return (
     <div className="p-6 max-w-full mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">🎓 YouTube Learning Extractor</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center">
+        🎓 YouTube Learning Extractor
+      </h1>
 
       <div className="flex items-center justify-center gap-4 mb-6">
         <input
@@ -57,13 +59,14 @@ function Home() {
           {loading ? "Generating..." : "Generate"}
         </button>
       </div>
-      
 
       <div className="flex justify-center gap-6 mb-6 border-b pb-2">
         <button
           onClick={() => setActiveTab("blog")}
           className={`px-4 py-2 font-medium ${
-            activeTab === "blog" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"
+            activeTab === "blog"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600"
           }`}
         >
           Blog
@@ -71,7 +74,9 @@ function Home() {
         <button
           onClick={() => setActiveTab("slides")}
           className={`px-4 py-2 font-medium ${
-            activeTab === "slides" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"
+            activeTab === "slides"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600"
           }`}
         >
           Slides
@@ -79,10 +84,22 @@ function Home() {
         <button
           onClick={() => setActiveTab("flashcards")}
           className={`px-4 py-2 font-medium ${
-            activeTab === "flashcards" ? "border-b-2 border-blue-500 text-blue-600" : "text-gray-600"
+            activeTab === "flashcards"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600"
           }`}
         >
           Flashcards
+        </button>
+        <button
+          onClick={() => setActiveTab("quiz")}
+          className={`px-4 py-2 font-medium ${
+            activeTab === "quiz"
+              ? "border-b-2 border-blue-500 text-blue-600"
+              : "text-gray-600"
+          }`}
+        >
+          Quiz
         </button>
       </div>
 
@@ -90,7 +107,11 @@ function Home() {
       <div className="min-h-[300px]">
         {activeTab === "blog" && <BlogView blog={blog} />}
         {activeTab === "slides" && <SlidesView slides={slides} />}
-        {activeTab === "flashcards" && <FlashCardGallery flashcards={flashcards} />}
+        {activeTab === "flashcards" && (
+          <FlashCardGallery flashcards={flashcards} />
+        )}
+        {activeTab === "quiz" && <QuizView quiz={quiz} />}
+
       </div>
     </div>
   );
