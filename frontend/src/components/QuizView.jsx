@@ -7,15 +7,18 @@ function QuizView({ quiz }) {
   const [startTime, setStartTime] = useState(Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
 
-  // Start timer
+  // Start timer and stop when results are shown
   useEffect(() => {
-    setStartTime(Date.now());
-    const interval = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
-    }, 1000);
+    // Only run the timer if we're not showing results
+    if (!showResults) {
+      setStartTime(Date.now());
+      const interval = setInterval(() => {
+        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+      }, 1000);
 
-    return () => clearInterval(interval); // cleanup
-  }, [startTime]);
+      return () => clearInterval(interval); // cleanup
+    }
+  }, [startTime, showResults]);
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);
@@ -42,6 +45,7 @@ function QuizView({ quiz }) {
   };
 
   const handleSubmit = () => {
+    // Final elapsed time is captured at the moment of submission
     setShowResults(true);
   };
 
