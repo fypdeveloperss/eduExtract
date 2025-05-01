@@ -1,9 +1,9 @@
 import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
 import Layout from "./components/Layout";
-import Home from "./pages/YtBlogs";
+import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
-import Flashcards from "./pages/FlashCards";
+
 
 function App() {
   return (
@@ -13,8 +13,6 @@ function App() {
           <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
-          <Route path="flashcards" element={<Flashcards />} />
-
         </Route>
 
       </Routes>
