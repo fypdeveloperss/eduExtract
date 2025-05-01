@@ -18,6 +18,7 @@ const Layout = () => {
             <li className="mb-2">
               <Link to="/contact" className="hover:text-gray-300">Contact</Link>
             </li>
+            
           </ul>
         </nav>
       </aside>
