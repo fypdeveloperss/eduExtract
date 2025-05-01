@@ -3,17 +3,20 @@ import Layout from "./components/Layout";
 import Home from "./pages/YtBlogs";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Flashcards from "./pages/FlashCards";
 
 function App() {
   return (
     <Router>
       <Routes>
         <Route path="/" element={<Layout />}>
-        <Route index element={<Home />} />
+          <Route index element={<Home />} />
           <Route path="about" element={<About />} />
           <Route path="contact" element={<Contact />} />
+          <Route path="flashcards" element={<Flashcards />} />
+
         </Route>
-        
+
       </Routes>
     </Router>
   );
