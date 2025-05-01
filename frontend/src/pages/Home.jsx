@@ -1,7 +1,7 @@
 import { useState } from "react";
 import BlogView from "../components/YtBlogs";
 import SlidesView from "../components/YtSlides";
-import Flashcards from "../components/FlashCards";
+import FlashCardGallery from "../components/FlashCardGallery";
 import axios from "axios";
 
 function Home() {
@@ -90,7 +90,7 @@ function Home() {
       <div className="min-h-[300px]">
         {activeTab === "blog" && <BlogView blog={blog} />}
         {activeTab === "slides" && <SlidesView slides={slides} />}
-        {activeTab === "flashcards" && <Flashcards flashcards={flashcards} />}
+        {activeTab === "flashcards" && <FlashCardGallery flashcards={flashcards} />}
       </div>
     </div>
   );

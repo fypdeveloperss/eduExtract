@@ -2,7 +2,7 @@ import { useState } from "react";
 import Flashcard from "./FlashCard";
 import axios from "axios";
 
-function Flashcards(props) {
+function FlashCardGallery(props) {
 
 
   return (
@@ -16,4 +16,4 @@ function Flashcards(props) {
   );
 }
 
-export default Flashcards;
+export default FlashCardGallery;
