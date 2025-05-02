@@ -58,6 +58,8 @@ function Home() {
     } catch (error) {
       console.error("Error generating content:", error);
       setError("Failed to generate content. Please try again.");
+    } finally {
+      setIsLoading(false); // Make sure to reset loading state after the process completes
     }
   };
 
