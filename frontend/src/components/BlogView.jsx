@@ -1,7 +1,7 @@
 import { useState } from "react";
-import "./YtBlogs.css";
+import "./BlogView.css";
 
-const YtBlogs = (props) => {
+const BlogView = (props) => {
   return (
     <>
       {props.blog && (
@@ -18,4 +18,4 @@ const YtBlogs = (props) => {
   );
 };
 
-export default YtBlogs;
+export default BlogView;

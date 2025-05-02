@@ -3,6 +3,7 @@ const cors = require("cors");
 const dotenv = require("dotenv");
 const { YoutubeTranscript } = require("youtube-transcript");
 const { Groq } = require("groq-sdk");
+const PptxGenJS = require("pptxgenjs");
 
 dotenv.config();
 
@@ -26,7 +27,7 @@ app.post("/generate", async (req, res) => {
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map(item => item.text).join(" ");
+    const transcriptText = transcript.map((item) => item.text).join(" ");
 
     const chatCompletion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -41,13 +42,13 @@ app.post("/generate", async (req, res) => {
           - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
           - Include an engaging introduction and a thoughtful conclusion.
           - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-          - Return only valid HTML without CSS or markdown.`
+          - Return only valid HTML without CSS or markdown.`,
         },
         {
           role: "user",
-          content: transcriptText
-        }
-      ]
+          content: transcriptText,
+        },
+      ],
     });
 
     let blogPost = chatCompletion.choices[0].message.content;
@@ -55,7 +56,10 @@ app.post("/generate", async (req, res) => {
 
     res.json({ blogPost });
   } catch (error) {
-    console.error("Error generating blog:", error.response?.data || error.message);
+    console.error(
+      "Error generating blog:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ error: "Error generating blog post" });
   }
 });
@@ -70,7 +74,7 @@ app.post("/generate-flashcards", async (req, res) => {
     }
 
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map(item => item.text).join(" ");
+    const transcriptText = transcript.map((item) => item.text).join(" ");
 
     const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -79,13 +83,13 @@ app.post("/generate-flashcards", async (req, res) => {
           role: "system",
           content: `Based on the provided transcript, generate 5-10 educational flashcards as a JSON array.
 Each flashcard should have a "question" and an "answer" field.
-Only return a JSON array. Do NOT include markdown, explanations, or formatting like triple backticks.`
+Only return a JSON array. Do NOT include markdown, explanations, or formatting like triple backticks.`,
         },
         {
           role: "user",
-          content: transcriptText
-        }
-      ]
+          content: transcriptText,
+        },
+      ],
     });
 
     let content = completion.choices[0].message.content;
@@ -96,15 +100,18 @@ Only return a JSON array. Do NOT include markdown, explanations, or formatting l
     const flashcards = JSON.parse(content);
     res.json({ flashcards });
   } catch (error) {
-    console.error("Flashcard generation error:", error.response?.data || error.message);
+    console.error(
+      "Flashcard generation error:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ error: "Failed to generate flashcards" });
   }
 });
 
-
 /**
  * SLIDES GENERATION ENDPOINT
  */
+
 app.post("/generate-slides", async (req, res) => {
   const { url } = req.body;
 
@@ -113,7 +120,7 @@ app.post("/generate-slides", async (req, res) => {
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map(item => item.text).join(" ");
+    const transcriptText = transcript.map((item) => item.text).join(" ");
 
     const chatCompletion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -124,36 +131,51 @@ app.post("/generate-slides", async (req, res) => {
       messages: [
         {
           role: "system",
-          content: `Generate a Reveal.js-compatible presentation in raw HTML.
-          - Each slide should be inside a <section>.
-          - Use <h2> for slide titles and <p> for content.
-          - Add 8-12 slides including a title and a conclusion.
-          - Do not include CSS or markdown.
-          - Only return raw HTML using <section> tags.`
+          content: `Create 8-12 slide titles and their bullet points based on this transcript. 
+Return valid JSON like: [{"title": "Slide Title", "points": ["Point 1", "Point 2"]}, ...]
+No markdown or triple backticks. Only pure JSON.`,
         },
         {
           role: "user",
-          content: transcriptText
-        }
-      ]
+          content: transcriptText,
+        },
+      ],
     });
 
-    let slideContent = chatCompletion.choices[0].message.content;
+    let slidesJson = chatCompletion.choices[0].message.content.replace(
+      /```json|```/g,
+      ""
+    );
+    const slides = JSON.parse(slidesJson);
 
+    const pptx = new PptxGenJS();
+    slides.forEach((slide) => {
+      const s = pptx.addSlide();
+      s.addText(slide.title, { x: 0.5, y: 0.3, fontSize: 24, bold: true });
+      s.addText(slide.points.join("\n"), {
+        x: 0.5,
+        y: 1.2,
+        fontSize: 18,
+        color: "363636",
+      });
+    });
 
-    // Remove code block markers (```html and ```)
-    slideContent = slideContent.replace(/```html/g, "").replace(/```/g, "");
-
-    res.json({ slides: slideContent });
+    const b64 = await pptx.write("base64");
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="presentation.pptx"'
+    );
+    res.json({ pptxBase64: b64, success: true });
   } catch (error) {
-    console.error("Error generating slides:", error.response?.data || error.message);
-    res.status(500).json({ error: "Error generating presentation slides" });
+    console.error(
+      "Error generating .pptx:",
+      error.response?.data || error.message
+    );
+    res.status(500).json({ error: "Failed to generate PowerPoint file" });
   }
 });
 
-/**
- * QUIZ GENERATION ENDPOINT
- */
+
 app.post("/generate-quiz", async (req, res) => {
   const { url } = req.body;
 
@@ -162,7 +184,7 @@ app.post("/generate-quiz", async (req, res) => {
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map(item => item.text).join(" ");
+    const transcriptText = transcript.map((item) => item.text).join(" ");
 
     const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -178,13 +200,13 @@ Return a JSON array where each object has:
 - "question": the question string
 - "options": an array of 4 answer choices
 - "answer": the correct answer string
-Do NOT include explanations or formatting like triple backticks. Only return valid JSON.`
+Do NOT include explanations or formatting like triple backticks. Only return valid JSON.`,
         },
         {
           role: "user",
-          content: transcriptText
-        }
-      ]
+          content: transcriptText,
+        },
+      ],
     });
 
     let quizContent = completion.choices[0].message.content;
@@ -195,12 +217,13 @@ Do NOT include explanations or formatting like triple backticks. Only return val
     const quiz = JSON.parse(quizContent);
     res.json({ quiz });
   } catch (error) {
-    console.error("Quiz generation error:", error.response?.data || error.message);
+    console.error(
+      "Quiz generation error:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ error: "Failed to generate quiz" });
   }
 });
-
-
 
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);

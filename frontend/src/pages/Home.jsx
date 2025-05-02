@@ -1,24 +1,48 @@
-import { useState } from "react";
-import BlogView from "../components/YtBlogs";
-import SlidesView from "../components/YtSlides";
+import React, { useState } from "react";
+import axios from "axios";
+import BlogView from "../components/BlogView";
+import SlidesView from "../components/SlidesView";
 import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
-import axios from "axios";
+import "./Home.css";
 
 function Home() {
-  const [activeTab, setActiveTab] = useState("blog");
   const [url, setUrl] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
-  const [slides, setSlides] = useState("");
+  const [pptxBase64, setPptxBase64] = useState("");
   const [flashcards, setFlashcards] = useState([]);
-  const [loading, setLoading] = useState(false);
   const [quiz, setQuiz] = useState([]);
-
-  const handleGenerate = async () => {
-    if (!url) return alert("Enter a YouTube URL");
-    setLoading(true);
-
+  const [activeTab, setActiveTab] = useState("");
+  const [error, setError] = useState("");
+  
+  const extractVideoId = (url) => {
     try {
+      const urlObj = new URL(url);
+      return urlObj.searchParams.get("v");
+    } catch (error) {
+      return null;
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    const videoId = extractVideoId(url);
+    if (!videoId) {
+      setError("Please enter a valid YouTube URL");
+      return;
+    }
+    
+    setError("");
+    setIsLoading(true);
+    setBlog("");
+    setPptxBase64("");
+    setFlashcards([]);
+    setQuiz([]);
+    
+    try {
+      // Generate all content in parallel
       const [blogRes, slidesRes, flashRes, quizRes] = await Promise.all([
         axios.post("http://localhost:5000/generate", { url }),
         axios.post("http://localhost:5000/generate-slides", { url }),
@@ -27,91 +51,86 @@ function Home() {
       ]);
 
       setBlog(blogRes.data.blogPost || "");
-      setSlides(slidesRes.data.slides || "");
+      setPptxBase64(slidesRes.data.pptxBase64 || "");
       setFlashcards(flashRes.data.flashcards || []);
       setQuiz(quizRes.data.quiz || []);
+      
     } catch (error) {
-      console.error("Error generating resources:", error);
+      console.error("Error generating content:", error);
+      setError("Failed to generate content. Please try again.");
     } finally {
-      setLoading(false);
+      setIsLoading(false);
     }
   };
 
+  // Check if any content is available
+  const hasContent = blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0;
+
   return (
-    <div className="p-6 max-w-full mx-auto">
-      <h1 className="text-3xl font-bold mb-6 text-center">
-        🎓 YouTube Learning Extractor
-      </h1>
+    <div className="container mx-auto px-4 py-8">
+      <h1 className="text-3xl font-bold text-center mb-8">YouTube Learning Assistant</h1>
+      
+      <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-8">
+        <div className="flex flex-col md:flex-row gap-4">
+          <input
+            type="text"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            placeholder="Enter YouTube URL"
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            disabled={isLoading}
+          />
+          <button
+            type="submit"
+            className={`px-6 py-2 rounded-md text-white ${
+              isLoading ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"
+            }`}
+            disabled={isLoading}
+          >
+            {isLoading ? "Processing..." : "Generate"}
+          </button>
+        </div>
+        {error && <p className="text-red-500 mt-2">{error}</p>}
+      </form>
 
-      <div className="flex items-center justify-center gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Enter YouTube URL"
-          value={url}
-          onChange={(e) => setUrl(e.target.value)}
-          className="w-full max-w-xl px-4 py-2 border rounded-lg shadow"
-        />
-        <button
-          onClick={handleGenerate}
-          disabled={loading}
-          className="px-6 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-        >
-          {loading ? "Generating..." : "Generate"}
-        </button>
-      </div>
+      <div className="max-w-4xl mx-auto">
+        {/* Modern tab design - always visible but disabled when no content */}
+        <div className="tab-container">
+          {[
+            { id: "blog", label: "Blog" },
+            { id: "slides", label: "Slides" },
+            { id: "flashcards", label: "Flashcards" },
+            { id: "quiz", label: "Quiz" }
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              className={`tab-button ${
+                activeTab === tab.id
+                  ? "active"
+                  : hasContent
+                    ? "enabled"
+                    : "disabled"
+              }`}
+              onClick={() => hasContent && setActiveTab(tab.id)}
+              disabled={!hasContent}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex justify-center gap-6 mb-6 border-b pb-2">
-        <button
-          onClick={() => setActiveTab("blog")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "blog"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Blog
-        </button>
-        <button
-          onClick={() => setActiveTab("slides")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "slides"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Slides
-        </button>
-        <button
-          onClick={() => setActiveTab("flashcards")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "flashcards"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Flashcards
-        </button>
-        <button
-          onClick={() => setActiveTab("quiz")}
-          className={`px-4 py-2 font-medium ${
-            activeTab === "quiz"
-              ? "border-b-2 border-blue-500 text-blue-600"
-              : "text-gray-600"
-          }`}
-        >
-          Quiz
-        </button>
-      </div>
-
-      {/* Tabs Content */}
-      <div className="min-h-[300px]">
-        {activeTab === "blog" && <BlogView blog={blog} />}
-        {activeTab === "slides" && <SlidesView slides={slides} />}
-        {activeTab === "flashcards" && (
-          <FlashCardGallery flashcards={flashcards} />
+        {hasContent && (
+          <div className="content-container">
+            {activeTab === "blog" && <BlogView blog={blog} />}
+            {activeTab === "slides" && (
+              <SlidesView 
+                pptxBase64={pptxBase64} 
+              />
+            )}
+            {activeTab === "flashcards" && <FlashCardGallery flashcards={flashcards} />}
+            {activeTab === "quiz" && <QuizView quiz={quiz} />}
+          </div>
         )}
-        {activeTab === "quiz" && <QuizView quiz={quiz} />}
-
       </div>
     </div>
   );
