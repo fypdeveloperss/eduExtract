@@ -165,8 +165,12 @@ No markdown or triple backticks. Only pure JSON.`,
       "Content-Disposition",
       'attachment; filename="presentation.pptx"'
     );
-    res.json({ pptxBase64: b64, success: true });
-  } catch (error) {
+    res.json({
+      pptxBase64: b64,
+      slides, 
+      success: true
+    });
+      } catch (error) {
     console.error(
       "Error generating .pptx:",
       error.response?.data || error.message
