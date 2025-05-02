@@ -11,11 +11,12 @@ function Home() {
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
   const [pptxBase64, setPptxBase64] = useState("");
+  const [slides, setSlides] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [quiz, setQuiz] = useState([]);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
-  
+
   const extractVideoId = (url) => {
     try {
       const urlObj = new URL(url);
@@ -27,22 +28,21 @@ function Home() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    
+
     const videoId = extractVideoId(url);
     if (!videoId) {
       setError("Please enter a valid YouTube URL");
       return;
     }
-    
+
     setError("");
     setIsLoading(true);
     setBlog("");
     setPptxBase64("");
     setFlashcards([]);
     setQuiz([]);
-    
+
     try {
-      // Generate all content in parallel
       const [blogRes, slidesRes, flashRes, quizRes] = await Promise.all([
         axios.post("http://localhost:5000/generate", { url }),
         axios.post("http://localhost:5000/generate-slides", { url }),
@@ -52,24 +52,25 @@ function Home() {
 
       setBlog(blogRes.data.blogPost || "");
       setPptxBase64(slidesRes.data.pptxBase64 || "");
+      setSlides(slidesRes.data.slides || []); // ✅ Add this line
       setFlashcards(flashRes.data.flashcards || []);
       setQuiz(quizRes.data.quiz || []);
-      
     } catch (error) {
       console.error("Error generating content:", error);
       setError("Failed to generate content. Please try again.");
-    } finally {
-      setIsLoading(false);
     }
   };
 
   // Check if any content is available
-  const hasContent = blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0;
+  const hasContent =
+    blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0;
 
   return (
     <div className="container mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-center mb-8">YouTube Learning Assistant</h1>
-      
+      <h1 className="text-3xl font-bold text-center mb-8">
+        YouTube Learning Assistant
+      </h1>
+
       <form onSubmit={handleSubmit} className="max-w-2xl mx-auto mb-8">
         <div className="flex flex-col md:flex-row gap-4">
           <input
@@ -100,7 +101,7 @@ function Home() {
             { id: "blog", label: "Blog" },
             { id: "slides", label: "Slides" },
             { id: "flashcards", label: "Flashcards" },
-            { id: "quiz", label: "Quiz" }
+            { id: "quiz", label: "Quiz" },
           ].map((tab) => (
             <button
               key={tab.id}
@@ -108,8 +109,8 @@ function Home() {
                 activeTab === tab.id
                   ? "active"
                   : hasContent
-                    ? "enabled"
-                    : "disabled"
+                  ? "enabled"
+                  : "disabled"
               }`}
               onClick={() => hasContent && setActiveTab(tab.id)}
               disabled={!hasContent}
@@ -123,11 +124,15 @@ function Home() {
           <div className="content-container">
             {activeTab === "blog" && <BlogView blog={blog} />}
             {activeTab === "slides" && (
-              <SlidesView 
-                pptxBase64={pptxBase64} 
+              <SlidesView
+                pptxBase64={pptxBase64}
+                slides={slides} 
               />
             )}
-            {activeTab === "flashcards" && <FlashCardGallery flashcards={flashcards} />}
+
+            {activeTab === "flashcards" && (
+              <FlashCardGallery flashcards={flashcards} />
+            )}
             {activeTab === "quiz" && <QuizView quiz={quiz} />}
           </div>
         )}
