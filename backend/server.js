@@ -13,28 +13,28 @@ const port = process.env.PORT || 5000;
 app.use(express.json());
 app.use(cors());
 
-// Initialize Groq client
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
+// Helper: Extract transcript text from YouTube URL
+async function getTranscriptText(url) {
+  const videoId = new URL(url).searchParams.get("v");
+  if (!videoId) throw new Error("Invalid YouTube URL");
+
+  const transcript = await YoutubeTranscript.fetchTranscript(videoId);
+  return transcript.map((item) => item.text).join(" ");
+}
+
 /**
- * BLOG GENERATION ENDPOINT
+ * BLOG GENERATION
  */
 app.post("/generate", async (req, res) => {
-  const { url } = req.body;
-
   try {
-    const videoId = new URL(url).searchParams.get("v");
-    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+    const transcriptText = await getTranscriptText(req.body.url);
 
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map((item) => item.text).join(" ");
-
-    const chatCompletion = await groq.chat.completions.create({
+    const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
       temperature: 1,
       max_tokens: 2048,
-      top_p: 1,
-      stream: false,
       messages: [
         {
           role: "system",
@@ -44,74 +44,50 @@ app.post("/generate", async (req, res) => {
           - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
           - Return only valid HTML without CSS or markdown.`,
         },
-        {
-          role: "user",
-          content: transcriptText,
-        },
+        { role: "user", content: transcriptText },
       ],
     });
 
-    let blogPost = chatCompletion.choices[0].message.content;
-    blogPost = blogPost.replace(/```html/g, "").replace(/```/g, "");
-
+    const blogPost = completion.choices[0].message.content.replace(/```html|```/g, "");
     res.json({ blogPost });
   } catch (error) {
-    console.error(
-      "Error generating blog:",
-      error.response?.data || error.message
-    );
+    console.error("Blog error:", error.message);
     res.status(500).json({ error: "Error generating blog post" });
   }
 });
 
+/**
+ * FLASHCARD GENERATION
+ */
 app.post("/generate-flashcards", async (req, res) => {
-  const { url } = req.body;
-
   try {
-    const videoId = new URL(url).searchParams.get("v");
-    if (!videoId) {
-      return res.status(400).json({ error: "Invalid YouTube URL" });
-    }
-
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map((item) => item.text).join(" ");
+    const transcriptText = await getTranscriptText(req.body.url);
 
     const completion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
       messages: [
         {
           role: "system",
-          content: `Based on the provided transcript, generate 5-10 educational flashcards as a JSON array.
+          content: `Generate 5-10 educational flashcards as a JSON array.
 Each flashcard should have a "question" and an "answer" field.
-Only return a JSON array. Do NOT include markdown, explanations, or formatting like triple backticks.`,
+Return only valid JSON. No markdown or explanations.`,
         },
-        {
-          role: "user",
-          content: transcriptText,
-        },
+        { role: "user", content: transcriptText },
       ],
     });
 
-    let content = completion.choices[0].message.content;
-
-    // Remove triple backticks if they sneak in
-    content = content.replace(/```json/g, "").replace(/```/g, "");
-
+    const content = completion.choices[0].message.content.replace(/```json|```/g, "");
     const flashcards = JSON.parse(content);
     res.json({ flashcards });
   } catch (error) {
-    console.error(
-      "Flashcard generation error:",
-      error.response?.data || error.message
-    );
+    console.error("Flashcard error:", error.message);
     res.status(500).json({ error: "Failed to generate flashcards" });
   }
 });
 
 /**
- * SLIDES GENERATION ENDPOINT
+ * SLIDES GENERATION
  */
-
 app.post("/generate-slides", async (req, res) => {
   const { url } = req.body;
 
@@ -179,8 +155,41 @@ No markdown or triple backticks. Only pure JSON.`,
   }
 });
 
-
+/**
+ * QUIZ GENERATION
+ */
 app.post("/generate-quiz", async (req, res) => {
+  try {
+    const transcriptText = await getTranscriptText(req.body.url);
+
+    const completion = await groq.chat.completions.create({
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: [
+        {
+          role: "system",
+          content: `Generate 5-10 multiple-choice quiz questions in JSON format.
+Each object must include:
+- "question"
+- "options" (array of 4 choices)
+- "answer" (correct choice)
+Return only valid JSON. No markdown or explanations.`,
+        },
+        { role: "user", content: transcriptText },
+      ],
+    });
+
+    const quiz = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+    res.json({ quiz });
+  } catch (error) {
+    console.error("Quiz error:", error.message);
+    res.status(500).json({ error: "Failed to generate quiz" });
+  }
+});
+
+/**
+ * SUMMARY GENERATION ✅ (NEW ENDPOINT)
+ */
+app.post("/generate-summary", async (req, res) => {
   const { url } = req.body;
 
   try {
@@ -190,21 +199,16 @@ app.post("/generate-quiz", async (req, res) => {
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map((item) => item.text).join(" ");
 
-    const completion = await groq.chat.completions.create({
+    const chatCompletion = await groq.chat.completions.create({
       model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      temperature: 1,
-      max_tokens: 2048,
+      temperature: 0.7,
+      max_tokens: 512,
       top_p: 1,
       stream: false,
       messages: [
         {
           role: "system",
-          content: `Generate 5-10 multiple-choice quiz questions based on the following YouTube transcript.
-Return a JSON array where each object has:
-- "question": the question string
-- "options": an array of 4 answer choices
-- "answer": the correct answer string
-Do NOT include explanations or formatting like triple backticks. Only return valid JSON.`,
+          content: `Summarize the transcript into a concise and informative paragraph. Limit to 150-200 words.`,
         },
         {
           role: "user",
@@ -213,22 +217,18 @@ Do NOT include explanations or formatting like triple backticks. Only return val
       ],
     });
 
-    let quizContent = completion.choices[0].message.content;
+    let summary = chatCompletion.choices[0].message.content;
+    summary = summary.replace(/```(json|text)?/g, "").trim();
 
-    // Clean up any formatting if present
-    quizContent = quizContent.replace(/```json/g, "").replace(/```/g, "");
-
-    const quiz = JSON.parse(quizContent);
-    res.json({ quiz });
+    res.json({ summary });
   } catch (error) {
-    console.error(
-      "Quiz generation error:",
-      error.response?.data || error.message
-    );
-    res.status(500).json({ error: "Failed to generate quiz" });
+    console.error("Summary generation error:", error.response?.data || error.message);
+    res.status(500).json({ error: "Failed to generate summary" });
   }
 });
 
+
+// Start server
 app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
 });

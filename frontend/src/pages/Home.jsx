@@ -4,6 +4,7 @@ import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
 import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
+import SummaryView from "../components/SummaryView";
 import "./Home.css";
 
 function Home() {
@@ -16,6 +17,7 @@ function Home() {
   const [quiz, setQuiz] = useState([]);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
+  const [summary,setSummary] = useState(""); 
 
   const extractVideoId = (url) => {
     try {
@@ -41,20 +43,24 @@ function Home() {
     setPptxBase64("");
     setFlashcards([]);
     setQuiz([]);
+    setSummary("");
 
     try {
-      const [blogRes, slidesRes, flashRes, quizRes] = await Promise.all([
+      const [blogRes, slidesRes, flashRes, quizRes, summaryRes] = await Promise.all([
         axios.post("http://localhost:5000/generate", { url }),
         axios.post("http://localhost:5000/generate-slides", { url }),
         axios.post("http://localhost:5000/generate-flashcards", { url }),
         axios.post("http://localhost:5000/generate-quiz", { url }),
+        axios.post("http://localhost:5000/generate-summary", { url }),
       ]);
+  
 
       setBlog(blogRes.data.blogPost || "");
       setPptxBase64(slidesRes.data.pptxBase64 || "");
       setSlides(slidesRes.data.slides || []); // ✅ Add this line
       setFlashcards(flashRes.data.flashcards || []);
       setQuiz(quizRes.data.quiz || []);
+      setSummary(summaryRes.data.summary || "");
     } catch (error) {
       console.error("Error generating content:", error);
       setError("Failed to generate content. Please try again.");
@@ -65,7 +71,7 @@ function Home() {
 
   // Check if any content is available
   const hasContent =
-    blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0;
+    blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0 || summary;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -100,10 +106,11 @@ function Home() {
         {/* Modern tab design - always visible but disabled when no content */}
         <div className="tab-container">
           {[
-            { id: "blog", label: "Blog" },
-            { id: "slides", label: "Slides" },
-            { id: "flashcards", label: "Flashcards" },
-            { id: "quiz", label: "Quiz" },
+              { id: "blog", label: "Blog" },
+              { id: "slides", label: "Slides" },
+              { id: "flashcards", label: "Flashcards" },
+              { id: "quiz", label: "Quiz" },
+              { id: "summary", label: "Summary" }, 
           ].map((tab) => (
             <button
               key={tab.id}
@@ -136,6 +143,7 @@ function Home() {
               <FlashCardGallery flashcards={flashcards} />
             )}
             {activeTab === "quiz" && <QuizView quiz={quiz} />}
+            {activeTab === "summary" && <SummaryView summary={summary} />}
           </div>
         )}
       </div>
