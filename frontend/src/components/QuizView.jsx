@@ -67,95 +67,115 @@ function QuizView({ quiz }) {
   if (showResults) {
     const score = getScore();
     return (
-      <div className="max-w-2xl mx-auto p-4 bg-white rounded shadow text-black">
-        <h2 className="text-xl font-bold mb-4">Quiz Results</h2>
-        <p className="mb-2">Your Score: {score} / {quiz.length}</p>
-        <p className="mb-4">Time Taken: {formatTime(elapsedTime)}</p>
-
-        <ul className="space-y-4">
-          {quiz.map((q, idx) => {
-            const isCorrect = selectedAnswers[idx] === q.answer;
-            return (
-              <li key={idx} className="p-4 border rounded">
-                <p className="font-medium">{q.question}</p>
-                <p>Your answer: <span className={isCorrect ? "text-green-600" : "text-red-600"}>{selectedAnswers[idx]}</span></p>
-                {!isCorrect && <p>Correct answer: <span className="text-green-600">{q.answer}</span></p>}
-              </li>
-            );
-          })}
-        </ul>
-
-        <button
-          onClick={handleRestart}
-          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-        >
-          Restart Quiz
-        </button>
-      </div>
+      <div className="max-w-2xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#1a1a1a]">
+      <h2 className="text-xl font-bold mb-4">Quiz Results</h2>
+      <p className="mb-2">
+        Your Score: {getScore()} / {quiz.length}
+      </p>
+      <p className="mb-4">Time Taken: {formatTime(elapsedTime)}</p>
+  
+      <ul className="space-y-4">
+        {quiz.map((q, idx) => {
+          const isCorrect = selectedAnswers[idx] === q.answer;
+          return (
+            <li
+              key={idx}
+              className="p-4 border rounded border-gray-300 dark:border-[#171717] bg-gray-50 dark:bg-[#141414]"
+            >
+              <p className="font-medium">{q.question}</p>
+              <p>
+                Your answer:{" "}
+                <span className={isCorrect ? "text-green-500" : "text-red-500"}>
+                  {selectedAnswers[idx]}
+                </span>
+              </p>
+              {!isCorrect && (
+                <p>
+                  Correct answer:{" "}
+                  <span className="text-green-500">{q.answer}</span>
+                </p>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+  
+      <button
+        onClick={handleRestart}
+        className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+      >
+        Restart Quiz
+      </button>
+    </div>
     );
   }
 
   const question = quiz[currentQuestion];
 
   return (
-    <div className="max-w-xl mx-auto p-4 bg-white rounded shadow text-black">
-      {/* Top Bar: Progress + Timer */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="w-3/4 bg-gray-200 rounded-full h-2">
-          <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-            style={{ width: `${((currentQuestion + 1) / quiz.length) * 100}%` }}
-          ></div>
-        </div>
-        <span className="text-sm font-medium text-gray-600 ml-4">
-          Time: {formatTime(elapsedTime)}
-        </span>
+    <div className="max-w-xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#1a1a1a]">
+    {/* Top Bar: Progress + Timer */}
+    <div className="flex justify-between items-center mb-4">
+      <div className="w-3/4 bg-gray-200 dark:bg-[#141414] rounded-full h-2">
+        <div
+          className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+          style={{
+            width: `${((currentQuestion + 1) / quiz.length) * 100}%`,
+          }}
+        ></div>
       </div>
+      <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-4">
+        Time: {formatTime(elapsedTime)}
+      </span>
+    </div>
 
-      <h2 className="text-lg font-semibold mb-2">Question {currentQuestion + 1} of {quiz.length}</h2>
-      <p className="mb-4">{question.question}</p>
+    <h2 className="text-lg font-semibold mb-2">
+      Question {currentQuestion + 1} of {quiz.length}
+    </h2>
+    <p className="mb-4">{question.question}</p>
 
-      <ul className="space-y-2">
-        {question.options.map((option, index) => (
-          <li
-            key={index}
-            onClick={() => handleOptionClick(option)}
-            className={`px-4 py-2 border rounded cursor-pointer transition-all duration-200 ${
+    <ul className="space-y-2">
+      {question.options.map((option, index) => (
+        <li
+          key={index}
+          onClick={() => handleOptionClick(option)}
+          className={`px-4 py-2 border rounded cursor-pointer transition-all duration-200
+            ${
               selectedAnswers[currentQuestion] === option
-                ? "bg-blue-100 border-blue-500"
-                : "hover:bg-gray-100"
+                ? "bg-blue-100 dark:bg-[#141414] border-blue-500"
+                : "hover:bg-gray-100 dark:hover:bg-[#171717] border-gray-300 dark:border-[#141414]"
             }`}
-          >
-            {option}
-          </li>
-        ))}
-      </ul>
-
-      <div className="flex justify-between items-center mt-4">
-        <button
-          onClick={handleBack}
-          disabled={currentQuestion === 0}
-          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50"
         >
-          Back
-        </button>
+          {option}
+        </li>
+      ))}
+    </ul>
 
-        {currentQuestion < quiz.length - 1 ? (
-          <button
-            onClick={handleNext}
-            disabled={selectedAnswers[currentQuestion] == null}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
-          >
-            Next
-          </button>
-        ) : (
-          <button
-            onClick={handleSubmit}
-            disabled={selectedAnswers[currentQuestion] == null}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
-          >
-            Submit
-          </button>
+    <div className="flex justify-between items-center mt-4">
+      <button
+        onClick={handleBack}
+        disabled={currentQuestion === 0}
+        className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50"
+      >
+        Back
+      </button>
+
+      {currentQuestion < quiz.length - 1 ? (
+        <button
+          onClick={handleNext}
+          disabled={selectedAnswers[currentQuestion] == null}
+          className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+        >
+          Next
+        </button>
+      ) : (
+        <button
+          onClick={handleSubmit}
+          disabled={selectedAnswers[currentQuestion] == null}
+          className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+        >
+          Submit
+        </button>
         )}
       </div>
     </div>
