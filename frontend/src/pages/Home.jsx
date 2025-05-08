@@ -47,7 +47,7 @@ function Home() {
 
     try {
       const [blogRes, slidesRes, flashRes, quizRes, summaryRes] = await Promise.all([
-        axios.post("http://localhost:5000/generate", { url }),
+        axios.post("http://localhost:5000/generate-blog", { url }),
         axios.post("http://localhost:5000/generate-slides", { url }),
         axios.post("http://localhost:5000/generate-flashcards", { url }),
         axios.post("http://localhost:5000/generate-quiz", { url }),
