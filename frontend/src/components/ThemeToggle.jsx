@@ -1,6 +1,6 @@
-import { useContext } from 'react';
-import { ThemeContext } from '../context/ThemeContext';
-import { Sun, Moon } from 'lucide-react';
+import { useContext } from "react";
+import { ThemeContext } from "../context/ThemeContext";
+import { Sun, Moon } from "lucide-react";
 
 const ThemeToggle = () => {
   const { theme, toggleTheme } = useContext(ThemeContext);
@@ -14,7 +14,7 @@ const ThemeToggle = () => {
   dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700
 "
     >
-      {theme === 'light' ? <Moon /> : <Sun />}
+      {theme === "light" ? <Moon /> : <Sun />}
     </button>
   );
 };

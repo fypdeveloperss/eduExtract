@@ -9,7 +9,6 @@ const Layout = () => {
         <h2 className="text-xl font-bold">EduExtract</h2>
         <nav className="mt-4">
           <ul>
-            
             <li className="mb-2">
               <Link
                 to="/"

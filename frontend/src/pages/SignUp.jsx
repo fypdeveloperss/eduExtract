@@ -19,23 +19,29 @@ const AuthButton = ({ children }) => (
 
 const GoogleButton = ({ children }) => (
   <button className="w-full flex items-center justify-center gap-2 bg-zinc-800 text-white py-3 rounded-md hover:bg-zinc-700">
-    <img src="https://www.svgrepo.com/show/475656/google-color.svg" alt="Google" className="w-5 h-5" />
+    <img
+      src="https://www.svgrepo.com/show/475656/google-color.svg"
+      alt="Google"
+      className="w-5 h-5"
+    />
     {children}
   </button>
 );
 
-
-
 export const SignUp = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-   const navigate = useNavigate();
+  const navigate = useNavigate();
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
       <div className="bg-black p-8 rounded-md w-full max-w-md">
-        <h2 className="text-white text-2xl font-semibold text-center mb-2">Create an account</h2>
-        <p className="text-zinc-400 text-center mb-6">Let's get you learning journey started.</p>
+        <h2 className="text-white text-2xl font-semibold text-center mb-2">
+          Create an account
+        </h2>
+        <p className="text-zinc-400 text-center mb-6">
+          Let's get you learning journey started.
+        </p>
 
         <GoogleButton>Sign up with Google</GoogleButton>
 
@@ -45,22 +51,40 @@ export const SignUp = () => {
           <hr className="flex-grow border-zinc-700" />
         </div>
 
-        <AuthInput type="email" placeholder="Enter your email" value={email} onChange={(e) => setEmail(e.target.value)} />
+        <AuthInput
+          type="email"
+          placeholder="Enter your email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
         <div className="relative mt-4">
-          <AuthInput type="password" placeholder="Enter your password" value={password} onChange={(e) => setPassword(e.target.value)} />
-          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 cursor-pointer">👁️</span>
+          <AuthInput
+            type="password"
+            placeholder="Enter your password"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+          />
+          <span className="absolute right-3 top-1/2 transform -translate-y-1/2 text-zinc-500 cursor-pointer">
+            👁️
+          </span>
         </div>
 
-        <div className="text-right mt-2 text-sm text-zinc-400 hover:underline cursor-pointer">Forgot password?</div>
+        <div className="text-right mt-2 text-sm text-zinc-400 hover:underline cursor-pointer">
+          Forgot password?
+        </div>
 
         <AuthButton>Sign Up</AuthButton>
 
         <p className="text-center text-zinc-400 mt-6 text-sm">
-          Already have an account? <button onClick={() => navigate("/login")} className="underline cursor-pointer">Sign in</button>
+          Already have an account?{" "}
+          <button
+            onClick={() => navigate("/login")}
+            className="underline cursor-pointer"
+          >
+            Sign in
+          </button>
         </p>
       </div>
     </div>
   );
 };
-
-

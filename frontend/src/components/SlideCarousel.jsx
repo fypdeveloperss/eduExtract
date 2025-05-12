@@ -15,7 +15,9 @@ const SlideCarousel = ({ slides }) => {
       <h2 className="text-2xl font-bold mb-4">{title}</h2>
       <ul className="text-left list-disc list-inside mb-6">
         {points.map((pt, i) => (
-          <li key={i} className="mb-1">{pt}</li>
+          <li key={i} className="mb-1">
+            {pt}
+          </li>
         ))}
       </ul>
       <div className="flex justify-between items-center">
@@ -26,7 +28,9 @@ const SlideCarousel = ({ slides }) => {
         >
           Previous
         </button>
-        <span className="font-semibold">{index + 1} / {slides.length}</span>
+        <span className="font-semibold">
+          {index + 1} / {slides.length}
+        </span>
         <button
           onClick={next}
           disabled={index === slides.length - 1}
