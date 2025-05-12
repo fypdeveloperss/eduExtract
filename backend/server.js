@@ -18,7 +18,6 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
 
-
 // Helper: Extract transcript text from YouTube URL
 async function getTranscriptText(url) {
   const videoId = new URL(url).searchParams.get("v");
@@ -33,8 +32,6 @@ async function getTranscriptText(url) {
   transcriptCache.set(cacheKey, fullText); // Auto-expires after 10 mins
   return fullText;
 }
-
-
 
 /**
  * BLOG GENERATION
@@ -60,7 +57,10 @@ app.post("/generate-blog", async (req, res) => {
       ],
     });
 
-    const blogPost = completion.choices[0].message.content.replace(/```html|```/g, "");
+    const blogPost = completion.choices[0].message.content.replace(
+      /```html|```/g,
+      ""
+    );
     res.json({ blogPost });
   } catch (error) {
     console.error("Blog error:", error.message);
@@ -88,7 +88,10 @@ Return only valid JSON. No markdown or explanations.`,
       ],
     });
 
-    const content = completion.choices[0].message.content.replace(/```json|```/g, "");
+    const content = completion.choices[0].message.content.replace(
+      /```json|```/g,
+      ""
+    );
     const flashcards = JSON.parse(content);
     res.json({ flashcards });
   } catch (error) {
@@ -141,11 +144,18 @@ No markdown or triple backticks. Only pure JSON.`,
       const firstBracket = responseContent.indexOf("[");
       const lastBracket = responseContent.lastIndexOf("]");
 
-      if (firstBracket === -1 || lastBracket === -1 || lastBracket <= firstBracket) {
+      if (
+        firstBracket === -1 ||
+        lastBracket === -1 ||
+        lastBracket <= firstBracket
+      ) {
         throw new Error("JSON array not found in response");
       }
 
-      const jsonArrayString = responseContent.substring(firstBracket, lastBracket + 1);
+      const jsonArrayString = responseContent.substring(
+        firstBracket,
+        lastBracket + 1
+      );
       slides = JSON.parse(jsonArrayString);
 
       if (!Array.isArray(slides)) {
@@ -153,7 +163,9 @@ No markdown or triple backticks. Only pure JSON.`,
       }
     } catch (jsonErr) {
       console.error("Invalid JSON response from AI model:", jsonErr.message);
-      return res.status(500).json({ error: "AI response was not valid JSON. Please try again." });
+      return res
+        .status(500)
+        .json({ error: "AI response was not valid JSON. Please try again." });
     }
 
     // Generate PowerPoint
@@ -170,14 +182,20 @@ No markdown or triple backticks. Only pure JSON.`,
     });
 
     const b64 = await pptx.write("base64");
-    res.setHeader("Content-Disposition", 'attachment; filename="presentation.pptx"');
+    res.setHeader(
+      "Content-Disposition",
+      'attachment; filename="presentation.pptx"'
+    );
     res.json({
       pptxBase64: b64,
       slides,
       success: true,
     });
   } catch (error) {
-    console.error("Error generating .pptx:", error.response?.data || error.message);
+    console.error(
+      "Error generating .pptx:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ error: "Failed to generate PowerPoint file" });
   }
 });
@@ -205,7 +223,9 @@ Return only valid JSON. No markdown or explanations.`,
       ],
     });
 
-    const quiz = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+    const quiz = JSON.parse(
+      completion.choices[0].message.content.replace(/```json|```/g, "")
+    );
     res.json({ quiz });
   } catch (error) {
     console.error("Quiz error:", error.message);
@@ -249,7 +269,10 @@ app.post("/generate-summary", async (req, res) => {
 
     res.json({ summary });
   } catch (error) {
-    console.error("Summary generation error:", error.response?.data || error.message);
+    console.error(
+      "Summary generation error:",
+      error.response?.data || error.message
+    );
     res.status(500).json({ error: "Failed to generate summary" });
   }
 });
@@ -286,13 +309,11 @@ app.post("/chatbot", async (req, res) => {
 
     const answer = completion.choices[0].message.content.trim();
     res.json({ answer });
-
   } catch (error) {
     console.error("Chatbot error:", error.message);
     res.status(500).json({ error: "Failed to generate chatbot response" });
   }
 });
-
 
 // Start server
 app.listen(port, () => {
