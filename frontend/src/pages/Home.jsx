@@ -78,12 +78,18 @@ export default function Home() {
                 </a>
               </div>
             </div>
-            <div>
+            <div className="flex flex-row gap-2">
               <button
                 onClick={() => navigate("/dashboard")}
                 className="bg-black text-white px-4 py-2 rounded-md font-medium"
               >
                 Get Started
+              </button>
+              <button
+                onClick={() => navigate("/login")}
+                className="bg-black text-white px-4 py-2 rounded-md font-medium"
+              >
+                Sign In
               </button>
             </div>
           </div>
