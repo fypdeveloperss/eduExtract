@@ -2,7 +2,6 @@
   background: #ffffff;
   padding: 2rem;
   border-radius: 1rem;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.05);
   font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
   max-width: 100%;
   line-height: 1.8;
@@ -11,8 +10,8 @@
 
 /* Dark mode support using data-theme */
 [data-theme="dark"] .summary-container {
-  background: #1a1a1a;
-  box-shadow: 0 6px 12px rgba(0, 0, 0, 0.3);
+  background: #171717;
+  
 }
 
 .summary-title {

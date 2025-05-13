@@ -45,20 +45,20 @@ const Header = () => {
               <div className="ml-10 flex items-center space-x-8">
                 <a
                   href="#"
-                  className="text-gray-700 hover:text-gray-900 relative group px-3 py-2"
+                  className="text-[#171717cc] hover:text-gray-900 relative group px-3 py-2"
                 >
                   Features
                   <span className="inline-block ml-1">▼</span>
                 </a>
                 <a
                   href="#"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2"
+                  className="text-[#171717cc] hover:text-[#171717] px-3 py-2"
                 >
                   Pricing
                 </a>
                 <a
                   href="#"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2"
+                  className="text-[#171717cc] hover:text-[#171717] px-3 py-2"
                 >
                   Careers
                 </a>
@@ -66,7 +66,7 @@ const Header = () => {
                   <li className="">
                     <Link
                       to="/about"
-                      className="hover:text-[#4b5563] text-gray-700 dark:hover:text-gray-900"
+                      className="hover:text-[#171717] text-[#171717cc] "
                     >
                       About
                     </Link>
@@ -74,7 +74,7 @@ const Header = () => {
                   <li className="">
                     <Link
                       to="/contact"
-                      className="hover:text-[#4b5563] text-gray-700 dark:hover:text-gray-900"
+                      className="hover:text-[#171717] text-[#171717cc] "
                     >
                       Contact
                     </Link>
@@ -85,13 +85,13 @@ const Header = () => {
             <div className="flex flex-row gap-2">
               <button
                 onClick={() => navigate("/dashboard")}
-                className="bg-black text-white px-4 py-2 rounded-md font-medium"
+                className="bg-[#171717] text-white px-4 py-2 rounded-md font-medium"
               >
                 Get Started
               </button>
               <button
                 onClick={() => navigate("/login")}
-                className="bg-black text-white px-4 py-2 rounded-md font-medium"
+                className="bg-[#171717] text-white px-4 py-2 rounded-md font-medium"
               >
                 Sign In
               </button>

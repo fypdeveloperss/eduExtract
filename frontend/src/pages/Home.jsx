@@ -3,7 +3,7 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
 import { Github } from "lucide-react";
-import { useNavigate,Link } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 
 export default function Home() {
@@ -11,7 +11,6 @@ export default function Home() {
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const featuresRef = useRef(null);
-
 
   // Interpolate scroll to transform values
   const rotateX = useTransform(scrollY, [0, 300], [5, 0]); // rotateX from 5° to 0°
@@ -40,28 +39,28 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="bg-white min-h-screen">
+    <div className="bg-[#FFFFFF] min-h-screen">
       {/* Navigation */}
-      <Header/>
+      <Header />
 
       {/* Hero Section */}
       <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
           
-          <h1 className="text-5xl font-bold text-gray-900 mb-6">
+          <h1 className="text-5xl font-bold text-[#171717] mb-6">
             An AI tutor made for you
           </h1>
-          <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+          <p className="text-xl text-[#171717cc] max-w-3xl mx-auto">
             Turn your learning materials into concise notes, quizzes,
             interactive chats, and more
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <button onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })} className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium">
+            <button onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })} className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA]">
               See features
             </button>
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-black text-white px-6 py-3 rounded-md font-medium"
+              className="bg-[#171717] text-white px-6 py-3 rounded-md font-medium"
             >
               Get Started
             </button>
@@ -81,7 +80,7 @@ export default function Home() {
                 E
               </div>
             </div>
-            <p className="ml-3 text-sm text-gray-600">
+            <p className="ml-3 text-sm text-[#171717cc]">
               Loved by over 1 million learners
             </p>
           </div>
@@ -90,7 +89,7 @@ export default function Home() {
         {/* Tilting Demo Image/Video */}
         <div className="mt-16 max-w-full mx-auto">
           <motion.div
-            className="relative bg-gray-900 rounded-lg overflow-hidden shadow-xl"
+            className="relative bg-[#121212] rounded-lg overflow-hidden shadow-xl"
             style={{
               perspective: "1200px",
               scale: scale,
@@ -130,12 +129,12 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Hero Section */}
+      {/* Features Section */}
       <div
         className="mt-16 max-w-6xl mx-auto overflow-hidden"
         ref={containerRef}
       >
-        <div ref={featuresRef} className="bg-gray-100 rounded-xl p-8 shadow-lg">
+        <div ref={featuresRef} className="bg-[#FAFAFA] rounded-xl p-8 shadow-lg">
           <div className="flex flex-col md:flex-row items-start gap-10">
             <div className="w-full md:w-1/3">
               {/* Text Section */}
@@ -155,11 +154,11 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-semibold text-black">
+                <h2 className="text-2xl font-semibold text-[#171717]">
                   Summary, flashcards, quizzes, voice mode, and more
                 </h2>
               </div>
-              <p className="text-gray-700">
+              <p className="text-[#171717cc]">
                 Understand the key points, test your knowledge, get answers with
                 references, and talk with an AI tutor.
               </p>
@@ -185,13 +184,13 @@ export default function Home() {
       </div>
 
       {/* Features Cards Section */}
-      <div className="py-16 bg-white">
+      <div className="py-16 bg-[#FFFFFF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid gap-8 md:grid-cols-3">
             {/* Feature 1 */}
-            <div className="bg-gray-50 p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
               <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
@@ -208,19 +207,19 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
+              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
                 Upload any content
               </h3>
-              <p className="text-gray-600 text-center">
+              <p className="text-[#171717cc] text-center">
                 From PDFs and YouTube videos to slides and even recorded
                 lectures, learn everything your way.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-gray-50 p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
               <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
@@ -237,19 +236,19 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
+              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
                 Test your knowledge
               </h3>
-              <p className="text-gray-600 text-center">
+              <p className="text-[#171717cc] text-center">
                 Create personalized exams, get answer breakdowns, and track your
                 progress.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-gray-50 p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
               <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-gray-200 rounded-full flex items-center justify-center">
+                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
@@ -266,10 +265,10 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4">
+              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
                 Talk with an AI Tutor
               </h3>
-              <p className="text-gray-600 text-center">
+              <p className="text-[#171717cc] text-center">
                 Talk to an AI tutor to simplify ideas and receive guidance on
                 the content.
               </p>
@@ -278,19 +277,19 @@ export default function Home() {
         </div>
       </div>
 
-      <div className="flex flex-col gap-5 bg-white">
+      <div className="flex flex-col gap-5 bg-[#FFFFFF]">
         {/* Main Content */}
         <main className="flex-grow flex items-center justify-center px-4">
-          <div className="w-full max-w-[80%] mx-2 rounded-3xl bg-gray-100 py-24 px-6 text-center">
-            <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <div className="w-full max-w-[80%] mx-2 rounded-3xl bg-[#FAFAFA] py-24 px-6 text-center">
+            <h1 className="text-4xl font-bold text-[#171717] mb-4">
               Learn smarter, faster, easier.
             </h1>
-            <p className="text-gray-600 mb-8">
+            <p className="text-[#171717cc] mb-8">
               Upload your content, and start your learning journey.
             </p>
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-black hover:bg-gray-800 text-white font-medium py-3 px-8 rounded-full"
+              className="bg-[#171717] hover:bg-[#121212] text-white font-medium py-3 px-8 rounded-full"
             >
               Get Started
             </button>
@@ -298,32 +297,32 @@ export default function Home() {
         </main>
 
         {/* Footer */}
-        <footer className="p-4 border-t border-gray-200">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-gray-600">
+        <footer className="p-4 border-t border-[#EEEEEE]">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-[#171717cc]">
             <div>
-              <p>© Copyright 2025 YouLearn Inc.</p>
+              <p>© Copyright 2025 EduExtract Inc.</p>
             </div>
             <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Blogs
               </a>
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Invite & Earn
               </a>
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Careers
               </a>
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Terms & Conditions
               </a>
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-gray-900">
+              <a href="#" className="hover:text-[#171717]">
                 Contact Us
               </a>
-              <a href="#" className="hover:text-gray-900">
-                <Github size={20} className="text-gray-800" />
+              <a href="#" className="hover:text-[#171717]">
+                <Github size={20} className="text-[#171717]" />
               </a>
             </div>
           </div>

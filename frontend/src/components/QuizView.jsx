@@ -71,7 +71,7 @@ function QuizView({ quiz }) {
   if (showResults) {
     const score = getScore();
     return (
-      <div className="max-w-2xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#1a1a1a]">
+      <div className="max-w-2xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#171717]">
         <h2 className="text-xl font-bold mb-4">Quiz Results</h2>
         <p className="mb-2">
           Your Score: {getScore()} / {quiz.length}
@@ -108,7 +108,7 @@ function QuizView({ quiz }) {
 
         <button
           onClick={handleRestart}
-          className="mt-6 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
         >
           Restart Quiz
         </button>
@@ -119,12 +119,12 @@ function QuizView({ quiz }) {
   const question = quiz[currentQuestion];
 
   return (
-    <div className="max-w-xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#1a1a1a]">
+    <div className="max-w-xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#171717]">
       {/* Top Bar: Progress + Timer */}
       <div className="flex justify-between items-center mb-4">
         <div className="w-3/4 bg-gray-200 dark:bg-[#141414] rounded-full h-2">
           <div
-            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
             style={{
               width: `${((currentQuestion + 1) / quiz.length) * 100}%`,
             }}
@@ -149,7 +149,7 @@ function QuizView({ quiz }) {
             ${
               selectedAnswers[currentQuestion] === option
                 ? "bg-blue-100 dark:bg-[#141414] border-blue-500"
-                : "hover:bg-gray-100 dark:hover:bg-[#171717] border-gray-300 dark:border-[#141414]"
+                : "hover:bg-[#EEEEEE] dark:hover:bg-[#171717] border-gray-300 dark:border-[#141414]"
             }`}
           >
             {option}
@@ -170,7 +170,7 @@ function QuizView({ quiz }) {
           <button
             onClick={handleNext}
             disabled={selectedAnswers[currentQuestion] == null}
-            className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50"
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
           >
             Next
           </button>

@@ -8,8 +8,8 @@ function Flashcard({ question, answer }) {
       className={`w-80 h-40 max-h-100 p-5 rounded-xl shadow-md cursor-pointer transition-transform duration-300 ease-in-out hover:scale-105 overflow-auto 
         ${
           flipped
-            ? "bg-blue-100 dark:bg-[#141414]"
-            : "bg-white dark:bg-[#1f1f1f]"
+            ? "bg-blue-100 dark:bg-[#121212]"
+            : "bg-white dark:bg-[#2E2E2E]"
         }`}
       onClick={() => setFlipped(!flipped)}
     >
