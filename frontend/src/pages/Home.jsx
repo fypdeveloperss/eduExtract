@@ -47,12 +47,7 @@ export default function Home() {
       {/* Hero Section */}
       <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
-          <button
-  onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })}
-  className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium"
->
-  See features
-</button>
+          
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             An AI tutor made for you
           </h1>
@@ -61,7 +56,7 @@ export default function Home() {
             interactive chats, and more
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <button className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium">
+            <button onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })} className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium">
               See features
             </button>
             <button
