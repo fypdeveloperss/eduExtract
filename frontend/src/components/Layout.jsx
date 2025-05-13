@@ -25,22 +25,7 @@ const Layout = () => {
                 Dashboard
               </Link>
             </li>
-            <li className="mb-2">
-              <Link
-                to="/about"
-                className="hover:text-[#4b5563] dark:hover:text-[#cbd5e1]"
-              >
-                About
-              </Link>
-            </li>
-            <li className="mb-2">
-              <Link
-                to="/contact"
-                className="hover:text-[#4b5563] dark:hover:text-[#cbd5e1]"
-              >
-                Contact
-              </Link>
-            </li>
+            
           </ul>
         </nav>
       </aside>

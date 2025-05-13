@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 
 const AuthInput = ({ type, placeholder, value, onChange }) => (
   <input
@@ -35,6 +35,9 @@ export const SignUp = () => {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-black">
+      <Link to="/" className="absolute top-6 left-6 text-white font-bold text-2xl">
+              EduExtract
+            </Link>
       <div className="bg-black p-8 rounded-md w-full max-w-md">
         <h2 className="text-white text-2xl font-semibold text-center mb-2">
           Create an account

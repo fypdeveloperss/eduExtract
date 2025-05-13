@@ -3,12 +3,15 @@ import { motion, useScroll, useTransform } from "framer-motion";
 import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
 import { Github } from "lucide-react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate,Link } from "react-router-dom";
+import Header from "../components/Header";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
+  const featuresRef = useRef(null);
+
 
   // Interpolate scroll to transform values
   const rotateX = useTransform(scrollY, [0, 300], [5, 0]); // rotateX from 5° to 0°
@@ -39,66 +42,17 @@ export default function Home() {
   return (
     <div className="bg-white min-h-screen">
       {/* Navigation */}
-      <nav
-        className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? "bg-white shadow-md" : "bg-transparent"
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
-            <div className="flex items-center">
-              <div className="flex-shrink-0">
-                <div className="flex items-center">
-                  <div className="text-black font-bold text-2xl">
-                    EduExtract
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-center space-x-8">
-                <a
-                  href="#"
-                  className="text-gray-700 hover:text-gray-900 relative group px-3 py-2"
-                >
-                  Features
-                  <span className="inline-block ml-1">▼</span>
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2"
-                >
-                  Pricing
-                </a>
-                <a
-                  href="#"
-                  className="text-gray-700 hover:text-gray-900 px-3 py-2"
-                >
-                  Careers
-                </a>
-              </div>
-            </div>
-            <div className="flex flex-row gap-2">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="bg-black text-white px-4 py-2 rounded-md font-medium"
-              >
-                Get Started
-              </button>
-              <button
-                onClick={() => navigate("/login")}
-                className="bg-black text-white px-4 py-2 rounded-md font-medium"
-              >
-                Sign In
-              </button>
-            </div>
-          </div>
-        </div>
-      </nav>
+      <Header/>
 
       {/* Hero Section */}
       <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
+          <button
+  onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })}
+  className="bg-white border border-gray-300 text-gray-700 px-6 py-3 rounded-md font-medium"
+>
+  See features
+</button>
           <h1 className="text-5xl font-bold text-gray-900 mb-6">
             An AI tutor made for you
           </h1>
@@ -186,7 +140,7 @@ export default function Home() {
         className="mt-16 max-w-6xl mx-auto overflow-hidden"
         ref={containerRef}
       >
-        <div className="bg-gray-100 rounded-xl p-8 shadow-lg">
+        <div ref={featuresRef} className="bg-gray-100 rounded-xl p-8 shadow-lg">
           <div className="flex flex-col md:flex-row items-start gap-10">
             <div className="w-full md:w-1/3">
               {/* Text Section */}
