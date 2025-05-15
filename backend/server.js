@@ -277,41 +277,37 @@ app.post("/generate-summary", async (req, res) => {
   }
 });
 
-app.post("/chatbot", async (req, res) => {
-  const { url, question } = req.body;
-
+/**
+ * CHATBOT ENDPOINT
+ */
+app.post("/api/chat", async (req, res) => {
   try {
-    if (!url || !question) {
-      return res.status(400).json({ error: "Missing YouTube URL or question" });
-    }
+    const { messages } = req.body;
 
-    const transcriptText = await getTranscriptText(url);
+    const systemPrompt = {
+      role: "system",
+      content: "You are a helpful educational assistant for EduExtract. Only answer questions related to education and this app."
+    };
+
+    const finalMessages = [systemPrompt, ...messages];
 
     const completion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      messages: finalMessages,
+      model: "llama3-8b-8192",
       temperature: 0.7,
       max_tokens: 1024,
-      messages: [
-        {
-          role: "system",
-          content: `You are a helpful educational assistant. Answer questions based only on the transcript below. If needed, suggest additional trusted sources.`,
-        },
-        {
-          role: "user",
-          content: `Transcript:\n${transcriptText}`,
-        },
-        {
-          role: "user",
-          content: `Question: ${question}`,
-        },
-      ],
     });
 
-    const answer = completion.choices[0].message.content.trim();
-    res.json({ answer });
+    const finishReason = completion.choices[0]?.finish_reason;
+    if (finishReason === "length") {
+      console.log("Max tokens reached. Truncating response.");
+    }
+
+    const aiResponse = completion.choices[0]?.message?.content;
+    res.json({ message: aiResponse });
   } catch (error) {
-    console.error("Chatbot error:", error.message);
-    res.status(500).json({ error: "Failed to generate chatbot response" });
+    console.error("Chat error:", error);
+    res.status(500).json({ error: "Failed to get response from AI" });
   }
 });
 
