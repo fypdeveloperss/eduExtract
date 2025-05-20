@@ -5,9 +5,11 @@ import SlidesView from "../components/SlidesView";
 import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
+import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
 
 function Dashboard() {
+  const { isAuthenticated, toggleAuthModal } = useAuth();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -33,6 +35,11 @@ function Dashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (!isAuthenticated) {
+      toggleAuthModal();
+      return;
+    }
 
     const extractedVideoId = extractVideoId(url);
     if (!extractedVideoId) {
@@ -67,7 +74,6 @@ function Dashboard() {
       setQuiz(quizRes.data.quiz || []);
       setSummary(summaryRes.data.summary || "");
       setActiveTab("summary");
-      // Show video with animation after content is loaded
       setTimeout(() => {
         setShowVideo(true);
       }, 100);
@@ -75,7 +81,7 @@ function Dashboard() {
       console.error("Error generating content:", error);
       setError("Failed to generate content. Please try again.");
     } finally {
-      setIsLoading(false); // Make sure to reset loading state after the process completes
+      setIsLoading(false);
     }
   };
 

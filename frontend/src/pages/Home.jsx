@@ -14,7 +14,6 @@ export default function Home() {
   const featuresRef = useRef(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-
   // Interpolate scroll to transform values
   const rotateX = useTransform(scrollY, [0, 300], [5, 0]); // rotateX from 5° to 0°
   const scale = useTransform(scrollY, [0, 300], [0.795, 1]); // scale from ~0.895 to 1
@@ -49,7 +48,6 @@ export default function Home() {
       {/* Hero Section */}
       <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
-          
           <h1 className="text-5xl font-bold text-[#171717] mb-6">
             An AI tutor made for you
           </h1>
@@ -58,34 +56,49 @@ export default function Home() {
             interactive chats, and more
           </p>
           <div className="mt-10 flex flex-wrap justify-center gap-4">
-            <button onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })} className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA]">
-              See features
-            </button>
+            {" "}
+            <button
+              onClick={() =>
+                featuresRef.current?.scrollIntoView({ behavior: "smooth" })
+              }
+              className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA]"
+            >
+              {" "}
+              See features{" "}
+            </button>{" "}
             <button
               onClick={() => navigate("/dashboard")}
               className="bg-[#171717] text-white px-6 py-3 rounded-md font-medium"
             >
-              Get Started
-            </button>
-          </div>
+              {" "}
+              Try Now{" "}
+            </button>{" "}
+          </div>{" "}
           <div className="mt-8 flex items-center justify-center">
+            {" "}
             <div className="flex -space-x-2">
+              {" "}
               <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white">
-                H
-              </div>
+                {" "}
+                H{" "}
+              </div>{" "}
               <div className="w-8 h-8 rounded-full bg-orange-500 border-2 border-white">
-                S
-              </div>
+                {" "}
+                S{" "}
+              </div>{" "}
               <div className="w-8 h-8 rounded-full bg-green-500 border-2 border-white">
-                S
-              </div>
+                {" "}
+                S{" "}
+              </div>{" "}
               <div className="w-8 h-8 rounded-full bg-teal-500 border-2 border-white">
-                E
-              </div>
-            </div>
+                {" "}
+                E{" "}
+              </div>{" "}
+            </div>{" "}
             <p className="ml-3 text-sm text-[#171717cc]">
-              Loved by over 1 million learners
-            </p>
+              {" "}
+              Loved by over 1 million learners{" "}
+            </p>{" "}
           </div>
         </div>
 
@@ -137,7 +150,10 @@ export default function Home() {
         className="mt-16 max-w-6xl mx-auto overflow-hidden"
         ref={containerRef}
       >
-        <div ref={featuresRef} className="bg-[#FAFAFA] rounded-xl p-8 shadow-lg">
+        <div
+          ref={featuresRef}
+          className="bg-[#FAFAFA] rounded-xl p-8 shadow-lg"
+        >
           <div className="flex flex-col md:flex-row items-start gap-10">
             <div className="w-full md:w-1/3">
               {/* Text Section */}

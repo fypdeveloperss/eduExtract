@@ -5,6 +5,7 @@ const { YoutubeTranscript } = require("youtube-transcript");
 const { Groq } = require("groq-sdk");
 const PptxGenJS = require("pptxgenjs");
 const NodeCache = require("node-cache");
+const authRoutes = require('./routes/auth');
 
 dotenv.config();
 
@@ -32,6 +33,9 @@ async function getTranscriptText(url) {
   transcriptCache.set(cacheKey, fullText); // Auto-expires after 10 mins
   return fullText;
 }
+
+// Auth routes
+app.use('/api/auth', authRoutes);
 
 /**
  * BLOG GENERATION
