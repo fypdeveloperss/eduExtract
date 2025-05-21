@@ -92,15 +92,71 @@ Return only valid JSON. No markdown or explanations.`,
       ],
     });
 
-    const content = completion.choices[0].message.content.replace(
-      /```json|```/g,
-      ""
-    );
-    const flashcards = JSON.parse(content);
-    res.json({ flashcards });
+    let content = completion.choices[0].message.content.replace(/```json|```/g, "").trim();
+    
+    // Try to find and extract JSON array from the response
+    try {
+      const firstBracket = content.indexOf("[");
+      const lastBracket = content.lastIndexOf("]");
+      
+      if (firstBracket === -1 || lastBracket === -1 || lastBracket <= firstBracket) {
+        throw new Error("JSON array not found in response");
+      }
+      
+      const jsonArrayString = content.substring(firstBracket, lastBracket + 1);
+      const flashcards = JSON.parse(jsonArrayString);
+      
+      if (!Array.isArray(flashcards)) {
+        throw new Error("Parsed JSON is not an array");
+      }
+      
+      // Validate each flashcard has required fields
+      const validFlashcards = flashcards.filter(card => 
+        card && typeof card === 'object' && 
+        typeof card.question === 'string' && 
+        typeof card.answer === 'string'
+      );
+      
+      if (validFlashcards.length === 0) {
+        throw new Error("No valid flashcards found in response");
+      }
+      
+      res.json({ flashcards: validFlashcards });
+    } catch (jsonErr) {
+      console.error("Invalid JSON response from AI model:", jsonErr.message);
+      // Retry with a more strict prompt
+      const retryCompletion = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `Generate exactly 5 educational flashcards as a JSON array.
+Each flashcard must have exactly these fields:
+{
+  "question": "string",
+  "answer": "string"
+}
+Return ONLY the JSON array, nothing else. No markdown, no explanations.`,
+          },
+          { role: "user", content: transcriptText },
+        ],
+      });
+      
+      const retryContent = retryCompletion.choices[0].message.content.replace(/```json|```/g, "").trim();
+      const flashcards = JSON.parse(retryContent);
+      
+      if (!Array.isArray(flashcards)) {
+        throw new Error("Failed to generate valid flashcards after retry");
+      }
+      
+      res.json({ flashcards });
+    }
   } catch (error) {
     console.error("Flashcard error:", error.message);
-    res.status(500).json({ error: "Failed to generate flashcards" });
+    res.status(500).json({ 
+      error: "Failed to generate flashcards",
+      details: error.message 
+    });
   }
 });
 

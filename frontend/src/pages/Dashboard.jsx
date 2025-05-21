@@ -22,6 +22,20 @@ function Dashboard() {
   const [summary, setSummary] = useState("");
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
+  const [loadingStates, setLoadingStates] = useState({
+    blog: false,
+    slides: false,
+    flashcards: false,
+    quiz: false,
+    summary: false
+  });
+  const [errors, setErrors] = useState({
+    blog: "",
+    slides: "",
+    flashcards: "",
+    quiz: "",
+    summary: ""
+  });
   const videoContainerRef = useRef(null);
 
   const extractVideoId = (url) => {
@@ -56,15 +70,51 @@ function Dashboard() {
     setSummary("");
     setVideoId(extractedVideoId);
     setShowVideo(false);
+    
+    // Reset all loading states and errors
+    setLoadingStates({
+      blog: true,
+      slides: true,
+      flashcards: true,
+      quiz: true,
+      summary: true
+    });
+    setErrors({
+      blog: "",
+      slides: "",
+      flashcards: "",
+      quiz: "",
+      summary: ""
+    });
 
     try {
       const [blogRes, slidesRes, flashRes, quizRes, summaryRes] =
         await Promise.all([
-          axios.post("http://localhost:5000/generate-blog", { url }),
-          axios.post("http://localhost:5000/generate-slides", { url }),
-          axios.post("http://localhost:5000/generate-flashcards", { url }),
-          axios.post("http://localhost:5000/generate-quiz", { url }),
-          axios.post("http://localhost:5000/generate-summary", { url }),
+          axios.post("http://localhost:5000/generate-blog", { url })
+            .catch(err => {
+              setErrors(prev => ({ ...prev, blog: err.response?.data?.error || "Failed to generate blog" }));
+              return { data: { blogPost: "" } };
+            }),
+          axios.post("http://localhost:5000/generate-slides", { url })
+            .catch(err => {
+              setErrors(prev => ({ ...prev, slides: err.response?.data?.error || "Failed to generate slides" }));
+              return { data: { slides: [], pptxBase64: "" } };
+            }),
+          axios.post("http://localhost:5000/generate-flashcards", { url })
+            .catch(err => {
+              setErrors(prev => ({ ...prev, flashcards: err.response?.data?.error || "Failed to generate flashcards" }));
+              return { data: { flashcards: [] } };
+            }),
+          axios.post("http://localhost:5000/generate-quiz", { url })
+            .catch(err => {
+              setErrors(prev => ({ ...prev, quiz: err.response?.data?.error || "Failed to generate quiz" }));
+              return { data: { quiz: [] } };
+            }),
+          axios.post("http://localhost:5000/generate-summary", { url })
+            .catch(err => {
+              setErrors(prev => ({ ...prev, summary: err.response?.data?.error || "Failed to generate summary" }));
+              return { data: { summary: "" } };
+            })
         ]);
 
       setBlog(blogRes.data.blogPost || "");
@@ -82,6 +132,13 @@ function Dashboard() {
       setError("Failed to generate content. Please try again.");
     } finally {
       setIsLoading(false);
+      setLoadingStates({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
     }
   };
 
@@ -168,6 +225,8 @@ function Dashboard() {
           ].map((tab) => {
             const isActive = activeTab === tab.id;
             const isDisabled = !hasContent;
+            const isLoading = loadingStates[tab.id];
+            const hasError = errors[tab.id];
 
             const baseClasses =
               "flex-1 py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm";
@@ -195,23 +254,55 @@ function Dashboard() {
                 disabled={isDisabled}
               >
                 {tab.label}
+                {isLoading && " (Loading...)"}
+                {hasError && " (!)"}
               </button>
             );
           })}
         </div>
 
         {/* Tab content */}
-        { hasContent && (
+        {hasContent && (
           <div className="bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg">
-            {activeTab === "blog" && <BlogView blog={blog} />}
+            {activeTab === "blog" && (
+              <>
+                {loadingStates.blog && <p>Loading blog...</p>}
+                {errors.blog && <p className="text-red-500">{errors.blog}</p>}
+                {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
+              </>
+            )}
             {activeTab === "slides" && (
-              <SlidesView pptxBase64={pptxBase64} slides={slides} />
+              <>
+                {loadingStates.slides && <p>Loading slides...</p>}
+                {errors.slides && <p className="text-red-500">{errors.slides}</p>}
+                {!loadingStates.slides && !errors.slides && (
+                  <SlidesView pptxBase64={pptxBase64} slides={slides} />
+                )}
+              </>
             )}
             {activeTab === "flashcards" && (
-              <FlashCardGallery flashcards={flashcards} />
+              <>
+                {loadingStates.flashcards && <p>Loading flashcards...</p>}
+                {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
+                {!loadingStates.flashcards && !errors.flashcards && (
+                  <FlashCardGallery flashcards={flashcards} />
+                )}
+              </>
             )}
-            {activeTab === "quiz" && <QuizView quiz={quiz} />}
-            {activeTab === "summary" && <SummaryView summary={summary} />}
+            {activeTab === "quiz" && (
+              <>
+                {loadingStates.quiz && <p>Loading quiz...</p>}
+                {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
+                {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+              </>
+            )}
+            {activeTab === "summary" && (
+              <>
+                {loadingStates.summary && <p>Loading summary...</p>}
+                {errors.summary && <p className="text-red-500">{errors.summary}</p>}
+                {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
+              </>
+            )}
           </div>
         )}
       </div>
