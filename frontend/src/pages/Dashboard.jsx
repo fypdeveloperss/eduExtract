@@ -167,7 +167,7 @@ function Dashboard() {
             value={url}
             onChange={(e) => setUrl(e.target.value)}
             placeholder="Paste a YouTube video link here..."
-            className="flex-1 px-5 py-3 rounded-lg border border-neutral-300 dark:border-neutral-700 bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+            className="flex-1 px-5 py-3 rounded-lg border border-neutral-300 dark:border-[#2E2E2E] bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             disabled={isLoading}
           />
           <button
@@ -200,7 +200,7 @@ function Dashboard() {
                   : "opacity-0 max-h-0 transform -translate-y-10"
               }`}
             >
-              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-[#181B20] dark:bg-[#181B20]">
+              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-white dark:bg-[#171717]">
                 <div className="relative" style={{ paddingBottom: '56.25%' }}>
                   <iframe
                     className="absolute top-0 left-0 w-full h-full rounded-xl"
@@ -213,8 +213,8 @@ function Dashboard() {
               </div>
               {/* Pills for Chapters and Transcripts */}
               <div className="flex gap-2 mt-4">
-                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#23272F] text-[#23272F] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Chapters</button>
-                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#23272F] text-[#23272F] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Transcripts</button>
+                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Chapters</button>
+                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Transcripts</button>
               </div>
             </div>
           )}
@@ -224,7 +224,7 @@ function Dashboard() {
         <div className="md:w-1/2 w-full">
           <div className="max-w-4xl mx-auto">
             {/* Tab bar */}
-            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#23272F] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
+            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#171717] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
               {[
                 { id: "blog", label: "Blog", icon: <BookOpen size={20} className="inline mr-2" /> },
                 { id: "slides", label: "Slides", icon: <StickyNote size={20} className="inline mr-2" /> },
@@ -240,11 +240,11 @@ function Dashboard() {
                 const baseClasses =
                   "py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2";
                 const enabledClasses =
-                  "bg-[#FFFFFF] dark:bg-[#23272F] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#181B20] hover:text-[#171717] dark:hover:text-[#fafafa]";
+                  "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#2E2E2E] hover:text-[#171717] dark:hover:text-[#fafafa]";
                 const activeClasses =
                   "bg-blue-500 text-white shadow-md dark:bg-blue-500";
                 const disabledClasses =
-                  "bg-[#EEEEEE] dark:bg-[#23272F] text-[#6B7280] dark:text-[#6B7280] opacity-60 cursor-not-allowed";
+                  "bg-[#EEEEEE] dark:bg-[#171717] text-[#6B7280] dark:text-[#fafafacc] opacity-60 cursor-not-allowed";
 
                 let classes = baseClasses;
                 if (isDisabled) {
@@ -273,17 +273,17 @@ function Dashboard() {
 
             {/* Tab content */}
             {hasContent && (
-              <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#23272F] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
+              <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
                 {activeTab === "blog" && (
                   <>
-                    {loadingStates.blog && <p>Loading blog...</p>}
+                    {loadingStates.blog && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading blog...</p>}
                     {errors.blog && <p className="text-red-500">{errors.blog}</p>}
                     {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
                   </>
                 )}
                 {activeTab === "slides" && (
                   <>
-                    {loadingStates.slides && <p>Loading slides...</p>}
+                    {loadingStates.slides && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading slides...</p>}
                     {errors.slides && <p className="text-red-500">{errors.slides}</p>}
                     {!loadingStates.slides && !errors.slides && (
                       <SlidesView pptxBase64={pptxBase64} slides={slides} />
@@ -292,7 +292,7 @@ function Dashboard() {
                 )}
                 {activeTab === "flashcards" && (
                   <>
-                    {loadingStates.flashcards && <p>Loading flashcards...</p>}
+                    {loadingStates.flashcards && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading flashcards...</p>}
                     {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
                     {!loadingStates.flashcards && !errors.flashcards && (
                       <FlashCardGallery flashcards={flashcards} />
@@ -301,14 +301,14 @@ function Dashboard() {
                 )}
                 {activeTab === "quiz" && (
                   <>
-                    {loadingStates.quiz && <p>Loading quiz...</p>}
+                    {loadingStates.quiz && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading quiz...</p>}
                     {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
                     {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
                   </>
                 )}
                 {activeTab === "summary" && (
                   <>
-                    {loadingStates.summary && <p>Loading summary...</p>}
+                    {loadingStates.summary && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading summary...</p>}
                     {errors.summary && <p className="text-red-500">{errors.summary}</p>}
                     {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
                   </>

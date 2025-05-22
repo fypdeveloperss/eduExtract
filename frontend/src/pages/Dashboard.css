@@ -54,27 +54,67 @@
 } */
 
 /* Custom scrollbar for content container */
-
 .custom-scrollbar {
     scrollbar-width: thin;
     scrollbar-color: #CCCCCC #EEEEEE;
 }
+
 [data-theme="dark"] .custom-scrollbar {
-    scrollbar-color: #181B20 #23272F;
+    scrollbar-color: #2E2E2E #171717;
 }
 
 .custom-scrollbar::-webkit-scrollbar {
-  height: 8px;
-  width: 8px;
-  background: #EEEEEE;
+    height: 8px;
+    width: 8px;
+    background: #EEEEEE;
 }
+
 .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #CCCCCC;
-  border-radius: 4px;
+    background: #CCCCCC;
+    border-radius: 4px;
 }
+
 [data-theme="dark"] .custom-scrollbar::-webkit-scrollbar {
-  background: #23272F;
+    background: #171717;
 }
+
 [data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
-  background: #181B20;
+    background: #2E2E2E;
+}
+
+/* Dark mode specific styles */
+[data-theme="dark"] .content-container {
+    background-color: #171717;
+    color: #fafafacc;
+}
+
+[data-theme="dark"] .content-container:hover {
+    color: #fafafa;
+}
+
+/* Ensure text colors are consistent */
+[data-theme="dark"] p,
+[data-theme="dark"] span,
+[data-theme="dark"] div {
+    color: #fafafacc;
+}
+
+[data-theme="dark"] p:hover,
+[data-theme="dark"] span:hover,
+[data-theme="dark"] div:hover {
+    color: #fafafa;
+}
+
+/* Background colors for different sections */
+[data-theme="dark"] .page-content {
+    background-color: #121212;
+}
+
+[data-theme="dark"] .sidebar {
+    background-color: #171717;
+}
+
+[data-theme="dark"] .sidebar-item:hover,
+[data-theme="dark"] .active-item {
+    background-color: #2E2E2E;
 }
