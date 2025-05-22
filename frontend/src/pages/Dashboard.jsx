@@ -36,6 +36,13 @@ function Dashboard() {
     quiz: "",
     summary: ""
   });
+  const [loaded, setLoaded] = useState({
+    blog: false,
+    slides: false,
+    flashcards: false,
+    quiz: false,
+    summary: false
+  });
   const videoContainerRef = useRef(null);
 
   const extractVideoId = (url) => {
@@ -47,7 +54,7 @@ function Dashboard() {
     }
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
 
     if (!isAuthenticated) {
@@ -65,19 +72,19 @@ function Dashboard() {
     setIsLoading(true);
     setBlog("");
     setPptxBase64("");
+    setSlides([]);
     setFlashcards([]);
     setQuiz([]);
     setSummary("");
     setVideoId(extractedVideoId);
     setShowVideo(false);
-    
-    // Reset all loading states and errors
+    setActiveTab("");
     setLoadingStates({
-      blog: true,
-      slides: true,
-      flashcards: true,
-      quiz: true,
-      summary: true
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
     });
     setErrors({
       blog: "",
@@ -86,59 +93,49 @@ function Dashboard() {
       quiz: "",
       summary: ""
     });
-
-    try {
-      const [blogRes, slidesRes, flashRes, quizRes, summaryRes] =
-        await Promise.all([
-          axios.post("http://localhost:5000/generate-blog", { url })
-            .catch(err => {
-              setErrors(prev => ({ ...prev, blog: err.response?.data?.error || "Failed to generate blog" }));
-              return { data: { blogPost: "" } };
-            }),
-          axios.post("http://localhost:5000/generate-slides", { url })
-            .catch(err => {
-              setErrors(prev => ({ ...prev, slides: err.response?.data?.error || "Failed to generate slides" }));
-              return { data: { slides: [], pptxBase64: "" } };
-            }),
-          axios.post("http://localhost:5000/generate-flashcards", { url })
-            .catch(err => {
-              setErrors(prev => ({ ...prev, flashcards: err.response?.data?.error || "Failed to generate flashcards" }));
-              return { data: { flashcards: [] } };
-            }),
-          axios.post("http://localhost:5000/generate-quiz", { url })
-            .catch(err => {
-              setErrors(prev => ({ ...prev, quiz: err.response?.data?.error || "Failed to generate quiz" }));
-              return { data: { quiz: [] } };
-            }),
-          axios.post("http://localhost:5000/generate-summary", { url })
-            .catch(err => {
-              setErrors(prev => ({ ...prev, summary: err.response?.data?.error || "Failed to generate summary" }));
-              return { data: { summary: "" } };
-            })
-        ]);
-
-      setBlog(blogRes.data.blogPost || "");
-      setPptxBase64(slidesRes.data.pptxBase64 || "");
-      setSlides(slidesRes.data.slides || []); 
-      setFlashcards(flashRes.data.flashcards || []);
-      setQuiz(quizRes.data.quiz || []);
-      setSummary(summaryRes.data.summary || "");
-      setActiveTab("summary");
-      setTimeout(() => {
-        setShowVideo(true);
-      }, 100);
-    } catch (error) {
-      console.error("Error generating content:", error);
-      setError("Failed to generate content. Please try again.");
-    } finally {
+    setLoaded({
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
+    });
+    setTimeout(() => {
+      setShowVideo(true);
       setIsLoading(false);
-      setLoadingStates({
-        blog: false,
-        slides: false,
-        flashcards: false,
-        quiz: false,
-        summary: false
-      });
+    }, 100);
+  };
+
+  // Function to handle tab click and lazy load data
+  const handleTabClick = async (tabId) => {
+    setActiveTab(tabId);
+    if (loaded[tabId] || !videoId) return;
+    setLoadingStates(prev => ({ ...prev, [tabId]: true }));
+    setErrors(prev => ({ ...prev, [tabId]: "" }));
+    try {
+      let res;
+      if (tabId === "blog") {
+        res = await axios.post("http://localhost:5000/generate-blog", { url });
+        setBlog(res.data.blogPost || "");
+      } else if (tabId === "slides") {
+        res = await axios.post("http://localhost:5000/generate-slides", { url });
+        setPptxBase64(res.data.pptxBase64 || "");
+        setSlides(res.data.slides || []);
+      } else if (tabId === "flashcards") {
+        res = await axios.post("http://localhost:5000/generate-flashcards", { url });
+        setFlashcards(res.data.flashcards || []);
+      } else if (tabId === "quiz") {
+        res = await axios.post("http://localhost:5000/generate-quiz", { url });
+        setQuiz(res.data.quiz || []);
+      } else if (tabId === "summary") {
+        res = await axios.post("http://localhost:5000/generate-summary", { url });
+        setSummary(res.data.summary || "");
+      }
+      setLoaded(prev => ({ ...prev, [tabId]: true }));
+    } catch (err) {
+      setErrors(prev => ({ ...prev, [tabId]: err.response?.data?.error || `Failed to generate ${tabId}` }));
+    } finally {
+      setLoadingStates(prev => ({ ...prev, [tabId]: false }));
     }
   };
 
@@ -157,7 +154,7 @@ function Dashboard() {
     blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0 || summary;
 
   return (
-    <div className="max-w-5xl mx-auto px-4 py-10">
+    <div className="max-w-6xl mx-auto px-4 py-10">
       <h1 className="text-4xl font-bold text-center mb-10 text-[#171717cc] dark:text-[#fafafacc]">
         YouTube Learning Assistant
       </h1>
@@ -189,123 +186,132 @@ function Dashboard() {
         )}
       </form>
 
-      {/* YouTube Video Container with Animation */}
-      {videoId && (
-        <div 
-          ref={videoContainerRef}
-          className={`max-w-4xl mx-auto mb-10 overflow-hidden transition-all duration-700 ease-in-out ${
-            showVideo 
-              ? "opacity-100 max-h-96 transform translate-y-0" 
-              : "opacity-0 max-h-0 transform -translate-y-10"
-          }`}
-        >
-          <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg">
-            <div className="relative" style={{ paddingBottom: '56.25%' }}>
-              <iframe
-                className="absolute top-0 left-0 w-full h-full rounded-xl"
-                src={`https://www.youtube.com/embed/${videoId}?rel=0`}
-                frameBorder="0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                allowFullScreen
-              ></iframe>
+      {/* Two-column layout start */}
+      <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
+        {/* Left column: Video */}
+        <div className="md:w-1/2 w-full">
+          {videoId && (
+            <div 
+              ref={videoContainerRef}
+              className={`mb-10 overflow-hidden transition-all duration-700 ease-in-out ${
+                showVideo 
+                  ? "opacity-100 max-h-96 transform translate-y-0" 
+                  : "opacity-0 max-h-0 transform -translate-y-10"
+              }`}
+            >
+              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg">
+                <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                  <iframe
+                    className="absolute top-0 left-0 w-full h-full rounded-xl"
+                    src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+                    frameBorder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                  ></iframe>
+                </div>
+              </div>
             </div>
-          </div>
-        </div>
-      )}
-
-      <div className="max-w-4xl mx-auto">
-        {/* Tab bar */}
-        <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#2E2E2E] p-2 rounded-xl shadow-sm gap-2">
-          {[
-            { id: "blog", label: "Blog" },
-            { id: "slides", label: "Slides" },
-            { id: "flashcards", label: "Flashcards" },
-            { id: "quiz", label: "Quiz" },
-            { id: "summary", label: "Summary" },
-          ].map((tab) => {
-            const isActive = activeTab === tab.id;
-            const isDisabled = !hasContent;
-            const isLoading = loadingStates[tab.id];
-            const hasError = errors[tab.id];
-
-            const baseClasses =
-              "flex-1 py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm";
-            const enabledClasses =
-              "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#121212] hover:text-[#171717] dark:hover:text-[#fafafa]";
-            const activeClasses =
-              "bg-blue-500 text-white shadow-md dark:bg-blue-500";
-            const disabledClasses =
-              "bg-[#EEEEEE] dark:bg-[#2E2E2E] text-[#171717cc] opacity-50 cursor-not-allowed";
-
-            let classes = baseClasses;
-            if (isDisabled) {
-              classes += ` ${disabledClasses}`;
-            } else if (isActive) {
-              classes += ` ${activeClasses}`;
-            } else {
-              classes += ` ${enabledClasses}`;
-            }
-
-            return (
-              <button
-                key={tab.id}
-                className={classes}
-                onClick={() => !isDisabled && setActiveTab(tab.id)}
-                disabled={isDisabled}
-              >
-                {tab.label}
-                {isLoading && " (Loading...)"}
-                {hasError && " (!)"}
-              </button>
-            );
-          })}
+          )}
         </div>
 
-        {/* Tab content */}
-        {hasContent && (
-          <div className="bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg">
-            {activeTab === "blog" && (
-              <>
-                {loadingStates.blog && <p>Loading blog...</p>}
-                {errors.blog && <p className="text-red-500">{errors.blog}</p>}
-                {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
-              </>
-            )}
-            {activeTab === "slides" && (
-              <>
-                {loadingStates.slides && <p>Loading slides...</p>}
-                {errors.slides && <p className="text-red-500">{errors.slides}</p>}
-                {!loadingStates.slides && !errors.slides && (
-                  <SlidesView pptxBase64={pptxBase64} slides={slides} />
+        {/* Right column: Tabs and content */}
+        <div className="md:w-1/2 w-full">
+          <div className="max-w-4xl mx-auto">
+            {/* Tab bar */}
+            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#2E2E2E] p-2 rounded-xl shadow-sm gap-2">
+              {[
+                { id: "blog", label: "Blog" },
+                { id: "slides", label: "Slides" },
+                { id: "flashcards", label: "Flashcards" },
+                { id: "quiz", label: "Quiz" },
+                { id: "summary", label: "Summary" },
+              ].map((tab) => {
+                const isActive = activeTab === tab.id;
+                const isDisabled = !videoId;
+                const isLoading = loadingStates[tab.id];
+                const hasError = errors[tab.id];
+
+                const baseClasses =
+                  "flex-1 py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm";
+                const enabledClasses =
+                  "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#121212] hover:text-[#171717] dark:hover:text-[#fafafa]";
+                const activeClasses =
+                  "bg-blue-500 text-white shadow-md dark:bg-blue-500";
+                const disabledClasses =
+                  "bg-[#EEEEEE] dark:bg-[#2E2E2E] text-[#171717cc] opacity-50 cursor-not-allowed";
+
+                let classes = baseClasses;
+                if (isDisabled) {
+                  classes += ` ${disabledClasses}`;
+                } else if (isActive) {
+                  classes += ` ${activeClasses}`;
+                } else {
+                  classes += ` ${enabledClasses}`;
+                }
+
+                return (
+                  <button
+                    key={tab.id}
+                    className={classes}
+                    onClick={() => !isDisabled && handleTabClick(tab.id)}
+                    disabled={isDisabled}
+                  >
+                    {tab.label}
+                    {isLoading && " (Loading...)"}
+                    {hasError && " (!)"}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Tab content */}
+            {hasContent && (
+              <div className="bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg">
+                {activeTab === "blog" && (
+                  <>
+                    {loadingStates.blog && <p>Loading blog...</p>}
+                    {errors.blog && <p className="text-red-500">{errors.blog}</p>}
+                    {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
+                  </>
                 )}
-              </>
-            )}
-            {activeTab === "flashcards" && (
-              <>
-                {loadingStates.flashcards && <p>Loading flashcards...</p>}
-                {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
-                {!loadingStates.flashcards && !errors.flashcards && (
-                  <FlashCardGallery flashcards={flashcards} />
+                {activeTab === "slides" && (
+                  <>
+                    {loadingStates.slides && <p>Loading slides...</p>}
+                    {errors.slides && <p className="text-red-500">{errors.slides}</p>}
+                    {!loadingStates.slides && !errors.slides && (
+                      <SlidesView pptxBase64={pptxBase64} slides={slides} />
+                    )}
+                  </>
                 )}
-              </>
-            )}
-            {activeTab === "quiz" && (
-              <>
-                {loadingStates.quiz && <p>Loading quiz...</p>}
-                {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
-                {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
-              </>
-            )}
-            {activeTab === "summary" && (
-              <>
-                {loadingStates.summary && <p>Loading summary...</p>}
-                {errors.summary && <p className="text-red-500">{errors.summary}</p>}
-                {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
-              </>
+                {activeTab === "flashcards" && (
+                  <>
+                    {loadingStates.flashcards && <p>Loading flashcards...</p>}
+                    {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
+                    {!loadingStates.flashcards && !errors.flashcards && (
+                      <FlashCardGallery flashcards={flashcards} />
+                    )}
+                  </>
+                )}
+                {activeTab === "quiz" && (
+                  <>
+                    {loadingStates.quiz && <p>Loading quiz...</p>}
+                    {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
+                    {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+                  </>
+                )}
+                {activeTab === "summary" && (
+                  <>
+                    {loadingStates.summary && <p>Loading summary...</p>}
+                    {errors.summary && <p className="text-red-500">{errors.summary}</p>}
+                    {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
+                  </>
+                )}
+              </div>
             )}
           </div>
-        )}
+        </div>
       </div>
+      {/* Two-column layout end */}
     </div>
   );
 }
