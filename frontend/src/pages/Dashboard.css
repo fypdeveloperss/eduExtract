@@ -52,3 +52,29 @@
     padding: 1.5rem;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
 } */
+
+/* Custom scrollbar for content container */
+
+.custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #CCCCCC #EEEEEE;
+}
+[data-theme="dark"] .custom-scrollbar {
+    scrollbar-color: #181B20 #23272F;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  height: 8px;
+  width: 8px;
+  background: #EEEEEE;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #CCCCCC;
+  border-radius: 4px;
+}
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar {
+  background: #23272F;
+}
+[data-theme="dark"] .custom-scrollbar::-webkit-scrollbar-thumb {
+  background: #181B20;
+}

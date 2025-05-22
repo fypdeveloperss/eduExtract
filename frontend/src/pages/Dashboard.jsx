@@ -7,6 +7,7 @@ import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
+import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote } from "lucide-react";
 
 function Dashboard() {
   const { isAuthenticated, toggleAuthModal } = useAuth();
@@ -193,13 +194,13 @@ function Dashboard() {
           {videoId && (
             <div 
               ref={videoContainerRef}
-              className={`mb-10 overflow-hidden transition-all duration-700 ease-in-out ${
+              className={`mb-6 overflow-hidden transition-all duration-700 ease-in-out ${
                 showVideo 
                   ? "opacity-100 max-h-96 transform translate-y-0" 
                   : "opacity-0 max-h-0 transform -translate-y-10"
               }`}
             >
-              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg">
+              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-[#181B20] dark:bg-[#181B20]">
                 <div className="relative" style={{ paddingBottom: '56.25%' }}>
                   <iframe
                     className="absolute top-0 left-0 w-full h-full rounded-xl"
@@ -210,6 +211,11 @@ function Dashboard() {
                   ></iframe>
                 </div>
               </div>
+              {/* Pills for Chapters and Transcripts */}
+              <div className="flex gap-2 mt-4">
+                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#23272F] text-[#23272F] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Chapters</button>
+                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#23272F] text-[#23272F] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Transcripts</button>
+              </div>
             </div>
           )}
         </div>
@@ -218,13 +224,13 @@ function Dashboard() {
         <div className="md:w-1/2 w-full">
           <div className="max-w-4xl mx-auto">
             {/* Tab bar */}
-            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#2E2E2E] p-2 rounded-xl shadow-sm gap-2">
+            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#23272F] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
               {[
-                { id: "blog", label: "Blog" },
-                { id: "slides", label: "Slides" },
-                { id: "flashcards", label: "Flashcards" },
-                { id: "quiz", label: "Quiz" },
-                { id: "summary", label: "Summary" },
+                { id: "blog", label: "Blog", icon: <BookOpen size={20} className="inline mr-2" /> },
+                { id: "slides", label: "Slides", icon: <StickyNote size={20} className="inline mr-2" /> },
+                { id: "flashcards", label: "Flashcards", icon: <MessageCircle size={20} className="inline mr-2" /> },
+                { id: "quiz", label: "Quiz", icon: <ListChecks size={20} className="inline mr-2" /> },
+                { id: "summary", label: "Summary", icon: <FileText size={20} className="inline mr-2" /> },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
                 const isDisabled = !videoId;
@@ -232,13 +238,13 @@ function Dashboard() {
                 const hasError = errors[tab.id];
 
                 const baseClasses =
-                  "flex-1 py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm";
+                  "py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2";
                 const enabledClasses =
-                  "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#121212] hover:text-[#171717] dark:hover:text-[#fafafa]";
+                  "bg-[#FFFFFF] dark:bg-[#23272F] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#181B20] hover:text-[#171717] dark:hover:text-[#fafafa]";
                 const activeClasses =
                   "bg-blue-500 text-white shadow-md dark:bg-blue-500";
                 const disabledClasses =
-                  "bg-[#EEEEEE] dark:bg-[#2E2E2E] text-[#171717cc] opacity-50 cursor-not-allowed";
+                  "bg-[#EEEEEE] dark:bg-[#23272F] text-[#6B7280] dark:text-[#6B7280] opacity-60 cursor-not-allowed";
 
                 let classes = baseClasses;
                 if (isDisabled) {
@@ -256,6 +262,7 @@ function Dashboard() {
                     onClick={() => !isDisabled && handleTabClick(tab.id)}
                     disabled={isDisabled}
                   >
+                    {tab.icon}
                     {tab.label}
                     {isLoading && " (Loading...)"}
                     {hasError && " (!)"}
@@ -266,7 +273,7 @@ function Dashboard() {
 
             {/* Tab content */}
             {hasContent && (
-              <div className="bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg">
+              <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#23272F] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
                 {activeTab === "blog" && (
                   <>
                     {loadingStates.blog && <p>Loading blog...</p>}
