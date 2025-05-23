@@ -5,6 +5,11 @@ const { YoutubeTranscript } = require("youtube-transcript");
 const { Groq } = require("groq-sdk");
 const PptxGenJS = require("pptxgenjs");
 const NodeCache = require("node-cache");
+const multer = require("multer");
+const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
+const fs = require("fs");
+const path = require("path");
 const authRoutes = require('./routes/auth');
 
 dotenv.config();
@@ -18,6 +23,40 @@ app.use(cors());
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOCX, TXT, and PPTX files are allowed.'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Helper: Extract transcript text from YouTube URL
 async function getTranscriptText(url) {
@@ -368,6 +407,203 @@ app.post("/api/chat", async (req, res) => {
   } catch (error) {
     console.error("Chat error:", error);
     res.status(500).json({ error: "Failed to get response from AI" });
+  }
+});
+
+// Helper function to extract text from different file types
+async function extractTextFromFile(file) {
+  const filePath = file.path;
+  const fileType = file.mimetype;
+
+  try {
+    let text = '';
+
+    if (fileType === 'application/pdf') {
+      const dataBuffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(dataBuffer);
+      text = pdfData.text;
+    } else if (fileType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      text = result.value;
+    } else if (fileType === 'text/plain') {
+      text = fs.readFileSync(filePath, 'utf8');
+    }
+
+    // Clean up the uploaded file
+    fs.unlinkSync(filePath);
+    return text;
+  } catch (error) {
+    // Clean up the file in case of error
+    if (fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    throw error;
+  }
+}
+
+/**
+ * FILE UPLOAD AND PROCESSING
+ */
+app.post("/process-file", upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  try {
+    const text = await extractTextFromFile(req.file);
+
+    // Generate all content types in parallel
+    const [blogResult, flashcardsResult, slidesResult, quizResult, summaryResult] = await Promise.all([
+      // Generate blog
+      groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 1,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: "system",
+            content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the content.
+            - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+            - Include an engaging introduction and a thoughtful conclusion.
+            - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+            - Return only valid HTML without CSS or markdown.`,
+          },
+          { role: "user", content: text },
+        ],
+      }),
+
+      // Generate flashcards
+      groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `Generate 5-10 educational flashcards as a JSON array.
+Each flashcard should have a "question" and an "answer" field.
+Return only valid JSON. No markdown or explanations.`,
+          },
+          { role: "user", content: text },
+        ],
+      }),
+
+      // Generate slides
+      groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 1,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: "system",
+            content: `Create 8-12 slide titles and their bullet points based on this content. 
+Return valid JSON like: [{"title": "Slide Title", "points": ["Point 1", "Point 2"]}, ...]
+No markdown or triple backticks. Only pure JSON.`,
+          },
+          { role: "user", content: text },
+        ],
+      }),
+
+      // Generate quiz
+      groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `Generate 5-10 multiple-choice quiz questions in JSON format.
+Each object must include:
+- "question"
+- "options" (array of 4 choices)
+- "answer" (correct choice)
+Return only valid JSON. No markdown or explanations.`,
+          },
+          { role: "user", content: text },
+        ],
+      }),
+
+      // Generate summary
+      groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.7,
+        max_tokens: 512,
+        messages: [
+          {
+            role: "system",
+            content: `Summarize the content into a concise and informative paragraph. Limit to 150-200 words.`,
+          },
+          { role: "user", content: text },
+        ],
+      })
+    ]);
+
+    // Process results
+    const blogPost = blogResult.choices[0].message.content.replace(/```html|```/g, "");
+    
+    let flashcards;
+    try {
+      const flashcardsContent = flashcardsResult.choices[0].message.content.replace(/```json|```/g, "").trim();
+      const firstBracket = flashcardsContent.indexOf("[");
+      const lastBracket = flashcardsContent.lastIndexOf("]");
+      const jsonArrayString = flashcardsContent.substring(firstBracket, lastBracket + 1);
+      flashcards = JSON.parse(jsonArrayString);
+    } catch (error) {
+      console.error("Error parsing flashcards:", error);
+      flashcards = [];
+    }
+
+    let slides;
+    try {
+      const slidesContent = slidesResult.choices[0].message.content.replace(/```json|```/g, "").trim();
+      const firstBracket = slidesContent.indexOf("[");
+      const lastBracket = slidesContent.lastIndexOf("]");
+      const jsonArrayString = slidesContent.substring(firstBracket, lastBracket + 1);
+      slides = JSON.parse(jsonArrayString);
+    } catch (error) {
+      console.error("Error parsing slides:", error);
+      slides = [];
+    }
+
+    let quiz;
+    try {
+      const quizContent = quizResult.choices[0].message.content.replace(/```json|```/g, "").trim();
+      quiz = JSON.parse(quizContent);
+    } catch (error) {
+      console.error("Error parsing quiz:", error);
+      quiz = [];
+    }
+
+    const summary = summaryResult.choices[0].message.content.replace(/```(json|text)?/g, "").trim();
+
+    // Generate PowerPoint if slides were successfully created
+    let pptxBase64 = '';
+    if (slides && slides.length > 0) {
+      const pptx = new PptxGenJS();
+      slides.forEach((slide) => {
+        const s = pptx.addSlide();
+        s.addText(slide.title, { x: 0.5, y: 0.3, fontSize: 24, bold: true });
+        s.addText(slide.points.join("\n"), {
+          x: 0.5,
+          y: 1.2,
+          fontSize: 18,
+          color: "363636",
+        });
+      });
+      pptxBase64 = await pptx.write("base64");
+    }
+
+    res.json({
+      blog: blogPost,
+      flashcards,
+      slides,
+      pptxBase64,
+      quiz,
+      summary
+    });
+
+  } catch (error) {
+    console.error("Error processing file:", error);
+    res.status(500).json({ 
+      error: "Failed to process file",
+      details: error.message 
+    });
   }
 });
 

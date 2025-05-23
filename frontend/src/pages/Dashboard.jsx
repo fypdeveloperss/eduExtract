@@ -7,7 +7,7 @@ import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
 import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
-import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote } from "lucide-react";
+import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube } from "lucide-react";
 
 function Dashboard() {
   const { isAuthenticated, toggleAuthModal } = useAuth();
@@ -23,6 +23,10 @@ function Dashboard() {
   const [summary, setSummary] = useState("");
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
+  const [uploadMode, setUploadMode] = useState("youtube"); // "youtube" or "file"
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef(null);
   const [loadingStates, setLoadingStates] = useState({
     blog: false,
     slides: false,
@@ -55,7 +59,49 @@ function Dashboard() {
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleDrag = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileSelect = (file) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
+
+    if (!allowedTypes.includes(file.type)) {
+      setError("Invalid file type. Only PDF, DOCX, TXT, and PPTX files are allowed.");
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB limit
+      setError("File size exceeds 10MB limit.");
+      return;
+    }
+
+    setSelectedFile(file);
+    setError("");
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
 
     if (!isAuthenticated) {
@@ -63,74 +109,122 @@ function Dashboard() {
       return;
     }
 
-    const extractedVideoId = extractVideoId(url);
-    if (!extractedVideoId) {
-      setError("Please enter a valid YouTube URL");
-      return;
-    }
+    if (uploadMode === "youtube") {
+      const extractedVideoId = extractVideoId(url);
+      if (!extractedVideoId) {
+        setError("Please enter a valid YouTube URL");
+        return;
+      }
 
-    setError("");
-    setIsLoading(true);
-    setBlog("");
-    setPptxBase64("");
-    setSlides([]);
-    setFlashcards([]);
-    setQuiz([]);
-    setSummary("");
-    setVideoId(extractedVideoId);
-    setShowVideo(false);
-    setActiveTab("");
-    setLoadingStates({
-      blog: false,
-      slides: false,
-      flashcards: false,
-      quiz: false,
-      summary: false
-    });
-    setErrors({
-      blog: "",
-      slides: "",
-      flashcards: "",
-      quiz: "",
-      summary: ""
-    });
-    setLoaded({
-      blog: false,
-      slides: false,
-      flashcards: false,
-      quiz: false,
-      summary: false
-    });
-    setTimeout(() => {
-      setShowVideo(true);
-      setIsLoading(false);
-    }, 100);
+      setError("");
+      setIsLoading(true);
+      setBlog("");
+      setPptxBase64("");
+      setSlides([]);
+      setFlashcards([]);
+      setQuiz([]);
+      setSummary("");
+      setVideoId(extractedVideoId);
+      setShowVideo(false);
+      setActiveTab("");
+      setLoadingStates({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
+      setErrors({
+        blog: "",
+        slides: "",
+        flashcards: "",
+        quiz: "",
+        summary: ""
+      });
+      setLoaded({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
+      setTimeout(() => {
+        setShowVideo(true);
+        setIsLoading(false);
+      }, 100);
+    } else {
+      if (!selectedFile) {
+        setError("Please select a file to upload");
+        return;
+      }
+
+      setError("");
+      setIsLoading(true);
+      setBlog("");
+      setPptxBase64("");
+      setSlides([]);
+      setFlashcards([]);
+      setQuiz([]);
+      setSummary("");
+      setVideoId("");
+      setShowVideo(false);
+      setActiveTab("");
+
+      const formData = new FormData();
+      formData.append('file', selectedFile);
+
+      try {
+        const response = await axios.post("http://localhost:5000/process-file", formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+
+        setBlog(response.data.blog);
+        setFlashcards(response.data.flashcards);
+        setPptxBase64(response.data.pptxBase64);
+        setSlides(response.data.slides);
+        setQuiz(response.data.quiz);
+        setSummary(response.data.summary);
+        setActiveTab("summary"); // Set default tab to summary for files
+      } catch (err) {
+        setError(err.response?.data?.error || "Failed to process file");
+      } finally {
+        setIsLoading(false);
+        setSelectedFile(null);
+        if (fileInputRef.current) {
+          fileInputRef.current.value = "";
+        }
+      }
+    }
   };
 
   // Function to handle tab click and lazy load data
   const handleTabClick = async (tabId) => {
     setActiveTab(tabId);
-    if (loaded[tabId] || !videoId) return;
+    if (loaded[tabId] || (!videoId && !selectedFile)) return;
     setLoadingStates(prev => ({ ...prev, [tabId]: true }));
     setErrors(prev => ({ ...prev, [tabId]: "" }));
     try {
       let res;
-      if (tabId === "blog") {
-        res = await axios.post("http://localhost:5000/generate-blog", { url });
-        setBlog(res.data.blogPost || "");
-      } else if (tabId === "slides") {
-        res = await axios.post("http://localhost:5000/generate-slides", { url });
-        setPptxBase64(res.data.pptxBase64 || "");
-        setSlides(res.data.slides || []);
-      } else if (tabId === "flashcards") {
-        res = await axios.post("http://localhost:5000/generate-flashcards", { url });
-        setFlashcards(res.data.flashcards || []);
-      } else if (tabId === "quiz") {
-        res = await axios.post("http://localhost:5000/generate-quiz", { url });
-        setQuiz(res.data.quiz || []);
-      } else if (tabId === "summary") {
-        res = await axios.post("http://localhost:5000/generate-summary", { url });
-        setSummary(res.data.summary || "");
+      if (videoId) {
+        if (tabId === "blog") {
+          res = await axios.post("http://localhost:5000/generate-blog", { url });
+          setBlog(res.data.blogPost || "");
+        } else if (tabId === "slides") {
+          res = await axios.post("http://localhost:5000/generate-slides", { url });
+          setPptxBase64(res.data.pptxBase64 || "");
+          setSlides(res.data.slides || []);
+        } else if (tabId === "flashcards") {
+          res = await axios.post("http://localhost:5000/generate-flashcards", { url });
+          setFlashcards(res.data.flashcards || []);
+        } else if (tabId === "quiz") {
+          res = await axios.post("http://localhost:5000/generate-quiz", { url });
+          setQuiz(res.data.quiz || []);
+        } else if (tabId === "summary") {
+          res = await axios.post("http://localhost:5000/generate-summary", { url });
+          setSummary(res.data.summary || "");
+        }
       }
       setLoaded(prev => ({ ...prev, [tabId]: true }));
     } catch (err) {
@@ -157,31 +251,125 @@ function Dashboard() {
   return (
     <div className="max-w-6xl mx-auto px-4 py-10">
       <h1 className="text-4xl font-bold text-center mb-10 text-[#171717cc] dark:text-[#fafafacc]">
-        YouTube Learning Assistant
+        Learning Assistant
       </h1>
 
-      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto mb-10">
-        <div className="flex flex-col sm:flex-row gap-4 items-stretch">
-          <input
-            type="text"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            placeholder="Paste a YouTube video link here..."
-            className="flex-1 px-5 py-3 rounded-lg border border-neutral-300 dark:border-[#2E2E2E] bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-            disabled={isLoading}
-          />
+      {/* Upload Mode Toggle */}
+      <div className="flex justify-center mb-6">
+        <div className="bg-[#EEEEEE] dark:bg-[#171717] p-1 rounded-lg">
           <button
-            type="submit"
-            className={`px-6 py-3 rounded-lg font-semibold text-white transition-all ${
-              isLoading
-                ? "bg-neutral-400 cursor-not-allowed"
-                : "bg-blue-500 hover:bg-blue-600"
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              uploadMode === "youtube"
+                ? "bg-[#FFFFFF] dark:bg-[#2E2E2E] text-[#171717] dark:text-[#fafafa] shadow"
+                : "text-[#171717cc] dark:text-[#fafafacc]"
             }`}
-            disabled={isLoading}
+            onClick={() => setUploadMode("youtube")}
           >
-            {isLoading ? "Processing..." : "Generate"}
+            <Youtube size={20} />
+            YouTube
+          </button>
+          <button
+            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+              uploadMode === "file"
+                ? "bg-[#FFFFFF] dark:bg-[#2E2E2E] text-[#171717] dark:text-[#fafafa] shadow"
+                : "text-[#171717cc] dark:text-[#fafafacc]"
+            }`}
+            onClick={() => setUploadMode("file")}
+          >
+            <Upload size={20} />
+            File Upload
           </button>
         </div>
+      </div>
+
+      <form onSubmit={handleSubmit} className="max-w-4xl mx-auto mb-10">
+        {uploadMode === "youtube" ? (
+          <div className="flex flex-col sm:flex-row gap-4 items-stretch">
+            <input
+              type="text"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              placeholder="Paste a YouTube video link here..."
+              className="flex-1 px-5 py-3 rounded-lg border border-neutral-300 dark:border-[#2E2E2E] bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              disabled={isLoading}
+            />
+            <button
+              type="submit"
+              className={`px-6 py-3 rounded-lg font-semibold text-white transition-all ${
+                isLoading
+                  ? "bg-neutral-400 cursor-not-allowed"
+                  : "bg-blue-500 hover:bg-blue-600"
+              }`}
+              disabled={isLoading}
+            >
+              {isLoading ? "Processing..." : "Generate"}
+            </button>
+          </div>
+        ) : (
+          <div
+            className={`relative border-2 ${
+              dragActive ? "border-blue-500" : "border-dashed border-neutral-300 dark:border-[#2E2E2E]"
+            } rounded-lg p-8 text-center transition-all ${
+              isLoading ? "opacity-50 cursor-not-allowed" : ""
+            }`}
+            onDragEnter={handleDrag}
+            onDragLeave={handleDrag}
+            onDragOver={handleDrag}
+            onDrop={handleDrop}
+          >
+            <input
+              ref={fileInputRef}
+              type="file"
+              className="hidden"
+              onChange={(e) => handleFileSelect(e.target.files[0])}
+              accept=".pdf,.docx,.txt,.pptx"
+              disabled={isLoading}
+            />
+            <div className="space-y-4">
+              <div className="flex justify-center">
+                <Upload
+                  size={40}
+                  className="text-[#171717cc] dark:text-[#fafafacc]"
+                />
+              </div>
+              <div>
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-blue-500 hover:text-blue-600 font-semibold"
+                  disabled={isLoading}
+                >
+                  Click to upload
+                </button>
+                <span className="text-[#171717cc] dark:text-[#fafafacc]">
+                  {" "}
+                  or drag and drop
+                </span>
+              </div>
+              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                PDF, DOCX, TXT, PPTX (max 10MB)
+              </p>
+              {selectedFile && (
+                <p className="text-sm text-blue-500">
+                  Selected: {selectedFile.name}
+                </p>
+              )}
+            </div>
+            {uploadMode === "file" && (
+              <button
+                type="submit"
+                className={`mt-6 px-6 py-3 rounded-lg font-semibold text-white transition-all ${
+                  isLoading
+                    ? "bg-neutral-400 cursor-not-allowed"
+                    : "bg-blue-500 hover:bg-blue-600"
+                }`}
+                disabled={isLoading || !selectedFile}
+              >
+                {isLoading ? "Processing..." : "Generate"}
+              </button>
+            )}
+          </div>
+        )}
         {error && (
           <p className="text-red-500 mt-3 text-sm text-center">{error}</p>
         )}
@@ -226,14 +414,14 @@ function Dashboard() {
             {/* Tab bar */}
             <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#171717] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
               {[
+                { id: "summary", label: "Summary", icon: <FileText size={20} className="inline mr-2" /> },
                 { id: "blog", label: "Blog", icon: <BookOpen size={20} className="inline mr-2" /> },
                 { id: "slides", label: "Slides", icon: <StickyNote size={20} className="inline mr-2" /> },
                 { id: "flashcards", label: "Flashcards", icon: <MessageCircle size={20} className="inline mr-2" /> },
                 { id: "quiz", label: "Quiz", icon: <ListChecks size={20} className="inline mr-2" /> },
-                { id: "summary", label: "Summary", icon: <FileText size={20} className="inline mr-2" /> },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
-                const isDisabled = !videoId;
+                const isDisabled = !videoId && !hasContent;
                 const isLoading = loadingStates[tab.id];
                 const hasError = errors[tab.id];
 
