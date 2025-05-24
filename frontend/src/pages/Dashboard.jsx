@@ -24,7 +24,8 @@ function Dashboard() {
   const [videoId, setVideoId] = useState("");
   const [showVideo, setShowVideo] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadMode, setUploadMode] = useState("youtube"); // "youtube" or "file"
+  const [isFileValidated, setIsFileValidated] = useState(false);
+  const [uploadMode, setUploadMode] = useState("youtube");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
   const [loadingStates, setLoadingStates] = useState({
@@ -80,6 +81,11 @@ function Dashboard() {
   };
 
   const handleFileSelect = (file) => {
+    if (!file) {
+      setError("No file selected");
+      return;
+    }
+
     const allowedTypes = [
       'application/pdf',
       'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
@@ -169,29 +175,37 @@ function Dashboard() {
       setVideoId("");
       setShowVideo(false);
       setActiveTab("");
-
-      const formData = new FormData();
-      formData.append('file', selectedFile);
+      setLoadingStates({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
+      setErrors({
+        blog: "",
+        slides: "",
+        flashcards: "",
+        quiz: "",
+        summary: ""
+      });
+      setLoaded({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
 
       try {
-        const response = await axios.post("http://localhost:5000/process-file", formData, {
-          headers: {
-            'Content-Type': 'multipart/form-data'
-          }
-        });
-
-        setBlog(response.data.blog);
-        setFlashcards(response.data.flashcards);
-        setPptxBase64(response.data.pptxBase64);
-        setSlides(response.data.slides);
-        setQuiz(response.data.quiz);
-        setSummary(response.data.summary);
-        setActiveTab("summary"); // Set default tab to summary for files
+        // Validate the file and enable tabs
+        setIsLoading(false);
+        setIsFileValidated(true);  // Enable the tabs
       } catch (err) {
         setError(err.response?.data?.error || "Failed to process file");
-      } finally {
         setIsLoading(false);
         setSelectedFile(null);
+        setIsFileValidated(false);  // Disable the tabs on error
         if (fileInputRef.current) {
           fileInputRef.current.value = "";
         }
@@ -201,10 +215,14 @@ function Dashboard() {
 
   // Function to handle tab click and lazy load data
   const handleTabClick = async (tabId) => {
+    if (!videoId && !selectedFile) return;
+    
     setActiveTab(tabId);
-    if (loaded[tabId] || (!videoId && !selectedFile)) return;
+    if (loaded[tabId]) return;
+    
     setLoadingStates(prev => ({ ...prev, [tabId]: true }));
     setErrors(prev => ({ ...prev, [tabId]: "" }));
+    
     try {
       let res;
       if (videoId) {
@@ -225,10 +243,57 @@ function Dashboard() {
           res = await axios.post("http://localhost:5000/generate-summary", { url });
           setSummary(res.data.summary || "");
         }
+      } else if (selectedFile) {
+        const formData = new FormData();
+        formData.append('file', selectedFile);
+        formData.append('type', tabId);
+        
+        try {
+          console.log('Sending request for tab:', tabId);
+          res = await axios.post("http://localhost:5000/process-file", formData, {
+            headers: {
+              'Content-Type': 'multipart/form-data'
+            }
+          });
+          console.log('Response for tab:', tabId, res.data);
+
+          switch (tabId) {
+            case 'blog':
+              if (!res.data.blog) {
+                throw new Error('No blog content received from server');
+              }
+              setBlog(res.data.blog);
+              break;
+            case 'slides':
+              setPptxBase64(res.data.pptxBase64 || "");
+              setSlides(res.data.slides || []);
+              break;
+            case 'flashcards':
+              setFlashcards(res.data.flashcards || []);
+              break;
+            case 'quiz':
+              setQuiz(res.data.quiz || []);
+              break;
+            case 'summary':
+              setSummary(res.data.summary || "");
+              break;
+          }
+        } catch (error) {
+          console.error("Error processing file:", error);
+          setErrors(prev => ({
+            ...prev,
+            [tabId]: error.response?.data?.error || error.message || `Failed to process ${tabId}`
+          }));
+          return;
+        }
       }
       setLoaded(prev => ({ ...prev, [tabId]: true }));
     } catch (err) {
-      setErrors(prev => ({ ...prev, [tabId]: err.response?.data?.error || `Failed to generate ${tabId}` }));
+      console.error(`Error in ${tabId} generation:`, err);
+      setErrors(prev => ({ 
+        ...prev, 
+        [tabId]: err.response?.data?.error || err.message || `Failed to generate ${tabId}` 
+      }));
     } finally {
       setLoadingStates(prev => ({ ...prev, [tabId]: false }));
     }
@@ -244,40 +309,86 @@ function Dashboard() {
     }
   }, [showVideo]);
 
-  // Check if any content is available
-  const hasContent =
-    blog || pptxBase64 || flashcards.length > 0 || quiz.length > 0 || summary;
+  // Update the hasContent check to properly handle both video and file modes
+  const hasContent = videoId || isFileValidated;
+
+  // Reset isFileValidated when switching modes
+  const resetStates = () => {
+    setUrl("");
+    setBlog("");
+    setPptxBase64("");
+    setSlides([]);
+    setFlashcards([]);
+    setQuiz([]);
+    setSummary("");
+    setVideoId("");
+    setShowVideo(false);
+    setActiveTab("");
+    setSelectedFile(null);
+    setIsFileValidated(false);
+    setError("");
+    setLoadingStates({
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
+    });
+    setErrors({
+      blog: "",
+      slides: "",
+      flashcards: "",
+      quiz: "",
+      summary: ""
+    });
+    setLoaded({
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
+    });
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-10">
+    <div className="max-w-full mx-auto px-4 py-10">
       <h1 className="text-4xl font-bold text-center mb-10 text-[#171717cc] dark:text-[#fafafacc]">
         Learning Assistant
       </h1>
 
       {/* Upload Mode Toggle */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-[#EEEEEE] dark:bg-[#171717] p-1 rounded-lg">
+      <div className="flex justify-center mb-8">
+        <div className="bg-[#F3F4F6] dark:bg-[#1E1E1E] p-2 rounded-2xl shadow-lg flex gap-2 transition-all duration-300 hover:shadow-xl">
           <button
-            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+            className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 font-medium ${
               uploadMode === "youtube"
-                ? "bg-[#FFFFFF] dark:bg-[#2E2E2E] text-[#171717] dark:text-[#fafafa] shadow"
-                : "text-[#171717cc] dark:text-[#fafafacc]"
+                ? "bg-white dark:bg-[#2E2E2E] text-blue-600 dark:text-blue-400 shadow-md transform scale-105"
+                : "text-[#4B5563] dark:text-[#9CA3AF] hover:bg-white/50 dark:hover:bg-[#2E2E2E]/50"
             }`}
-            onClick={() => setUploadMode("youtube")}
+            onClick={() => {
+              setUploadMode("youtube");
+              resetStates();
+            }}
           >
-            <Youtube size={20} />
-            YouTube
+            <Youtube size={22} className={uploadMode === "youtube" ? "text-blue-600 dark:text-blue-400" : ""} />
+            <span>YouTube URL</span>
           </button>
           <button
-            className={`px-4 py-2 rounded-md transition-all flex items-center gap-2 ${
+            className={`px-6 py-3 rounded-xl transition-all duration-300 flex items-center gap-3 font-medium ${
               uploadMode === "file"
-                ? "bg-[#FFFFFF] dark:bg-[#2E2E2E] text-[#171717] dark:text-[#fafafa] shadow"
-                : "text-[#171717cc] dark:text-[#fafafacc]"
+                ? "bg-white dark:bg-[#2E2E2E] text-blue-600 dark:text-blue-400 shadow-md transform scale-105"
+                : "text-[#4B5563] dark:text-[#9CA3AF] hover:bg-white/50 dark:hover:bg-[#2E2E2E]/50"
             }`}
-            onClick={() => setUploadMode("file")}
+            onClick={() => {
+              setUploadMode("file");
+              resetStates();
+            }}
           >
-            <Upload size={20} />
-            File Upload
+            <Upload size={22} className={uploadMode === "file" ? "text-blue-600 dark:text-blue-400" : ""} />
+            <span>File Upload</span>
           </button>
         </div>
       </div>
@@ -287,7 +398,7 @@ function Dashboard() {
           <div className="flex flex-col sm:flex-row gap-4 items-stretch">
             <input
               type="text"
-              value={url}
+              value={url || ''}
               onChange={(e) => setUrl(e.target.value)}
               placeholder="Paste a YouTube video link here..."
               className="flex-1 px-5 py-3 rounded-lg border border-neutral-300 dark:border-[#2E2E2E] bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
@@ -321,7 +432,12 @@ function Dashboard() {
               ref={fileInputRef}
               type="file"
               className="hidden"
-              onChange={(e) => handleFileSelect(e.target.files[0])}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  handleFileSelect(file);
+                }
+              }}
               accept=".pdf,.docx,.txt,.pptx"
               disabled={isLoading}
             />
@@ -355,11 +471,11 @@ function Dashboard() {
                 </p>
               )}
             </div>
-            {uploadMode === "file" && (
+            {uploadMode === "file" && selectedFile && (
               <button
                 type="submit"
-                className={`mt-6 px-6 py-3 rounded-lg font-semibold text-white transition-all ${
-                  isLoading
+                className={`w-full mt-6 px-6 py-3 rounded-lg font-semibold text-white transition-all ${
+                  isLoading || !selectedFile
                     ? "bg-neutral-400 cursor-not-allowed"
                     : "bg-blue-500 hover:bg-blue-600"
                 }`}
@@ -376,7 +492,7 @@ function Dashboard() {
       </form>
 
       {/* Two-column layout start */}
-      <div className="flex flex-col md:flex-row gap-8 max-w-6xl mx-auto">
+      <div className="flex flex-col md:flex-row gap-8 max-w-full mx-auto">
         {/* Left column: Video */}
         <div className="md:w-1/2 w-full">
           {videoId && (
@@ -421,7 +537,7 @@ function Dashboard() {
                 { id: "quiz", label: "Quiz", icon: <ListChecks size={20} className="inline mr-2" /> },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
-                const isDisabled = !videoId && !hasContent;
+                const isDisabled = !hasContent;
                 const isLoading = loadingStates[tab.id];
                 const hasError = errors[tab.id];
 
