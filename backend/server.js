@@ -19,6 +19,23 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
 
+// Retry utility function
+async function withRetry(operation, maxRetries = 3, delay = 1000) {
+  let lastError;
+  for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    try {
+      return await operation();
+    } catch (error) {
+      lastError = error;
+      console.log(`Attempt ${attempt} failed:`, error.message);
+      if (attempt < maxRetries) {
+        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+      }
+    }
+  }
+  throw lastError;
+}
+
 // Helper: Extract transcript text from YouTube URL
 async function getTranscriptText(url) {
   const videoId = new URL(url).searchParams.get("v");
@@ -44,21 +61,29 @@ app.post("/generate-blog", async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
-    const completion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      temperature: 1,
-      max_tokens: 2048,
-      messages: [
-        {
-          role: "system",
-          content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the transcript.
-          - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
-          - Include an engaging introduction and a thoughtful conclusion.
-          - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-          - Return only valid HTML without CSS or markdown.`,
-        },
-        { role: "user", content: transcriptText },
-      ],
+    const completion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 1,
+        max_tokens: 2048,
+        messages: [
+          {
+            role: "system",
+            content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the transcript.
+            - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+            - Include an engaging introduction and a thoughtful conclusion.
+            - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+            - Return only valid HTML without CSS or markdown.`,
+          },
+          { role: "user", content: transcriptText },
+        ],
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     const blogPost = completion.choices[0].message.content.replace(
@@ -79,17 +104,25 @@ app.post("/generate-flashcards", async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
-    const completion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [
-        {
-          role: "system",
-          content: `Generate 5-10 educational flashcards as a JSON array.
+    const completion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `Generate 5-10 educational flashcards as a JSON array.
 Each flashcard should have a "question" and an "answer" field.
 Return only valid JSON. No markdown or explanations.`,
-        },
-        { role: "user", content: transcriptText },
-      ],
+          },
+          { role: "user", content: transcriptText },
+        ],
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     let content = completion.choices[0].message.content.replace(/```json|```/g, "").trim();
@@ -125,21 +158,29 @@ Return only valid JSON. No markdown or explanations.`,
     } catch (jsonErr) {
       console.error("Invalid JSON response from AI model:", jsonErr.message);
       // Retry with a more strict prompt
-      const retryCompletion = await groq.chat.completions.create({
-        model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        messages: [
-          {
-            role: "system",
-            content: `Generate exactly 5 educational flashcards as a JSON array.
+      const retryCompletion = await withRetry(async () => {
+        const result = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "system",
+              content: `Generate exactly 5 educational flashcards as a JSON array.
 Each flashcard must have exactly these fields:
 {
   "question": "string",
   "answer": "string"
 }
 Return ONLY the JSON array, nothing else. No markdown, no explanations.`,
-          },
-          { role: "user", content: transcriptText },
-        ],
+            },
+            { role: "user", content: transcriptText },
+          ],
+        });
+
+        if (!result.choices?.[0]?.message?.content) {
+          throw new Error("Invalid AI response format");
+        }
+
+        return result;
       });
       
       const retryContent = retryCompletion.choices[0].message.content.replace(/```json|```/g, "").trim();
@@ -173,24 +214,32 @@ app.post("/generate-slides", async (req, res) => {
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map((item) => item.text).join(" ");
 
-    const chatCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      temperature: 1,
-      max_tokens: 2048,
-      top_p: 1,
-      stream: false,
-      messages: [
-        {
-          role: "system",
-          content: `Create 8-12 slide titles and their bullet points based on this transcript. 
+    const chatCompletion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 1,
+        max_tokens: 2048,
+        top_p: 1,
+        stream: false,
+        messages: [
+          {
+            role: "system",
+            content: `Create 8-12 slide titles and their bullet points based on this transcript. 
 Return valid JSON like: [{"title": "Slide Title", "points": ["Point 1", "Point 2"]}, ...]
 No markdown or triple backticks. Only pure JSON.`,
-        },
-        {
-          role: "user",
-          content: transcriptText,
-        },
-      ],
+          },
+          {
+            role: "user",
+            content: transcriptText,
+          },
+        ],
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     // Extract and clean content
@@ -267,20 +316,28 @@ app.post("/generate-quiz", async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
-    const completion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      messages: [
-        {
-          role: "system",
-          content: `Generate 5-10 multiple-choice quiz questions in JSON format.
+    const completion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        messages: [
+          {
+            role: "system",
+            content: `Generate 5-10 multiple-choice quiz questions in JSON format.
 Each object must include:
 - "question"
 - "options" (array of 4 choices)
 - "answer" (correct choice)
 Return only valid JSON. No markdown or explanations.`,
-        },
-        { role: "user", content: transcriptText },
-      ],
+          },
+          { role: "user", content: transcriptText },
+        ],
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     const quiz = JSON.parse(
@@ -306,22 +363,30 @@ app.post("/generate-summary", async (req, res) => {
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map((item) => item.text).join(" ");
 
-    const chatCompletion = await groq.chat.completions.create({
-      model: "meta-llama/llama-4-scout-17b-16e-instruct",
-      temperature: 0.7,
-      max_tokens: 512,
-      top_p: 1,
-      stream: false,
-      messages: [
-        {
-          role: "system",
-          content: `Summarize the transcript into a concise and informative paragraph. Limit to 150-200 words.`,
-        },
-        {
-          role: "user",
-          content: transcriptText,
-        },
-      ],
+    const chatCompletion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.7,
+        max_tokens: 512,
+        top_p: 1,
+        stream: false,
+        messages: [
+          {
+            role: "system",
+            content: `Summarize the transcript into a concise and informative paragraph. Limit to 150-200 words.`,
+          },
+          {
+            role: "user",
+            content: transcriptText,
+          },
+        ],
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     let summary = chatCompletion.choices[0].message.content;
@@ -351,11 +416,19 @@ app.post("/api/chat", async (req, res) => {
 
     const finalMessages = [systemPrompt, ...messages];
 
-    const completion = await groq.chat.completions.create({
-      messages: finalMessages,
-      model: "llama3-8b-8192",
-      temperature: 0.7,
-      max_tokens: 1024,
+    const completion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        messages: finalMessages,
+        model: "llama3-8b-8192",
+        temperature: 0.7,
+        max_tokens: 1024,
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
     });
 
     const finishReason = completion.choices[0]?.finish_reason;
