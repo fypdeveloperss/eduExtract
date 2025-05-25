@@ -5,6 +5,11 @@ const { YoutubeTranscript } = require("youtube-transcript");
 const { Groq } = require("groq-sdk");
 const PptxGenJS = require("pptxgenjs");
 const NodeCache = require("node-cache");
+const multer = require("multer");
+const pdfParse = require("pdf-parse");
+const mammoth = require("mammoth");
+const fs = require("fs");
+const path = require("path");
 const authRoutes = require('./routes/auth');
 
 dotenv.config();
@@ -35,6 +40,40 @@ async function withRetry(operation, maxRetries = 3, delay = 1000) {
   }
   throw lastError;
 }
+
+// Configure multer for file upload
+const storage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    const uploadDir = path.join(__dirname, 'uploads');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir);
+    }
+    cb(null, uploadDir);
+  },
+  filename: function (req, file, cb) {
+    cb(null, Date.now() + '-' + file.originalname);
+  }
+});
+
+const upload = multer({
+  storage: storage,
+  fileFilter: (req, file, cb) => {
+    const allowedTypes = [
+      'application/pdf',
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      'text/plain',
+      'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+    ];
+    if (allowedTypes.includes(file.mimetype)) {
+      cb(null, true);
+    } else {
+      cb(new Error('Invalid file type. Only PDF, DOCX, TXT, and PPTX files are allowed.'));
+    }
+  },
+  limits: {
+    fileSize: 10 * 1024 * 1024 // 10MB limit
+  }
+});
 
 // Helper: Extract transcript text from YouTube URL
 async function getTranscriptText(url) {
@@ -441,6 +480,181 @@ app.post("/api/chat", async (req, res) => {
   } catch (error) {
     console.error("Chat error:", error);
     res.status(500).json({ error: "Failed to get response from AI" });
+  }
+});
+
+// Helper function to extract text from uploaded files
+async function extractTextFromFile(filePath, mimeType) {
+  try {
+    if (mimeType === 'application/pdf') {
+      const dataBuffer = fs.readFileSync(filePath);
+      const data = await pdfParse(dataBuffer);
+      return data.text;
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      return result.value;
+    } else if (mimeType === 'text/plain') {
+      return fs.readFileSync(filePath, 'utf8');
+    } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
+      // For PPTX files, we might need a different library or approach
+      // For now, we'll return an error
+      throw new Error('PPTX text extraction not implemented yet');
+    }
+    throw new Error('Unsupported file type');
+  } catch (error) {
+    console.error('Text extraction error:', error);
+    throw error;
+  }
+}
+
+// Clean up uploaded files
+function cleanupFile(filePath) {
+  try {
+    fs.unlinkSync(filePath);
+  } catch (error) {
+    console.error('Error cleaning up file:', error);
+  }
+}
+
+/**
+ * FILE PROCESSING ENDPOINT
+ */
+app.post("/process-file", upload.single('file'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({ error: "No file uploaded" });
+  }
+
+  const filePath = req.file.path;
+  const contentType = req.body.type;
+
+  try {
+    const fileContent = await extractTextFromFile(filePath, req.file.mimetype);
+
+    let completion;
+    switch (contentType) {
+      case 'blog':
+        completion = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          temperature: 1,
+          max_tokens: 2048,
+          messages: [
+            {
+              role: "system",
+              content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the file content.
+              - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+              - Include an engaging introduction and a thoughtful conclusion.
+              - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+              - Return only valid HTML without CSS or markdown.`,
+            },
+            { role: "user", content: fileContent },
+          ],
+        });
+        res.json({ blog: completion.choices[0].message.content.replace(/```html|```/g, "") });
+        break;
+
+      case 'slides':
+        completion = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "system",
+              content: `Generate 5-10 presentation slides based on the content.
+              Return a JSON array where each object represents a slide with:
+              {
+                "title": "Slide title",
+                "content": ["Bullet point 1", "Bullet point 2", ...]
+              }`,
+            },
+            { role: "user", content: fileContent },
+          ],
+        });
+        
+        const slides = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+        
+        // Generate PPTX
+        const pptx = new PptxGenJS();
+        slides.forEach(slide => {
+          const pptxSlide = pptx.addSlide();
+          pptxSlide.addText(slide.title, { x: 0.5, y: 0.5, w: '90%', h: 1, fontSize: 24, bold: true });
+          slide.content.forEach((point, idx) => {
+            pptxSlide.addText(point, { x: 0.5, y: 1.7 + (idx * 0.5), w: '90%', h: 0.5, fontSize: 18, bullet: true });
+          });
+        });
+
+        const pptxBuffer = await pptx.write('base64');
+        res.json({ 
+          pptxBase64: pptxBuffer,
+          slides: slides
+        });
+        break;
+
+      case 'flashcards':
+        completion = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "system",
+              content: `Generate 5-10 educational flashcards as a JSON array.
+              Each flashcard should have a "question" and an "answer" field.
+              Return only valid JSON. No markdown or explanations.`,
+            },
+            { role: "user", content: fileContent },
+          ],
+        });
+        
+        const flashcards = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+        res.json({ flashcards });
+        break;
+
+      case 'quiz':
+        completion = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "system",
+              content: `Generate a quiz with 5-10 multiple choice questions based on the content.
+              Return a JSON array where each object has:
+              {
+                "question": "Question text",
+                "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+                "correctAnswer": "A" // Just the letter
+              }`,
+            },
+            { role: "user", content: fileContent },
+          ],
+        });
+        
+        const quiz = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+        res.json({ quiz });
+        break;
+
+      case 'summary':
+        completion = await groq.chat.completions.create({
+          model: "meta-llama/llama-4-scout-17b-16e-instruct",
+          messages: [
+            {
+              role: "system",
+              content: "Generate a concise but comprehensive summary of the content in about 500 words.",
+            },
+            { role: "user", content: fileContent },
+          ],
+        });
+        
+        res.json({ summary: completion.choices[0].message.content });
+        break;
+
+      default:
+        res.status(400).json({ error: "Invalid content type" });
+    }
+  } catch (error) {
+    console.error("File processing error:", error);
+    res.status(500).json({ 
+      error: "Error processing file",
+      details: error.message 
+    });
+  } finally {
+    // Clean up the uploaded file
+    cleanupFile(filePath);
   }
 });
 
