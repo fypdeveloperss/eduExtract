@@ -2,10 +2,10 @@ import { Outlet, Link } from "react-router-dom";
 import ThemeToggle from "./ThemeToggle";
 import ChatBot from "./ChatBot";
 import AuthModal from "./AuthModal";
-import { useAuth } from "../context/AuthContext";
+import { useAuth } from "../context/FirebaseAuthContext";
 
 const Layout = () => {
-  const { isAuthenticated, user, logout, toggleAuthModal } = useAuth();
+  const { user, logout, toggleAuthModal } = useAuth();
 
   return (
     <div className="relative min-h-screen">
@@ -40,9 +40,9 @@ const Layout = () => {
           <h1 className="text-lg font-semibold text-[#121212] dark:text-[#fafafa]">Dashboard</h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
-            {isAuthenticated ? (
+            {user ? (
               <div className="flex items-center gap-4">
-                <span className="text-sm">{user?.email}</span>
+                <span className="text-sm">{user.email}</span>
                 <button
                   onClick={logout}
                   className="px-4 py-2 rounded-md bg-zinc-800 text-white hover:bg-zinc-700"

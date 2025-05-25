@@ -10,7 +10,7 @@ const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 const fs = require("fs");
 const path = require("path");
-const authRoutes = require('./routes/auth');
+const { verifyToken } = require('./config/firebase-admin');
 
 dotenv.config();
 
@@ -90,13 +90,10 @@ async function getTranscriptText(url) {
   return fullText;
 }
 
-// Auth routes
-app.use('/api/auth', authRoutes);
-
 /**
  * BLOG GENERATION
  */
-app.post("/generate-blog", async (req, res) => {
+app.post("/generate-blog", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
@@ -139,7 +136,7 @@ app.post("/generate-blog", async (req, res) => {
 /**
  * FLASHCARD GENERATION
  */
-app.post("/generate-flashcards", async (req, res) => {
+app.post("/generate-flashcards", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
@@ -243,7 +240,7 @@ Return ONLY the JSON array, nothing else. No markdown, no explanations.`,
 /**
  * SLIDES GENERATION
  */
-app.post("/generate-slides", async (req, res) => {
+app.post("/generate-slides", verifyToken, async (req, res) => {
   const { url } = req.body;
 
   try {
@@ -351,7 +348,7 @@ No markdown or triple backticks. Only pure JSON.`,
 /**
  * QUIZ GENERATION
  */
-app.post("/generate-quiz", async (req, res) => {
+app.post("/generate-quiz", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
@@ -392,7 +389,7 @@ Return only valid JSON. No markdown or explanations.`,
 /**
  * SUMMARY GENERATION ✅ (NEW ENDPOINT)
  */
-app.post("/generate-summary", async (req, res) => {
+app.post("/generate-summary", verifyToken, async (req, res) => {
   const { url } = req.body;
 
   try {
@@ -444,7 +441,7 @@ app.post("/generate-summary", async (req, res) => {
 /**
  * CHATBOT ENDPOINT
  */
-app.post("/api/chat", async (req, res) => {
+app.post("/api/chat", verifyToken, async (req, res) => {
   try {
     const { messages } = req.body;
 
@@ -458,7 +455,7 @@ app.post("/api/chat", async (req, res) => {
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         messages: finalMessages,
-        model: "llama3-8b-8192",
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
         max_tokens: 1024,
       });
@@ -519,7 +516,7 @@ function cleanupFile(filePath) {
 /**
  * FILE PROCESSING ENDPOINT
  */
-app.post("/process-file", upload.single('file'), async (req, res) => {
+app.post("/process-file", verifyToken, upload.single('file'), async (req, res) => {
   if (!req.file) {
     return res.status(400).json({ error: "No file uploaded" });
   }

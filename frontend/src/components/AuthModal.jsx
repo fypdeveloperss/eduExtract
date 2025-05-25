@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../context/FirebaseAuthContext';
 
 const AuthInput = ({ type, placeholder, value, onChange }) => (
   <input
@@ -23,14 +23,17 @@ const AuthButton = ({ children, onClick, loading }) => (
   </button>
 );
 
-const GoogleButton = ({ children }) => (
-  <button className="w-full flex items-center justify-center gap-2 bg-zinc-800 text-white py-3 rounded-md hover:bg-zinc-700">
+const GoogleButton = ({ onClick }) => (
+  <button 
+    onClick={onClick}
+    className="w-full flex items-center justify-center gap-2 bg-zinc-800 text-white py-3 rounded-md hover:bg-zinc-700"
+  >
     <img
       src="https://www.svgrepo.com/show/475656/google-color.svg"
       alt="Google"
       className="w-5 h-5"
     />
-    {children}
+    Continue with Google
   </button>
 );
 
@@ -40,6 +43,7 @@ const AuthModal = () => {
     toggleAuthModal, 
     login, 
     signup, 
+    loginWithGoogle,
     error: authError,
     modalMode,
     setModalMode
@@ -79,12 +83,23 @@ const AuthModal = () => {
     setLoading(true);
     try {
       if (isSignIn) {
-        await login({ email, password });
+        await login(email, password);
       } else {
-        await signup({ email, password });
+        await signup(email, password);
       }
     } catch (err) {
-      setError(err.response?.data?.error || 'An error occurred');
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    setLoading(true);
+    try {
+      await loginWithGoogle();
+    } catch (err) {
+      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -123,9 +138,7 @@ const AuthModal = () => {
             : "Let's get your learning journey started."}
         </p>
 
-        <GoogleButton>
-          {isSignIn ? 'Continue with Google' : 'Sign up with Google'}
-        </GoogleButton>
+        <GoogleButton onClick={handleGoogleSignIn} />
 
         <div className="flex items-center my-4">
           <hr className="flex-grow border-zinc-700" />

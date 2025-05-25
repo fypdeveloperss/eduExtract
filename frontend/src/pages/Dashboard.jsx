@@ -1,16 +1,14 @@
 import React, { useState, useRef, useEffect } from "react";
-import axios from "axios";
+import api from "../utils/axios";
 import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
 import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
-import { useAuth } from "../context/AuthContext";
 import "./Dashboard.css";
 import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube } from "lucide-react";
 
 function Dashboard() {
-  const { isAuthenticated, toggleAuthModal } = useAuth();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -109,11 +107,6 @@ function Dashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!isAuthenticated) {
-      toggleAuthModal();
-      return;
-    }
 
     if (uploadMode === "youtube") {
       const extractedVideoId = extractVideoId(url);
@@ -227,20 +220,20 @@ function Dashboard() {
       let res;
       if (videoId) {
         if (tabId === "blog") {
-          res = await axios.post("http://localhost:5000/generate-blog", { url });
+          res = await api.post("/generate-blog", { url });
           setBlog(res.data.blogPost || "");
         } else if (tabId === "slides") {
-          res = await axios.post("http://localhost:5000/generate-slides", { url });
+          res = await api.post("/generate-slides", { url });
           setPptxBase64(res.data.pptxBase64 || "");
           setSlides(res.data.slides || []);
         } else if (tabId === "flashcards") {
-          res = await axios.post("http://localhost:5000/generate-flashcards", { url });
+          res = await api.post("/generate-flashcards", { url });
           setFlashcards(res.data.flashcards || []);
         } else if (tabId === "quiz") {
-          res = await axios.post("http://localhost:5000/generate-quiz", { url });
+          res = await api.post("/generate-quiz", { url });
           setQuiz(res.data.quiz || []);
         } else if (tabId === "summary") {
-          res = await axios.post("http://localhost:5000/generate-summary", { url });
+          res = await api.post("/generate-summary", { url });
           setSummary(res.data.summary || "");
         }
       } else if (selectedFile) {
@@ -250,7 +243,7 @@ function Dashboard() {
         
         try {
           console.log('Sending request for tab:', tabId);
-          res = await axios.post("http://localhost:5000/process-file", formData, {
+          res = await api.post("/process-file", formData, {
             headers: {
               'Content-Type': 'multipart/form-data'
             }

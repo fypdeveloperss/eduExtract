@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, X, MessageCircle } from 'lucide-react';
-import axios from 'axios';
+import api from '../utils/axios';
 
 const ChatBot = ({ isOpen, setIsOpen }) => {
   const [messages, setMessages] = useState([]);
@@ -26,7 +26,7 @@ const ChatBot = ({ isOpen, setIsOpen }) => {
     setIsLoading(true);
 
     try {
-      const response = await axios.post('http://localhost:5000/api/chat', {
+      const response = await api.post('/api/chat', {
         messages: [
           {
             role: "system",
