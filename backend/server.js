@@ -24,21 +24,75 @@ const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
 
-// Retry utility function
+// Enhanced retry utility function with better error handling
 async function withRetry(operation, maxRetries = 3, delay = 1000) {
   let lastError;
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
-      return await operation();
+      console.log(`Attempt ${attempt}/${maxRetries}...`);
+      const result = await operation();
+      console.log(`Attempt ${attempt} succeeded`);
+      return result;
     } catch (error) {
       lastError = error;
-      console.log(`Attempt ${attempt} failed:`, error.message);
+      console.log(`Attempt ${attempt}/${maxRetries} failed:`, error.message);
+      
       if (attempt < maxRetries) {
-        await new Promise(resolve => setTimeout(resolve, delay * attempt));
+        const waitTime = delay * attempt;
+        console.log(`Retrying in ${waitTime}ms...`);
+        await new Promise(resolve => setTimeout(resolve, waitTime));
+      } else {
+        console.log(`All ${maxRetries} attempts failed`);
       }
     }
   }
   throw lastError;
+}
+
+// Enhanced JSON parsing with retry logic
+async function parseAIResponseWithRetry(operation, maxRetries = 3) {
+  return await withRetry(async () => {
+    console.log("Executing AI operation...");
+    const completion = await operation();
+    
+    if (!completion.choices?.[0]?.message?.content) {
+      throw new Error("Invalid AI response format - no content");
+    }
+
+    let content = completion.choices[0].message.content
+      .replace(/```json|```/g, "")
+      .trim();
+
+    console.log("Raw AI response length:", content.length);
+    console.log("First 200 chars:", content.substring(0, 200));
+
+    // Try to find and extract JSON array from the response
+    const firstBracket = content.indexOf("[");
+    const lastBracket = content.lastIndexOf("]");
+    
+    if (firstBracket === -1 || lastBracket === -1 || lastBracket <= firstBracket) {
+      console.log("JSON array markers not found in response");
+      throw new Error("JSON array not found in response - will retry");
+    }
+    
+    const jsonArrayString = content.substring(firstBracket, lastBracket + 1);
+    console.log("Extracted JSON string:", jsonArrayString.substring(0, 200) + "...");
+    
+    let parsedData;
+    try {
+      parsedData = JSON.parse(jsonArrayString);
+    } catch (parseError) {
+      console.log("JSON parsing failed:", parseError.message);
+      throw new Error(`JSON parsing failed: ${parseError.message} - will retry`);
+    }
+    
+    if (!Array.isArray(parsedData)) {
+      throw new Error("Parsed JSON is not an array - will retry");
+    }
+    
+    console.log(`Successfully parsed array with ${parsedData.length} items`);
+    return parsedData;
+  }, maxRetries);
 }
 
 // Configure multer for file upload
@@ -100,7 +154,7 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        temperature: 1,
+        temperature: 0.7, // Reduced for more consistent output
         max_tokens: 2048,
         messages: [
           {
@@ -109,7 +163,8 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
             - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
             - Include an engaging introduction and a thoughtful conclusion.
             - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-            - Return only valid HTML without CSS or markdown.`,
+            - Return only valid HTML without CSS or markdown.
+            - Do not include any JSON formatting or code blocks.`,
           },
           { role: "user", content: transcriptText },
         ],
@@ -120,7 +175,7 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
       }
 
       return result;
-    });
+    }, 3);
 
     const blogPost = completion.choices[0].message.content.replace(
       /```html|```/g,
@@ -140,94 +195,47 @@ app.post("/generate-flashcards", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
-    const completion = await withRetry(async () => {
-      const result = await groq.chat.completions.create({
+    const flashcards = await parseAIResponseWithRetry(async () => {
+      return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.7,
+        max_tokens: 1024,
         messages: [
           {
             role: "system",
-            content: `Generate 5-10 educational flashcards as a JSON array.
-Each flashcard should have a "question" and an "answer" field.
-Return only valid JSON. No markdown or explanations.`,
+            content: `Generate exactly 5-8 educational flashcards as a JSON array.
+Each flashcard must have exactly these fields:
+{
+  "question": "Clear, specific question text",
+  "answer": "Concise, accurate answer text"
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each question should be educational and based on the content
+- Start response with [ and end with ]
+- Example format: [{"question":"What is...?","answer":"It is..."},{"question":"How does...?","answer":"It works by..."}]`,
           },
           { role: "user", content: transcriptText },
         ],
       });
+    }, 3);
 
-      if (!result.choices?.[0]?.message?.content) {
-        throw new Error("Invalid AI response format");
-      }
-
-      return result;
-    });
-
-    let content = completion.choices[0].message.content.replace(/```json|```/g, "").trim();
+    // Validate each flashcard has required fields
+    const validFlashcards = flashcards.filter(card => 
+      card && typeof card === 'object' && 
+      typeof card.question === 'string' && card.question.trim() &&
+      typeof card.answer === 'string' && card.answer.trim()
+    );
     
-    // Try to find and extract JSON array from the response
-    try {
-      const firstBracket = content.indexOf("[");
-      const lastBracket = content.lastIndexOf("]");
-      
-      if (firstBracket === -1 || lastBracket === -1 || lastBracket <= firstBracket) {
-        throw new Error("JSON array not found in response");
-      }
-      
-      const jsonArrayString = content.substring(firstBracket, lastBracket + 1);
-      const flashcards = JSON.parse(jsonArrayString);
-      
-      if (!Array.isArray(flashcards)) {
-        throw new Error("Parsed JSON is not an array");
-      }
-      
-      // Validate each flashcard has required fields
-      const validFlashcards = flashcards.filter(card => 
-        card && typeof card === 'object' && 
-        typeof card.question === 'string' && 
-        typeof card.answer === 'string'
-      );
-      
-      if (validFlashcards.length === 0) {
-        throw new Error("No valid flashcards found in response");
-      }
-      
-      res.json({ flashcards: validFlashcards });
-    } catch (jsonErr) {
-      console.error("Invalid JSON response from AI model:", jsonErr.message);
-      // Retry with a more strict prompt
-      const retryCompletion = await withRetry(async () => {
-        const result = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "system",
-              content: `Generate exactly 5 educational flashcards as a JSON array.
-Each flashcard must have exactly these fields:
-{
-  "question": "string",
-  "answer": "string"
-}
-Return ONLY the JSON array, nothing else. No markdown, no explanations.`,
-            },
-            { role: "user", content: transcriptText },
-          ],
-        });
-
-        if (!result.choices?.[0]?.message?.content) {
-          throw new Error("Invalid AI response format");
-        }
-
-        return result;
-      });
-      
-      const retryContent = retryCompletion.choices[0].message.content.replace(/```json|```/g, "").trim();
-      const flashcards = JSON.parse(retryContent);
-      
-      if (!Array.isArray(flashcards)) {
-        throw new Error("Failed to generate valid flashcards after retry");
-      }
-      
-      res.json({ flashcards });
+    if (validFlashcards.length === 0) {
+      throw new Error("No valid flashcards found in response");
     }
+    
+    console.log(`Generated ${validFlashcards.length} valid flashcards`);
+    res.json({ flashcards: validFlashcards });
+    
   } catch (error) {
     console.error("Flashcard error:", error.message);
     res.status(500).json({ 
@@ -250,19 +258,27 @@ app.post("/generate-slides", verifyToken, async (req, res) => {
     const transcript = await YoutubeTranscript.fetchTranscript(videoId);
     const transcriptText = transcript.map((item) => item.text).join(" ");
 
-    const chatCompletion = await withRetry(async () => {
-      const result = await groq.chat.completions.create({
+    const slides = await parseAIResponseWithRetry(async () => {
+      return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        temperature: 1,
-        max_tokens: 2048,
-        top_p: 1,
-        stream: false,
+        temperature: 0.7,
+        max_tokens: 1500,
         messages: [
           {
             role: "system",
-            content: `Create 8-12 slide titles and their bullet points based on this transcript. 
-Return valid JSON like: [{"title": "Slide Title", "points": ["Point 1", "Point 2"]}, ...]
-No markdown or triple backticks. Only pure JSON.`,
+            content: `Create exactly 6-10 slide objects based on this transcript. 
+Return a valid JSON array where each object has:
+{
+  "title": "Clear slide title",
+  "points": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each slide should have 2-4 bullet points
+- Start response with [ and end with ]
+- Points should be clear and concise`,
           },
           {
             role: "user",
@@ -270,52 +286,22 @@ No markdown or triple backticks. Only pure JSON.`,
           },
         ],
       });
+    }, 3);
 
-      if (!result.choices?.[0]?.message?.content) {
-        throw new Error("Invalid AI response format");
-      }
+    // Validate slide structure
+    const validSlides = slides.filter(slide => 
+      slide && typeof slide === 'object' && 
+      typeof slide.title === 'string' && slide.title.trim() &&
+      Array.isArray(slide.points) && slide.points.length > 0
+    );
 
-      return result;
-    });
-
-    // Extract and clean content
-    let responseContent = chatCompletion.choices[0]?.message?.content || "";
-    responseContent = responseContent.trim().replace(/```json|```/g, "");
-
-    // Validate JSON format
-    let slides;
-    try {
-      // Ensure it's a JSON array before parsing
-      const firstBracket = responseContent.indexOf("[");
-      const lastBracket = responseContent.lastIndexOf("]");
-
-      if (
-        firstBracket === -1 ||
-        lastBracket === -1 ||
-        lastBracket <= firstBracket
-      ) {
-        throw new Error("JSON array not found in response");
-      }
-
-      const jsonArrayString = responseContent.substring(
-        firstBracket,
-        lastBracket + 1
-      );
-      slides = JSON.parse(jsonArrayString);
-
-      if (!Array.isArray(slides)) {
-        throw new Error("Parsed JSON is not an array");
-      }
-    } catch (jsonErr) {
-      console.error("Invalid JSON response from AI model:", jsonErr.message);
-      return res
-        .status(500)
-        .json({ error: "AI response was not valid JSON. Please try again." });
+    if (validSlides.length === 0) {
+      throw new Error("No valid slides found in response");
     }
 
     // Generate PowerPoint
     const pptx = new PptxGenJS();
-    slides.forEach((slide) => {
+    validSlides.forEach((slide) => {
       const s = pptx.addSlide();
       s.addText(slide.title, { x: 0.5, y: 0.3, fontSize: 24, bold: true });
       s.addText(slide.points.join("\n"), {
@@ -331,16 +317,15 @@ No markdown or triple backticks. Only pure JSON.`,
       "Content-Disposition",
       'attachment; filename="presentation.pptx"'
     );
+    
+    console.log(`Generated ${validSlides.length} slides successfully`);
     res.json({
       pptxBase64: b64,
-      slides,
+      slides: validSlides,
       success: true,
     });
   } catch (error) {
-    console.error(
-      "Error generating .pptx:",
-      error.response?.data || error.message
-    );
+    console.error("Error generating .pptx:", error.message);
     res.status(500).json({ error: "Failed to generate PowerPoint file" });
   }
 });
@@ -352,34 +337,49 @@ app.post("/generate-quiz", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
 
-    const completion = await withRetry(async () => {
-      const result = await groq.chat.completions.create({
+    const quiz = await parseAIResponseWithRetry(async () => {
+      return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.7,
+        max_tokens: 1200,
         messages: [
           {
             role: "system",
-            content: `Generate 5-10 multiple-choice quiz questions in JSON format.
+            content: `Generate exactly 6-8 multiple-choice quiz questions in JSON format.
 Each object must include:
-- "question"
-- "options" (array of 4 choices)
-- "answer" (correct choice)
-Return only valid JSON. No markdown or explanations.`,
+{
+  "question": "Clear question text",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "answer": "Option A"
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each question should have exactly 4 options
+- The answer should be one of the options (exact match)
+- Start response with [ and end with ]`,
           },
           { role: "user", content: transcriptText },
         ],
       });
+    }, 3);
 
-      if (!result.choices?.[0]?.message?.content) {
-        throw new Error("Invalid AI response format");
-      }
-
-      return result;
-    });
-
-    const quiz = JSON.parse(
-      completion.choices[0].message.content.replace(/```json|```/g, "")
+    // Validate quiz structure
+    const validQuiz = quiz.filter(q => 
+      q && typeof q === 'object' && 
+      typeof q.question === 'string' && q.question.trim() &&
+      Array.isArray(q.options) && q.options.length === 4 &&
+      typeof q.answer === 'string' && q.answer.trim() &&
+      q.options.includes(q.answer)
     );
-    res.json({ quiz });
+
+    if (validQuiz.length === 0) {
+      throw new Error("No valid quiz questions found in response");
+    }
+
+    console.log(`Generated ${validQuiz.length} valid quiz questions`);
+    res.json({ quiz: validQuiz });
   } catch (error) {
     console.error("Quiz error:", error.message);
     res.status(500).json({ error: "Failed to generate quiz" });
@@ -387,7 +387,7 @@ Return only valid JSON. No markdown or explanations.`,
 });
 
 /**
- * SUMMARY GENERATION ✅ (NEW ENDPOINT)
+ * SUMMARY GENERATION
  */
 app.post("/generate-summary", verifyToken, async (req, res) => {
   const { url } = req.body;
@@ -396,24 +396,37 @@ app.post("/generate-summary", verifyToken, async (req, res) => {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map((item) => item.text).join(" ");
+    // Use the cached transcript function for consistency
+    const transcriptText = await getTranscriptText(url);
+    
+    console.log(`Processing transcript for summary (${transcriptText.length} characters)`);
+    
+    // Validate transcript content
+    if (!transcriptText || transcriptText.trim().length < 50) {
+      return res.status(400).json({ error: "Transcript is too short or empty" });
+    }
 
     const chatCompletion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
         max_tokens: 512,
-        top_p: 1,
-        stream: false,
         messages: [
           {
             role: "system",
-            content: `Summarize the transcript into a concise and informative paragraph. Limit to 150-200 words.`,
+            content: `You are tasked with creating a summary of a video transcript. 
+            Create a concise and informative summary that:
+            - Is 150-200 words long
+            - Focuses on the main topics and key points
+            - Uses clear, engaging prose
+            - Does not use markdown, code formatting, or bullet points
+            - Provides value to someone who hasn't watched the video
+            
+            The user will provide the transcript content for you to summarize.`,
           },
           {
             role: "user",
-            content: transcriptText,
+            content: `Please summarize this video transcript:\n\n${transcriptText}`,
           },
         ],
       });
@@ -423,17 +436,18 @@ app.post("/generate-summary", verifyToken, async (req, res) => {
       }
 
       return result;
-    });
+    }, 3);
 
     let summary = chatCompletion.choices[0].message.content;
     summary = summary.replace(/```(json|text)?/g, "").trim();
+    
+    // Remove any potential prefixes like "Summary:" or "Video Summary:"
+    summary = summary.replace(/^(summary|video summary):\s*/i, "");
 
+    console.log(`Generated summary successfully (${summary.length} characters)`);
     res.json({ summary });
   } catch (error) {
-    console.error(
-      "Summary generation error:",
-      error.response?.data || error.message
-    );
+    console.error("Summary generation error:", error.message);
     res.status(500).json({ error: "Failed to generate summary" });
   }
 });
@@ -465,7 +479,7 @@ app.post("/api/chat", verifyToken, async (req, res) => {
       }
 
       return result;
-    });
+    }, 3);
 
     const finishReason = completion.choices[0]?.finish_reason;
     if (finishReason === "length") {
@@ -493,8 +507,6 @@ async function extractTextFromFile(filePath, mimeType) {
     } else if (mimeType === 'text/plain') {
       return fs.readFileSync(filePath, 'utf8');
     } else if (mimeType === 'application/vnd.openxmlformats-officedocument.presentationml.presentation') {
-      // For PPTX files, we might need a different library or approach
-      // For now, we'll return an error
       throw new Error('PPTX text extraction not implemented yet');
     }
     throw new Error('Unsupported file type');
@@ -526,47 +538,58 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
 
   try {
     const fileContent = await extractTextFromFile(filePath, req.file.mimetype);
+    console.log(`Processing file for ${contentType} generation`);
 
-    let completion;
+    let result;
     switch (contentType) {
       case 'blog':
-        completion = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          temperature: 1,
-          max_tokens: 2048,
-          messages: [
-            {
-              role: "system",
-              content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the file content.
-              - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
-              - Include an engaging introduction and a thoughtful conclusion.
-              - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-              - Return only valid HTML without CSS or markdown.`,
-            },
-            { role: "user", content: fileContent },
-          ],
-        });
-        res.json({ blog: completion.choices[0].message.content.replace(/```html|```/g, "") });
+        const blogCompletion = await withRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 2048,
+            messages: [
+              {
+                role: "system",
+                content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the file content.
+                - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+                - Include an engaging introduction and a thoughtful conclusion.
+                - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+                - Return only valid HTML without CSS or markdown.
+                - Do not include any JSON formatting or code blocks.`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
+        result = { blog: blogCompletion.choices[0].message.content.replace(/```html|```/g, "") };
         break;
 
       case 'slides':
-        completion = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "system",
-              content: `Generate 5-10 presentation slides based on the content.
-              Return a JSON array where each object represents a slide with:
+        const slides = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1500,
+            messages: [
               {
-                "title": "Slide title",
-                "content": ["Bullet point 1", "Bullet point 2", ...]
-              }`,
-            },
-            { role: "user", content: fileContent },
-          ],
-        });
-        
-        const slides = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
+                role: "system",
+                content: `Generate 6-10 presentation slides based on the content.
+                Return a JSON array where each object represents a slide with:
+                {
+                  "title": "Slide title",
+                  "content": ["Bullet point 1", "Bullet point 2", ...]
+                }
+                
+                IMPORTANT:
+                - Return ONLY a valid JSON array
+                - No markdown, no code blocks, no explanations
+                - Start response with [ and end with ]`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
         
         // Generate PPTX
         const pptx = new PptxGenJS();
@@ -579,70 +602,92 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
         });
 
         const pptxBuffer = await pptx.write('base64');
-        res.json({ 
+        result = { 
           pptxBase64: pptxBuffer,
           slides: slides
-        });
+        };
         break;
 
       case 'flashcards':
-        completion = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "system",
-              content: `Generate 5-10 educational flashcards as a JSON array.
-              Each flashcard should have a "question" and an "answer" field.
-              Return only valid JSON. No markdown or explanations.`,
-            },
-            { role: "user", content: fileContent },
-          ],
-        });
+        const flashcards = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "system",
+                content: `Generate 5-8 educational flashcards as a JSON array.
+                Each flashcard should have a "question" and an "answer" field.
+                
+                IMPORTANT:
+                - Return ONLY a valid JSON array
+                - No markdown, no code blocks, no explanations
+                - Start response with [ and end with ]`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
         
-        const flashcards = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
-        res.json({ flashcards });
+        result = { flashcards };
         break;
 
       case 'quiz':
-        completion = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "system",
-              content: `Generate a quiz with 5-10 multiple choice questions based on the content.
-              Return a JSON array where each object has:
+        const quiz = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1200,
+            messages: [
               {
-                "question": "Question text",
-                "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
-                "correctAnswer": "A" // Just the letter
-              }`,
-            },
-            { role: "user", content: fileContent },
-          ],
-        });
+                role: "system",
+                content: `Generate a quiz with 6-8 multiple choice questions based on the content.
+                Return a JSON array where each object has:
+                {
+                  "question": "Question text",
+                  "options": ["A) Option 1", "B) Option 2", "C) Option 3", "D) Option 4"],
+                  "correctAnswer": "A"
+                }
+                
+                IMPORTANT:
+                - Return ONLY a valid JSON array
+                - No markdown, no code blocks, no explanations
+                - Start response with [ and end with ]`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
         
-        const quiz = JSON.parse(completion.choices[0].message.content.replace(/```json|```/g, ""));
-        res.json({ quiz });
+        result = { quiz };
         break;
 
       case 'summary':
-        completion = await groq.chat.completions.create({
-          model: "meta-llama/llama-4-scout-17b-16e-instruct",
-          messages: [
-            {
-              role: "system",
-              content: "Generate a concise but comprehensive summary of the content in about 500 words.",
-            },
-            { role: "user", content: fileContent },
-          ],
-        });
+        const summaryCompletion = await withRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 512,
+            messages: [
+              {
+                role: "system",
+                content: "Generate a concise but comprehensive summary of the content in about 500 words. Do not use markdown or code formatting.",
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
         
-        res.json({ summary: completion.choices[0].message.content });
+        result = { summary: summaryCompletion.choices[0].message.content };
         break;
 
       default:
-        res.status(400).json({ error: "Invalid content type" });
+        return res.status(400).json({ error: "Invalid content type" });
     }
+
+    console.log(`Successfully processed file for ${contentType}`);
+    res.json(result);
   } catch (error) {
     console.error("File processing error:", error);
     res.status(500).json({ 
