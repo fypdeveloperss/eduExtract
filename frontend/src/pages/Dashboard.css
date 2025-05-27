@@ -93,17 +93,17 @@
 }
 
 /* Ensure text colors are consistent */
-[data-theme="dark"] p,
+/* [data-theme="dark"] p,
 [data-theme="dark"] span,
 [data-theme="dark"] div {
     color: #fafafacc;
-}
-
+} */
+/* 
 [data-theme="dark"] p:hover,
 [data-theme="dark"] span:hover,
 [data-theme="dark"] div:hover {
     color: #fafafa;
-}
+} */
 
 /* Background colors for different sections */
 [data-theme="dark"] .page-content {

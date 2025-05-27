@@ -35,8 +35,8 @@ const Header = () => {
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="flex items-center">
-                  <div className="text-black font-bold text-2xl">
-                    <Link to="/">EduExtract</Link>
+                  <div className=" font-bold text-2xl">
+                    <Link className="text-black" to="/">EduExtract</Link>
                   </div>
                 </div>
               </div>
