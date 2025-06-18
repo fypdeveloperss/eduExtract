@@ -5,6 +5,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/FirebaseAuthContext";
+import Content from "./components/Content";
 
 function App() {
   return (
@@ -16,6 +17,7 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
+            <Route path="content" element={<Content/>}/>
           </Route>
         </Routes>
       </Router>

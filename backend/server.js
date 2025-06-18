@@ -1,7 +1,7 @@
 const express = require("express");
 const cors = require("cors");
 const dotenv = require("dotenv");
-const { YoutubeTranscript } = require("youtube-transcript");
+const { exec } = require("child_process"); // Import exec from child_process
 const { Groq } = require("groq-sdk");
 const PptxGenJS = require("pptxgenjs");
 const NodeCache = require("node-cache");
@@ -11,14 +11,35 @@ const mammoth = require("mammoth");
 const fs = require("fs");
 const path = require("path");
 const { verifyToken } = require('./config/firebase-admin');
+const mongoose = require('mongoose'); // Import mongoose
 
 dotenv.config();
 
 const app = express();
 const port = process.env.PORT || 5000;
+const mongoUri = process.env.MONGODB_URI || 'mongodb://localhost:27017/eduExtract'; // MongoDB connection URI
 
 app.use(express.json());
 app.use(cors());
+
+// MongoDB Connection
+mongoose.connect(mongoUri)
+  .then(() => console.log('MongoDB connected successfully'))
+  .catch(err => console.error('MongoDB connection error:', err));
+
+// Define a schema and model for generated content
+const contentSchema = new mongoose.Schema({
+  userId: { type: String, required: true },
+  type: { type: String, required: true }, // e.g., 'blog', 'flashcards', 'slides', 'quiz', 'summary'
+  title: { type: String, required: true }, // A title for the generated content
+  createdAt: { type: Date, default: Date.now },
+  contentData: { type: mongoose.Schema.Types.Mixed, required: true }, // Store the actual generated content
+  url: { type: String }, // Original YouTube URL if applicable
+  filePath: { type: String } // Original file path if applicable
+});
+
+const GeneratedContent = mongoose.model('GeneratedContent', contentSchema);
+
 
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 
@@ -129,7 +150,7 @@ const upload = multer({
   }
 });
 
-// Helper: Extract transcript text from YouTube URL
+// Helper: Extract transcript text from YouTube URL using Python script
 async function getTranscriptText(url) {
   const videoId = new URL(url).searchParams.get("v");
   if (!videoId) throw new Error("Invalid YouTube URL");
@@ -138,11 +159,28 @@ async function getTranscriptText(url) {
   const cached = transcriptCache.get(cacheKey);
   if (cached) return cached;
 
-  const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-  const fullText = transcript.map((item) => item.text).join(" ");
-  transcriptCache.set(cacheKey, fullText); // Auto-expires after 10 mins
-  return fullText;
+  return new Promise((resolve, reject) => {
+    // Execute the Python script, passing the videoId as an argument
+    // Ensure 'python' is in your PATH, or use the full path to the python executable
+    // The Python script should print the full transcript text to stdout
+    exec(`python get_transcript.py ${videoId}`, (error, stdout, stderr) => {
+      if (error) {
+        console.error(`exec error: ${error}`);
+        return reject(new Error(`Failed to get transcript from Python script: ${stderr}`));
+      }
+      if (stderr) {
+        console.warn(`Python script stderr: ${stderr}`);
+      }
+      const fullText = stdout.trim();
+      if (!fullText) {
+        return reject(new Error("Python script returned empty transcript."));
+      }
+      transcriptCache.set(cacheKey, fullText);
+      resolve(fullText);
+    });
+  });
 }
+
 
 /**
  * BLOG GENERATION
@@ -150,6 +188,7 @@ async function getTranscriptText(url) {
 app.post("/generate-blog", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
+    const userId = req.user.uid; // Get userId from verified token
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
@@ -181,7 +220,23 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
       /```html|```/g,
       ""
     );
-    res.json({ blogPost });
+
+    // Attempt to extract a title from the blog post for storage
+    const titleMatch = blogPost.match(/<h1[^>]*>(.*?)<\/h1>/i);
+    const title = titleMatch ? titleMatch[1].trim() : `Blog Post from ${req.body.url}`;
+
+    // Save generated content to MongoDB
+    const newContent = new GeneratedContent({
+      userId,
+      type: 'blog',
+      title: title,
+      contentData: blogPost,
+      url: req.body.url
+    });
+    await newContent.save();
+    console.log(`Saved new blog post (ID: ${newContent._id}) to database.`);
+
+    res.json({ blogPost, contentId: newContent._id });
   } catch (error) {
     console.error("Blog error:", error.message);
     res.status(500).json({ error: "Error generating blog post" });
@@ -194,6 +249,7 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
 app.post("/generate-flashcards", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
+    const userId = req.user.uid;
 
     const flashcards = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -234,7 +290,19 @@ IMPORTANT:
     }
     
     console.log(`Generated ${validFlashcards.length} valid flashcards`);
-    res.json({ flashcards: validFlashcards });
+
+    // Save generated content to MongoDB
+    const newContent = new GeneratedContent({
+      userId,
+      type: 'flashcards',
+      title: `Flashcards from ${req.body.url}`, // You might want a more descriptive title
+      contentData: validFlashcards,
+      url: req.body.url
+    });
+    await newContent.save();
+    console.log(`Saved new flashcards (ID: ${newContent._id}) to database.`);
+
+    res.json({ flashcards: validFlashcards, contentId: newContent._id });
     
   } catch (error) {
     console.error("Flashcard error:", error.message);
@@ -250,13 +318,14 @@ IMPORTANT:
  */
 app.post("/generate-slides", verifyToken, async (req, res) => {
   const { url } = req.body;
+  const userId = req.user.uid;
 
   try {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
-    const transcript = await YoutubeTranscript.fetchTranscript(videoId);
-    const transcriptText = transcript.map((item) => item.text).join(" ");
+    // Using the updated getTranscriptText function
+    const transcriptText = await getTranscriptText(url);
 
     const slides = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -313,6 +382,19 @@ IMPORTANT:
     });
 
     const b64 = await pptx.write("base64");
+
+    // Save generated content to MongoDB
+    const newContent = new GeneratedContent({
+      userId,
+      type: 'slides',
+      title: `Slides from ${url}`, // You might want a more descriptive title
+      contentData: validSlides, // Storing the slide array, not the base64 PPTX
+      url: url
+    });
+    await newContent.save();
+    console.log(`Saved new slides (ID: ${newContent._id}) to database.`);
+
+
     res.setHeader(
       "Content-Disposition",
       'attachment; filename="presentation.pptx"'
@@ -323,6 +405,7 @@ IMPORTANT:
       pptxBase64: b64,
       slides: validSlides,
       success: true,
+      contentId: newContent._id
     });
   } catch (error) {
     console.error("Error generating .pptx:", error.message);
@@ -336,6 +419,7 @@ IMPORTANT:
 app.post("/generate-quiz", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
+    const userId = req.user.uid;
 
     const quiz = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -379,7 +463,19 @@ IMPORTANT:
     }
 
     console.log(`Generated ${validQuiz.length} valid quiz questions`);
-    res.json({ quiz: validQuiz });
+
+    // Save generated content to MongoDB
+    const newContent = new GeneratedContent({
+      userId,
+      type: 'quiz',
+      title: `Quiz from ${req.body.url}`, // You might want a more descriptive title
+      contentData: validQuiz,
+      url: req.body.url
+    });
+    await newContent.save();
+    console.log(`Saved new quiz (ID: ${newContent._id}) to database.`);
+
+    res.json({ quiz: validQuiz, contentId: newContent._id });
   } catch (error) {
     console.error("Quiz error:", error.message);
     res.status(500).json({ error: "Failed to generate quiz" });
@@ -391,6 +487,7 @@ IMPORTANT:
  */
 app.post("/generate-summary", verifyToken, async (req, res) => {
   const { url } = req.body;
+  const userId = req.user.uid;
 
   try {
     const videoId = new URL(url).searchParams.get("v");
@@ -445,7 +542,19 @@ app.post("/generate-summary", verifyToken, async (req, res) => {
     summary = summary.replace(/^(summary|video summary):\s*/i, "");
 
     console.log(`Generated summary successfully (${summary.length} characters)`);
-    res.json({ summary });
+    
+    // Save generated content to MongoDB
+    const newContent = new GeneratedContent({
+      userId,
+      type: 'summary',
+      title: `Summary from ${url}`, // You might want a more descriptive title
+      contentData: summary,
+      url: url
+    });
+    await newContent.save();
+    console.log(`Saved new summary (ID: ${newContent._id}) to database.`);
+
+    res.json({ summary, contentId: newContent._id });
   } catch (error) {
     console.error("Summary generation error:", error.message);
     res.status(500).json({ error: "Failed to generate summary" });
@@ -535,12 +644,16 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
 
   const filePath = req.file.path;
   const contentType = req.body.type;
+  const userId = req.user.uid;
 
   try {
     const fileContent = await extractTextFromFile(filePath, req.file.mimetype);
     console.log(`Processing file for ${contentType} generation`);
 
     let result;
+    let generatedContentData;
+    let contentTitle = `Content from file: ${req.file.originalname}`; // Default title
+
     switch (contentType) {
       case 'blog':
         const blogCompletion = await withRetry(async () => {
@@ -562,7 +675,10 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
             ],
           });
         }, 3);
-        result = { blog: blogCompletion.choices[0].message.content.replace(/```html|```/g, "") };
+        generatedContentData = blogCompletion.choices[0].message.content.replace(/```html|```/g, "");
+        const blogTitleMatch = generatedContentData.match(/<h1[^>]*>(.*?)<\/h1>/i);
+        contentTitle = blogTitleMatch ? blogTitleMatch[1].trim() : `Blog Post from ${req.file.originalname}`;
+        result = { blog: generatedContentData };
         break;
 
       case 'slides':
@@ -575,7 +691,7 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
               {
                 role: "system",
                 content: `Generate 6-10 presentation slides based on the content.
-                Return a JSON array where each object represents a slide with:
+                Return a JSON array where each object has:
                 {
                   "title": "Slide title",
                   "content": ["Bullet point 1", "Bullet point 2", ...]
@@ -591,6 +707,9 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
           });
         }, 3);
         
+        generatedContentData = slides;
+        contentTitle = `Slides from ${req.file.originalname}`;
+
         // Generate PPTX
         const pptx = new PptxGenJS();
         slides.forEach(slide => {
@@ -630,6 +749,8 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
           });
         }, 3);
         
+        generatedContentData = flashcards;
+        contentTitle = `Flashcards from ${req.file.originalname}`;
         result = { flashcards };
         break;
 
@@ -660,6 +781,8 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
           });
         }, 3);
         
+        generatedContentData = quiz;
+        contentTitle = `Quiz from ${req.file.originalname}`;
         result = { quiz };
         break;
 
@@ -679,12 +802,28 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
           });
         }, 3);
         
-        result = { summary: summaryCompletion.choices[0].message.content };
+        generatedContentData = summaryCompletion.choices[0].message.content;
+        contentTitle = `Summary from ${req.file.originalname}`;
+        result = { summary: generatedContentData };
         break;
 
       default:
         return res.status(400).json({ error: "Invalid content type" });
     }
+
+    // Save generated content to MongoDB for file uploads
+    const newContent = new GeneratedContent({
+      userId,
+      type: contentType,
+      title: contentTitle,
+      contentData: generatedContentData,
+      filePath: req.file.path // Store the path to the original uploaded file
+    });
+    await newContent.save();
+    console.log(`Saved new content from file (ID: ${newContent._id}) to database.`);
+    
+    // Add contentId to the response for client-side routing
+    result.contentId = newContent._id;
 
     console.log(`Successfully processed file for ${contentType}`);
     res.json(result);
@@ -699,6 +838,50 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
     cleanupFile(filePath);
   }
 });
+
+/**
+ * GET USER GENERATED CONTENT
+ */
+app.get("/api/content/:userId", verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Ensure the requesting user matches the userId in the URL or is an admin (if applicable)
+    if (req.user.uid !== userId) {
+      return res.status(403).json({ error: "Unauthorized access to content" });
+    }
+
+    const content = await GeneratedContent.find({ userId }).sort({ createdAt: -1 });
+    res.json(content);
+  } catch (error) {
+    console.error("Error fetching user content:", error.message);
+    res.status(500).json({ error: "Failed to fetch user content" });
+  }
+});
+
+/**
+ * GET SINGLE GENERATED CONTENT BY ID
+ */
+app.get("/api/content/details/:contentId", verifyToken, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const content = await GeneratedContent.findById(contentId);
+
+    if (!content) {
+      return res.status(404).json({ error: "Content not found" });
+    }
+    
+    // Ensure the requesting user owns the content
+    if (req.user.uid !== content.userId) {
+      return res.status(403).json({ error: "Unauthorized access to this content" });
+    }
+
+    res.json(content);
+  } catch (error) {
+    console.error("Error fetching single content:", error.message);
+    res.status(500).json({ error: "Failed to fetch content details" });
+  }
+});
+
 
 // Start server
 app.listen(port, () => {

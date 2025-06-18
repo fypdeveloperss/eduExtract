@@ -30,6 +30,14 @@ const Layout = () => {
                 Dashboard
               </Link>
             </li>
+             <li className="mb-2">
+              <Link
+                to="/content"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa]"
+              >
+                My Content
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>
