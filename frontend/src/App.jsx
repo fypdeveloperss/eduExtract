@@ -6,6 +6,7 @@ import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/FirebaseAuthContext";
 import Content from "./components/Content";
+import MyContent from "./components/MyContent";
 
 function App() {
   return (
@@ -17,7 +18,8 @@ function App() {
           <Route path="/contact" element={<Contact />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
-            <Route path="content" element={<Content/>}/>
+            <Route path="content" element={<MyContent/>}/>
+            <Route path="content/:contentId" element={<Content/>}/>
           </Route>
         </Routes>
       </Router>

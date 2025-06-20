@@ -26,7 +26,7 @@ function Content() {
         setLoading(true);
         setError(null);
         const idToken = await user.getIdToken();
-        const response = await fetch(`${process.env.REACT_APP_BACKEND_URL}/api/content/details/${contentId}`, {
+        const response = await fetch(`http://localhost:5000/api/content/details/${contentId}`, {
           headers: {
             'Authorization': `Bearer ${idToken}`
           }
