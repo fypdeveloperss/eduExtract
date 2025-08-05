@@ -17,15 +17,70 @@ export const AuthProvider = ({ children }) => {
   const [error, setError] = useState(null);
   const [showAuthModal, setShowAuthModal] = useState(false);
   const [modalMode, setModalMode] = useState('signin');
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [adminLoading, setAdminLoading] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (user) => {
+    const unsubscribe = onAuthStateChanged(auth, async (user) => {
       setUser(user);
       setLoading(false);
+      
+      // Check admin status when user changes
+      if (user) {
+        await checkAdminStatus();
+      } else {
+        setIsAdmin(false);
+      }
     });
 
     return () => unsubscribe();
   }, []);
+
+  const checkAdminStatus = async () => {
+    if (!user) return;
+    
+    try {
+      setAdminLoading(true);
+      console.log('Checking admin status for user:', user.uid);
+      const token = await user.getIdToken();
+      const response = await fetch('/api/admin/check', {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      console.log('Admin check response status:', response.status);
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Admin check response data:', data);
+        setIsAdmin(data.isAdmin);
+      } else {
+        console.log('Admin check failed with status:', response.status);
+        setIsAdmin(false);
+      }
+    } catch (error) {
+      console.error('Error checking admin status:', error);
+      setIsAdmin(false);
+    } finally {
+      setAdminLoading(false);
+    }
+  };
+
+  // Add a separate useEffect to trigger admin check when user changes
+  useEffect(() => {
+    if (user) {
+      checkAdminStatus();
+    } else {
+      setIsAdmin(false);
+    }
+  }, [user]);
+
+  // Manual trigger for admin check (for debugging)
+  const manualAdminCheck = async () => {
+    console.log('Manual admin check triggered');
+    await checkAdminStatus();
+  };
 
   const login = async (email, password) => {
     try {
@@ -94,7 +149,11 @@ export const AuthProvider = ({ children }) => {
         toggleAuthModal,
         error,
         modalMode,
-        setModalMode
+        setModalMode,
+        isAdmin,
+        adminLoading,
+        checkAdminStatus,
+        manualAdminCheck
       }}
     >
       {children}

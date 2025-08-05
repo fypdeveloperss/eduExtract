@@ -10,7 +10,7 @@ const pdfParse = require("pdf-parse");
 const mammoth = require("mammoth");
 const fs = require("fs");
 const path = require("path");
-const { verifyToken } = require('./config/firebase-admin');
+const { verifyToken, verifyAdmin, isAdmin } = require('./config/firebase-admin');
 const mongoose = require('mongoose'); // Import mongoose
 
 dotenv.config();
@@ -26,6 +26,17 @@ app.use(cors());
 mongoose.connect(mongoUri)
   .then(() => console.log('MongoDB connected successfully'))
   .catch(err => console.error('MongoDB connection error:', err));
+
+// Define a schema and model for users
+const userSchema = new mongoose.Schema({
+  uid: { type: String, required: true, unique: true }, // Firebase UID
+  name: { type: String, required: true },
+  email: { type: String, required: true, unique: true },
+  createdAt: { type: Date, default: Date.now },
+  lastLogin: { type: Date, default: Date.now }
+});
+
+const User = mongoose.model('User', userSchema);
 
 // Define a schema and model for generated content
 const contentSchema = new mongoose.Schema({
@@ -190,6 +201,9 @@ app.post("/generate-blog", verifyToken, async (req, res) => {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid; // Get userId from verified token
 
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
+
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -250,6 +264,9 @@ app.post("/generate-flashcards", verifyToken, async (req, res) => {
   try {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid;
+
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     const flashcards = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -323,6 +340,9 @@ app.post("/generate-slides", verifyToken, async (req, res) => {
   try {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     // Using the updated getTranscriptText function
     const transcriptText = await getTranscriptText(url);
@@ -421,6 +441,9 @@ app.post("/generate-quiz", verifyToken, async (req, res) => {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
+
     const quiz = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
@@ -492,6 +515,9 @@ app.post("/generate-summary", verifyToken, async (req, res) => {
   try {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     // Use the cached transcript function for consistency
     const transcriptText = await getTranscriptText(url);
@@ -603,6 +629,162 @@ app.post("/api/chat", verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * CREATE OR UPDATE USER
+ */
+app.post("/api/users", verifyToken, async (req, res) => {
+  try {
+    const { uid, name, email } = req.body;
+    
+    // Check if user already exists
+    let user = await User.findOne({ uid });
+    
+    if (user) {
+      // Update existing user
+      user.name = name;
+      user.email = email;
+      user.lastLogin = new Date();
+      await user.save();
+    } else {
+      // Create new user
+      user = new User({
+        uid,
+        name,
+        email
+      });
+      await user.save();
+    }
+    
+    res.json({ success: true, user });
+  } catch (error) {
+    console.error("Error creating/updating user:", error.message);
+    res.status(500).json({ error: "Failed to create/update user" });
+  }
+});
+
+/**
+ * GET ALL USERS (for admin view)
+ */
+app.get("/api/users", verifyAdmin, async (req, res) => {
+  try {
+    const users = await User.find({}).sort({ createdAt: -1 });
+    res.json(users);
+  } catch (error) {
+    console.error("Error fetching users:", error.message);
+    res.status(500).json({ error: "Failed to fetch users" });
+  }
+});
+
+/**
+ * GET USER BY ID
+ */
+app.get("/api/users/:userId", verifyAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    const user = await User.findOne({ uid: userId });
+    
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    res.json(user);
+  } catch (error) {
+    console.error("Error fetching user:", error.message);
+    res.status(500).json({ error: "Failed to fetch user" });
+  }
+});
+
+/**
+ * GET USER GENERATED CONTENT
+ */
+app.get("/api/content/:userId", verifyToken, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    // Ensure the requesting user matches the userId in the URL or is an admin (if applicable)
+    if (req.user.uid !== userId) {
+      return res.status(403).json({ error: "Unauthorized access to content" });
+    }
+
+    const content = await GeneratedContent.find({ userId }).sort({ createdAt: -1 });
+    res.json(content);
+  } catch (error) {
+    console.error("Error fetching user content:", error.message);
+    res.status(500).json({ error: "Failed to fetch user content" });
+  }
+});
+
+/**
+ * GET SINGLE GENERATED CONTENT BY ID
+ */
+app.get("/api/content/details/:contentId", verifyToken, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const content = await GeneratedContent.findById(contentId);
+
+    if (!content) {
+      return res.status(404).json({ error: "Content not found" });
+    }
+    
+    // Ensure the requesting user owns the content
+    if (req.user.uid !== content.userId) {
+      return res.status(403).json({ error: "Unauthorized access to this content" });
+    }
+
+    res.json(content);
+  } catch (error) {
+    console.error("Error fetching single content:", error.message);
+    res.status(500).json({ error: "Failed to fetch content details" });
+  }
+});
+
+/**
+ * GET CONTENT FOR ANY USER (admin view)
+ */
+app.get("/api/admin/content/:userId", verifyAdmin, async (req, res) => {
+  try {
+    const { userId } = req.params;
+    
+    // Get user info
+    const user = await User.findOne({ uid: userId });
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    
+    // Get user's content
+    const content = await GeneratedContent.find({ userId }).sort({ createdAt: -1 });
+    
+    res.json({
+      user: {
+        uid: user.uid,
+        name: user.name,
+        email: user.email,
+        createdAt: user.createdAt,
+        lastLogin: user.lastLogin
+      },
+      content: content
+    });
+  } catch (error) {
+    console.error("Error fetching user content:", error.message);
+    res.status(500).json({ error: "Failed to fetch user content" });
+  }
+});
+
+/**
+ * CHECK IF USER IS ADMIN
+ */
+app.get("/api/admin/check", verifyToken, async (req, res) => {
+  try {
+    console.log('Admin check requested for UID:', req.user.uid);
+    console.log('Available admin UIDs:', require('./config/firebase-admin').ADMIN_UIDS);
+    const adminStatus = isAdmin(req.user.uid);
+    console.log('Is admin?', adminStatus);
+    res.json({ isAdmin: adminStatus });
+  } catch (error) {
+    console.error("Error checking admin status:", error.message);
+    res.status(500).json({ error: "Failed to check admin status" });
+  }
+});
+
 // Helper function to extract text from uploaded files
 async function extractTextFromFile(filePath, mimeType) {
   try {
@@ -634,6 +816,34 @@ function cleanupFile(filePath) {
   }
 }
 
+// Helper function to create or update user
+async function createOrUpdateUser(uid, name, email) {
+  try {
+    let user = await User.findOne({ uid });
+    
+    if (user) {
+      // Update existing user
+      user.name = name;
+      user.email = email;
+      user.lastLogin = new Date();
+      await user.save();
+    } else {
+      // Create new user
+      user = new User({
+        uid,
+        name,
+        email
+      });
+      await user.save();
+    }
+    
+    return user;
+  } catch (error) {
+    console.error('Error creating/updating user:', error);
+    throw error;
+  }
+}
+
 /**
  * FILE PROCESSING ENDPOINT
  */
@@ -647,6 +857,9 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
   const userId = req.user.uid;
 
   try {
+    // Create or update user record
+    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
+
     const fileContent = await extractTextFromFile(filePath, req.file.mimetype);
     console.log(`Processing file for ${contentType} generation`);
 
@@ -836,49 +1049,6 @@ app.post("/process-file", verifyToken, upload.single('file'), async (req, res) =
   } finally {
     // Clean up the uploaded file
     cleanupFile(filePath);
-  }
-});
-
-/**
- * GET USER GENERATED CONTENT
- */
-app.get("/api/content/:userId", verifyToken, async (req, res) => {
-  try {
-    const { userId } = req.params;
-    // Ensure the requesting user matches the userId in the URL or is an admin (if applicable)
-    if (req.user.uid !== userId) {
-      return res.status(403).json({ error: "Unauthorized access to content" });
-    }
-
-    const content = await GeneratedContent.find({ userId }).sort({ createdAt: -1 });
-    res.json(content);
-  } catch (error) {
-    console.error("Error fetching user content:", error.message);
-    res.status(500).json({ error: "Failed to fetch user content" });
-  }
-});
-
-/**
- * GET SINGLE GENERATED CONTENT BY ID
- */
-app.get("/api/content/details/:contentId", verifyToken, async (req, res) => {
-  try {
-    const { contentId } = req.params;
-    const content = await GeneratedContent.findById(contentId);
-
-    if (!content) {
-      return res.status(404).json({ error: "Content not found" });
-    }
-    
-    // Ensure the requesting user owns the content
-    if (req.user.uid !== content.userId) {
-      return res.status(403).json({ error: "Unauthorized access to this content" });
-    }
-
-    res.json(content);
-  } catch (error) {
-    console.error("Error fetching single content:", error.message);
-    res.status(500).json({ error: "Failed to fetch content details" });
   }
 });
 

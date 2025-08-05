@@ -9,7 +9,7 @@ import Content from "./components/Content";
 import MyContent from "./components/MyContent";
 import Admin from "./pages/Admin";
 import AdminLayout from "./components/AdminLayout";
-
+import Users from "./pages/Users";
 function App() {
   return (
     <AuthProvider>
@@ -25,6 +25,7 @@ function App() {
           </Route>
             <Route path="/" element={<AdminLayout />}>
            <Route path="/admin" element={<Admin />} />
+           <Route path="/admin/users" element={<Users />} />
           </Route>
         </Routes>
       </Router>

@@ -7,5 +7,14 @@ export default defineConfig({
   plugins: [
     react(),
     tailwindcss()],
-    base: process.env.VITE_BASE_PATH ||  "/"
+    base: process.env.VITE_BASE_PATH ||  "/",
+    server: {
+      proxy: {
+        '/api': {
+          target: 'http://localhost:5000',
+          changeOrigin: true,
+          secure: false
+        }
+      }
+    }
 })

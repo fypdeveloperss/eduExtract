@@ -8,6 +8,7 @@ import SummaryView from "../components/SummaryView";
 import Spinner from "../components/Spinner";
 import "./Dashboard.css";
 import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube } from "lucide-react";
+import { useAuth } from "../context/FirebaseAuthContext";
 
 function Dashboard() {
   const [url, setUrl] = useState("");
@@ -49,6 +50,22 @@ function Dashboard() {
     summary: false
   });
   const videoContainerRef = useRef(null);
+  const { user } = useAuth();
+
+  // Function to create or update user record
+  const createOrUpdateUser = async () => {
+    if (!user) return;
+    
+    try {
+      await api.post("/api/users", {
+        uid: user.uid,
+        name: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+        email: user.email || 'unknown@example.com'
+      });
+    } catch (error) {
+      console.error("Error creating/updating user:", error);
+    }
+  };
 
   const extractVideoId = (url) => {
     try {
@@ -148,6 +165,10 @@ function Dashboard() {
         quiz: false,
         summary: false
       });
+      
+      // Create or update user record
+      await createOrUpdateUser();
+      
       setTimeout(() => {
         setShowVideo(true);
         setIsLoading(false);
@@ -192,6 +213,9 @@ function Dashboard() {
       });
 
       try {
+        // Create or update user record
+        await createOrUpdateUser();
+        
         // Validate the file and enable tabs
         setIsLoading(false);
         setIsFileValidated(true);  // Enable the tabs
@@ -218,6 +242,9 @@ function Dashboard() {
     setErrors(prev => ({ ...prev, [tabId]: "" }));
     
     try {
+      // Create or update user record before generating content
+      await createOrUpdateUser();
+      
       let res;
       if (videoId) {
         if (tabId === "blog") {

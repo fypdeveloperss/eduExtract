@@ -16,6 +16,14 @@ admin.initializeApp({
   })
 });
 
+// Predefined admin UIDs - Add your admin Firebase UIDs here
+const ADMIN_UIDS = [
+  '13zeFEG6XqTUtc0muOzZl3Ikba32'
+  // Add your admin UIDs here
+  // Example: 'your-firebase-uid-here',
+  // You can get your UID from Firebase Auth or by logging in and checking the user object
+];
+
 // Middleware to verify Firebase ID token
 const verifyToken = async (req, res, next) => {
   try {
@@ -34,7 +42,40 @@ const verifyToken = async (req, res, next) => {
   }
 };
 
+// Middleware to verify admin status
+const verifyAdmin = async (req, res, next) => {
+  try {
+    // First verify the token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Check if user is in admin list
+    if (!ADMIN_UIDS.includes(decodedToken.uid)) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error('Error verifying admin token:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
+};
+
+// Helper function to check if a user is admin
+const isAdmin = (uid) => {
+  return ADMIN_UIDS.includes(uid);
+};
+
 module.exports = {
   admin,
-  verifyToken
+  verifyToken,
+  verifyAdmin,
+  isAdmin,
+  ADMIN_UIDS
 }; 
