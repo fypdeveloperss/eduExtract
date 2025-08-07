@@ -11,14 +11,15 @@ function QuizView({ quiz }) {
   useEffect(() => {
     // Only run the timer if we're not showing results
     if (!showResults) {
-      setStartTime(Date.now());
+      const currentStartTime = Date.now();
+      setStartTime(currentStartTime);
       const interval = setInterval(() => {
-        setElapsedTime(Math.floor((Date.now() - startTime) / 1000));
+        setElapsedTime(Math.floor((Date.now() - currentStartTime) / 1000));
       }, 1000);
 
       return () => clearInterval(interval); // cleanup
     }
-  }, [startTime, showResults]);
+  }, [showResults]); // Remove startTime from dependencies
 
   const formatTime = (seconds) => {
     const mins = Math.floor(seconds / 60);

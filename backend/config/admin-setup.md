@@ -1,6 +1,24 @@
 # Admin Setup Guide
 
-## How to Add Admin Users
+> **⚡ NEW: Modern Admin Management Available!**  
+> See `modern-admin-setup.md` for the new email-based admin management system.
+> This legacy guide is kept for backward compatibility.
+
+## 🚀 Quick Modern Setup (Recommended)
+
+Instead of following this guide, you can now:
+1. **Register an account** in the system
+2. **Add your UID once** to the hardcoded list (below)
+3. **Use the web interface** for all future admin management
+4. **Add admins by email** - no more manual UID copying!
+
+[➡️ See Modern Admin Setup Guide](./modern-admin-setup.md)
+
+---
+
+## Legacy Method: How to Add Admin Users
+
+> **Note**: This method still works but is no longer recommended for new setups.
 
 ### Step 1: Get Your Firebase UID
 
@@ -54,17 +72,37 @@
 1. **Login to your application**
 2. **You should now see an "Admin" button in the header**
 3. **Click it to access the admin dashboard**
+4. **🎉 Now use "Admin Management" to add more admins by email!**
+
+---
+
+## 🆕 What's New
+
+### Modern Features Available:
+- ✅ **Add admins by email** (no UID copying)
+- ✅ **Web-based admin management**
+- ✅ **Role-based permissions**
+- ✅ **Remove admins instantly**
+- ✅ **No server restarts needed**
+- ✅ **Audit trail**
+
+### Migration Benefits:
+- Your existing hardcoded admins become "Super Admins"
+- Use the web interface for all future admin management
+- No breaking changes to your current setup
+
+---
 
 ## Security Notes
 
-- **Only add trusted UIDs** to the admin list
+- **Only add trusted UIDs** to the initial admin list
 - **Keep your Firebase UID private** - don't share it publicly
-- **The admin list is stored in code**, so it's secure and version-controlled
-- **Admins can access all user data and content**
+- **Use the modern web interface** for adding additional admins
+- **Super Admins can access all user data and content**
 
-## Multiple Admins
+## Multiple Admins (Legacy Way)
 
-To add multiple admins, simply add more UIDs to the array:
+To add multiple admins the old way, add more UIDs to the array:
 
 ```javascript
 const ADMIN_UIDS = [
@@ -74,6 +112,8 @@ const ADMIN_UIDS = [
 ];
 ```
 
+**Better way**: Use the Admin Management interface in the web app!
+
 ## Admin Features
 
 Admins can:
@@ -81,6 +121,7 @@ Admins can:
 - Access any user's generated content
 - View detailed content information
 - Monitor system usage
+- **🆕 Manage other admins** (Super Admins only)
 
 ## Troubleshooting
 
@@ -93,4 +134,9 @@ Admins can:
 **If getCurrentUserUid() doesn't work:**
 1. Make sure you're logged in to the application
 2. Try refreshing the page and running the command again
-3. Check if there are any console errors 
+3. Check if there are any console errors
+
+**🆕 For modern admin management issues:**
+- See the [Modern Admin Setup Guide](./modern-admin-setup.md)
+- Check that the user exists in the system before adding as admin
+- Ensure you have Super Admin privileges for admin management 

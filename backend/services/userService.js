@@ -29,10 +29,54 @@ class UserService {
     }
   }
 
-  // Get all users
-  static async getAllUsers() {
+  // Get all users with optional pagination
+  static async getAllUsers(page = 1, limit = 20, search = '') {
     try {
-      return await User.find().sort({ createdAt: -1 });
+      let query = {};
+      
+      // Add search functionality if search term is provided
+      if (search) {
+        query = {
+          $or: [
+            { name: { $regex: search, $options: 'i' } },
+            { email: { $regex: search, $options: 'i' } }
+          ]
+        };
+      }
+      
+      console.log(`UserService.getAllUsers called with page=${page}, limit=${limit}, search="${search}"`);
+      console.log('Query:', JSON.stringify(query));
+      
+      // If no pagination requested (legacy), return all users
+      if (page === undefined || limit === undefined) {
+        const allUsers = await User.find(query).sort({ createdAt: -1 });
+        console.log(`Returning ${allUsers.length} users (no pagination)`);
+        return allUsers;
+      }
+      
+      // Calculate skip value for pagination
+      const skip = (page - 1) * limit;
+      
+      // Get users with pagination
+      const users = await User.find(query)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(limit);
+      
+      // Get total count for pagination metadata
+      const total = await User.countDocuments(query);
+      
+      console.log(`Found ${users.length} users out of ${total} total`);
+      
+      return {
+        users,
+        pagination: {
+          page,
+          limit,
+          total,
+          pages: Math.ceil(total / limit)
+        }
+      };
     } catch (error) {
       console.error('Error getting all users:', error);
       throw error;

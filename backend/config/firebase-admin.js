@@ -18,7 +18,8 @@ admin.initializeApp({
 
 // Predefined admin UIDs - Add your admin Firebase UIDs here
 const ADMIN_UIDS = [
-  '13zeFEG6XqTUtc0muOzZl3Ikba32'
+  '13zeFEG6XqTUtc0muOzZl3Ikba32',
+  'Im9sZ0RPFyOjyzYv90dqeB7xCT43'
   // Add your admin UIDs here
   // Example: 'your-firebase-uid-here',
   // You can get your UID from Firebase Auth or by logging in and checking the user object
@@ -67,15 +68,45 @@ const verifyAdmin = async (req, res, next) => {
   }
 };
 
-// Helper function to check if a user is admin
+// Helper function to check if a user is admin (legacy support)
 const isAdmin = (uid) => {
   return ADMIN_UIDS.includes(uid);
+};
+
+// Enhanced admin verification using database
+const verifyAdminEnhanced = async (req, res, next) => {
+  try {
+    // First verify the token
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
+
+    const token = authHeader.split('Bearer ')[1];
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Check admin status using AdminService
+    const AdminService = require('../services/adminService');
+    const isAdminUser = await AdminService.isAdmin(decodedToken.uid);
+    
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+    
+    req.user = decodedToken;
+    req.userRole = await AdminService.getAdminRole(decodedToken.uid);
+    next();
+  } catch (error) {
+    console.error('Error verifying enhanced admin token:', error);
+    res.status(401).json({ error: 'Invalid token' });
+  }
 };
 
 module.exports = {
   admin,
   verifyToken,
   verifyAdmin,
+  verifyAdminEnhanced,
   isAdmin,
   ADMIN_UIDS
 }; 

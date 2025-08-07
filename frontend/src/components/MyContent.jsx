@@ -19,7 +19,7 @@ const MyContent = () => {
       try {
         setLoading(true);
         setError(null);
-        const res = await api.get(`/api/content/${user.uid}`);
+        const res = await api.get(`/api/content`);
         setContentList(res.data);
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to fetch content.');

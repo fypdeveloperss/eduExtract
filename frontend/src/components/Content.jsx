@@ -26,7 +26,7 @@ function Content() {
         setLoading(true);
         setError(null);
         const idToken = await user.getIdToken();
-        const response = await fetch(`http://localhost:5000/api/content/details/${contentId}`, {
+        const response = await fetch(`http://localhost:5000/api/content/${contentId}`, {
           headers: {
             'Authorization': `Bearer ${idToken}`
           }
@@ -83,7 +83,7 @@ function Content() {
         // For HTML content, use dangerouslySetInnerHTML
         return (
           <div 
-            className="prose dark:prose-invert max-w-none" 
+            className="blog-content max-w-none" 
             dangerouslySetInnerHTML={{ __html: content.contentData }} 
           />
         );

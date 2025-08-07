@@ -14,6 +14,14 @@ const AdminLayout = () => {
           <ul>
             <li className="mb-2">
               <Link
+                to="/"
+                className="block p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                🏠 Home
+              </Link>
+            </li>
+            <li className="mb-2">
+              <Link
                 to="/admin"
                 className="block p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
@@ -26,6 +34,14 @@ const AdminLayout = () => {
                 className="block p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
               >
                 User Management
+              </Link>
+            </li>
+            <li className="mb-2">
+              <Link
+                to="/admin/admins"
+                className="block p-2 rounded-md hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+              >
+                Admin Management
               </Link>
             </li>
             <li className="mb-2">

@@ -43,6 +43,27 @@ export const AuthProvider = ({ children }) => {
       setAdminLoading(true);
       console.log('Checking admin status for user:', user.uid);
       const token = await user.getIdToken();
+      
+      // First check the enhanced admin status
+      try {
+        const enhancedResponse = await fetch('/api/admin/check-enhanced', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+        
+        if (enhancedResponse.ok) {
+          const enhancedData = await enhancedResponse.json();
+          console.log('Enhanced admin check response:', enhancedData);
+          setIsAdmin(enhancedData.isAdmin);
+          return; // Exit early if enhanced check works
+        }
+      } catch (enhancedError) {
+        console.log('Enhanced admin check failed, falling back to legacy check');
+      }
+      
+      // Fallback to legacy admin check
       const response = await fetch('/api/admin/check', {
         headers: {
           'Authorization': `Bearer ${token}`,

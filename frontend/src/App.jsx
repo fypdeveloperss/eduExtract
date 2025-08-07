@@ -10,6 +10,8 @@ import MyContent from "./components/MyContent";
 import Admin from "./pages/Admin";
 import AdminLayout from "./components/AdminLayout";
 import Users from "./pages/Users";
+import AdminManagement from "./pages/AdminManagement";
+
 function App() {
   return (
     <AuthProvider>
@@ -23,9 +25,10 @@ function App() {
             <Route path="content" element={<MyContent/>}/>
             <Route path="content/:contentId" element={<Content/>}/>
           </Route>
-            <Route path="/" element={<AdminLayout />}>
-           <Route path="/admin" element={<Admin />} />
-           <Route path="/admin/users" element={<Users />} />
+          <Route path="/admin" element={<AdminLayout />}>
+            <Route index element={<Admin />} />
+            <Route path="users" element={<Users />} />
+            <Route path="admins" element={<AdminManagement />} />
           </Route>
         </Routes>
       </Router>

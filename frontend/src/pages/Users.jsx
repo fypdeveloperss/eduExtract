@@ -22,8 +22,10 @@ const Users = () => {
     setLoading(true);
     setError("");
     try {
-      const response = await api.get("/api/users");
-      setUsers(response.data);
+      const response = await api.get("/api/users/admin/all");
+      // Handle both paginated and non-paginated responses
+      const usersData = response.data.users || response.data;
+      setUsers(usersData);
     } catch (err) {
       setError("Failed to fetch users");
       console.error("Error fetching users:", err);
