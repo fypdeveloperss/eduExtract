@@ -84,6 +84,14 @@ const Header = () => {
                   </li>
                   <li className="">
                     <Link
+                      to="/marketplace"
+                      className="hover:text-[#171717]  text-[#171717cc] "
+                    >
+                      Marketplace
+                    </Link>
+                  </li>
+                  <li className="">
+                    <Link
                       to="/contact"
                       className="hover:text-[#171717]  text-[#171717cc] "
                     >

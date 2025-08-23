@@ -19,7 +19,8 @@ admin.initializeApp({
 // Predefined admin UIDs - Add your admin Firebase UIDs here
 const ADMIN_UIDS = [
   '13zeFEG6XqTUtc0muOzZl3Ikba32',
-  'Im9sZ0RPFyOjyzYv90dqeB7xCT43'
+  'Im9sZ0RPFyOjyzYv90dqeB7xCT43',
+  '20P183w4gzUlWyUKFFWYu6iOLoM2'
   // Add your admin UIDs here
   // Example: 'your-firebase-uid-here',
   // You can get your UID from Firebase Auth or by logging in and checking the user object

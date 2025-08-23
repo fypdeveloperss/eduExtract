@@ -11,6 +11,9 @@ import Admin from "./pages/Admin";
 import AdminLayout from "./components/AdminLayout";
 import Users from "./pages/Users";
 import AdminManagement from "./pages/AdminManagement";
+import Marketplace from "./pages/Marketplace";
+import MarketplaceDetail from "./pages/MarketplaceDetail";
+import MarketplaceUpload from "./pages/MarketplaceUpload";
 
 function App() {
   return (
@@ -20,6 +23,9 @@ function App() {
           <Route index element={<Home />} />
           <Route path="/about" element={<About />} />
           <Route path="/contact" element={<Contact />} />
+          <Route path="/marketplace" element={<Marketplace />} />
+          <Route path="/marketplace/content/:id" element={<MarketplaceDetail />} />
+          <Route path="/marketplace/upload" element={<MarketplaceUpload />} />
           <Route path="/" element={<Layout />}>
             <Route path="dashboard" element={<Dashboard />} />
             <Route path="content" element={<MyContent/>}/>

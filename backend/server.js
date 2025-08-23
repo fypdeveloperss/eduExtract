@@ -54,6 +54,7 @@ const authRoutes = require('./routes/auth');
 const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const contentRoutes = require('./routes/content');
+const marketplaceRoutes = require('./routes/marketplace');
 
 // Import generation routes
 const generationRoutes = require('./routes/generation');
@@ -63,6 +64,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
+app.use('/api/marketplace', marketplaceRoutes);
 
 // Content generation routes (includes both root-level and /api routes)
 app.use('/', generationRoutes);
@@ -101,6 +103,7 @@ app.listen(port, () => {
   console.log('  - Users: /api/users/*');
   console.log('  - Admin: /api/admin/*');
   console.log('  - Content: /api/content/*');
+  console.log('  - Marketplace: /api/marketplace/*');
   console.log('  - Generation: /generate-*, /process-file, /api/chat');
   console.log('  - Health check: /health');
 });
