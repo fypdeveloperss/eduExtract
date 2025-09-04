@@ -213,25 +213,25 @@ function MarketplaceUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 mb-4">
+          <h1 className="text-4xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">
             Share Your Knowledge
           </h1>
-          <p className="text-xl text-gray-600 max-w-2xl mx-auto">
+          <p className="text-xl text-[#171717cc] dark:text-[#fafafacc] max-w-2xl mx-auto">
             Upload educational content, documents, and resources to help others learn. 
             Set your price and start earning from your expertise.
           </p>
         </div>
 
         {/* Upload Form */}
-        <div className="bg-white rounded-2xl shadow-xl p-8">
+        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Basic Information Section */}
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
+              <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                 <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
                   📝
                 </span>
@@ -240,7 +240,7 @@ function MarketplaceUpload() {
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Content Title *
                   </label>
                   <input
@@ -248,26 +248,28 @@ function MarketplaceUpload() {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                    style={{ color: '#171717cc' }}
                     placeholder="Enter a descriptive title"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Category *
                   </label>
                   <select
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                  
                     required
                   >
-                    <option value="">Select a category</option>
+                    <option value="" className="text-[#171717cc] dark:text-[#fafafacc]">Select a category</option>
                     {categories.map(cat => (
-                      <option key={cat.value} value={cat.value}>
+                      <option key={cat.value} value={cat.value} className="text-[#171717cc] dark:text-[#fafafacc]">
                         {cat.icon} {cat.label}
                       </option>
                     ))}
@@ -275,7 +277,7 @@ function MarketplaceUpload() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Subject *
                   </label>
                   <input
@@ -283,19 +285,20 @@ function MarketplaceUpload() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                    style={{ color: '#171717cc' }}
                     placeholder="e.g., Algebra, Physics, World War II"
                     required
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Difficulty Level *
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {difficulties.map(diff => (
-                      <label key={diff.value} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <label key={diff.value} className="flex items-center p-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2E2E2E]">
                         <input
                           type="radio"
                           name="difficulty"
@@ -314,7 +317,7 @@ function MarketplaceUpload() {
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                   Description *
                 </label>
                 <textarea
@@ -322,14 +325,15 @@ function MarketplaceUpload() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                  style={{ color: '#171717cc' }}
                   placeholder="Describe your content, what learners will gain, and any prerequisites..."
                   required
                 />
               </div>
 
               <div className="mt-6">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                   Tags
                 </label>
                 <input
@@ -337,18 +341,19 @@ function MarketplaceUpload() {
                   name="tags"
                   value={formData.tags}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                  style={{ color: '#171717cc' }}
                   placeholder="Enter tags separated by commas (e.g., calculus, derivatives, math)"
                 />
-                <p className="text-sm text-gray-500 mt-1">
+                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
                   Tags help others discover your content
                 </p>
               </div>
             </div>
 
             {/* Content Type & File Upload Section */}
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
+              <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                 <span className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
                   📁
                 </span>
@@ -357,12 +362,12 @@ function MarketplaceUpload() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Content Type *
                   </label>
                   <div className="grid grid-cols-1 gap-2">
                     {contentTypes.map(type => (
-                      <label key={type.value} className="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50">
+                      <label key={type.value} className="flex items-center p-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2E2E2E]">
                         <input
                           type="radio"
                           name="contentType"
@@ -380,12 +385,12 @@ function MarketplaceUpload() {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Upload File
                   </label>
                   
                   {formData.contentType === 'document' && (
-                    <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                    <div className="border-2 border-dashed border-gray-300 dark:border-[#2E2E2E] rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
                       <input
                         ref={fileInputRef}
                         type="file"
@@ -399,7 +404,7 @@ function MarketplaceUpload() {
                           <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
                             <span className="text-2xl">📄</span>
                           </div>
-                          <p className="text-gray-600 mb-2">
+                          <p className="text-[#171717cc] dark:text-[#fafafacc] mb-2">
                             <button
                               type="button"
                               onClick={() => fileInputRef.current?.click()}
@@ -409,14 +414,14 @@ function MarketplaceUpload() {
                             </button>
                             {' '}or drag and drop
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                             PDF, DOC, DOCX, TXT, PPT, PPTX, JPG, PNG, GIF (max 10MB)
                           </p>
                         </div>
                       ) : (
                         <div className="text-left">
                           <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-gray-900">
+                            <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">
                               {selectedFile.name}
                             </span>
                             <button
@@ -427,10 +432,10 @@ function MarketplaceUpload() {
                               ✕
                             </button>
                           </div>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                             Size: {formatFileSize(selectedFile.size)}
                           </p>
-                          <p className="text-sm text-gray-500">
+                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                             Type: {selectedFile.type || 'Unknown'}
                           </p>
                         </div>
@@ -439,8 +444,8 @@ function MarketplaceUpload() {
                   )}
 
                   {formData.contentType !== 'document' && (
-                    <div className="bg-gray-50 rounded-lg p-4">
-                      <p className="text-sm text-gray-600">
+                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4">
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                         For {formData.contentType} content, you'll be able to add the content directly in the next step.
                       </p>
                     </div>
@@ -450,8 +455,8 @@ function MarketplaceUpload() {
             </div>
 
             {/* Pricing Section */}
-            <div className="border-b border-gray-200 pb-6">
-              <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+            <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
+              <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                 <span className="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center mr-3">
                   💰
                 </span>
@@ -460,7 +465,7 @@ function MarketplaceUpload() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                     Price
                   </label>
                   <div className="relative">
@@ -471,7 +476,7 @@ function MarketplaceUpload() {
                       className="absolute left-3 top-1/2 transform -translate-y-1/2 bg-transparent border-none focus:ring-0"
                     >
                       {currencies.map(curr => (
-                        <option key={curr.value} value={curr.value}>
+                        <option key={curr.value} value={curr.value} className="text-[#171717cc] dark:text-[#fafafacc]">
                           {curr.symbol}
                         </option>
                       ))}
@@ -483,18 +488,19 @@ function MarketplaceUpload() {
                       onChange={handleInputChange}
                       min="0"
                       step="0.01"
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                      style={{ color: '#171717cc' }}
                       placeholder="0.00"
                     />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
                     Set to 0 for free content
                   </p>
                 </div>
 
                 <div className="flex items-end">
-                  <div className="bg-blue-50 rounded-lg p-4 w-full">
-                    <p className="text-sm text-blue-800">
+                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 w-full">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
                       💡 <strong>Pricing Tip:</strong> Consider the value and complexity of your content when setting a price. 
                       High-quality, comprehensive resources typically command higher prices.
                     </p>
@@ -537,7 +543,7 @@ function MarketplaceUpload() {
               <button
                 type="button"
                 onClick={() => navigate('/marketplace')}
-                className="px-6 py-3 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors font-medium"
+                className="px-6 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors font-medium"
               >
                 Cancel
               </button>
@@ -563,24 +569,24 @@ function MarketplaceUpload() {
         </div>
 
         {/* Help Section */}
-        <div className="mt-8 bg-white rounded-2xl shadow-lg p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+        <div className="mt-8 bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6">
+          <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
             <span className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
               ❓
             </span>
             Need Help?
           </h3>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">📋 Content Guidelines</h4>
+              <h4 className="font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">📋 Content Guidelines</h4>
               <p>Ensure your content is original, educational, and follows our community standards.</p>
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">🔍 Quality Check</h4>
+              <h4 className="font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">🔍 Quality Check</h4>
               <p>All content undergoes plagiarism detection and quality review before approval.</p>
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 mb-2">💰 Earnings</h4>
+              <h4 className="font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">💰 Earnings</h4>
               <p>Earn money from your content when other users purchase it. Set competitive prices!</p>
             </div>
           </div>

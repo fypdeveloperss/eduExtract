@@ -112,17 +112,17 @@ function Marketplace() {
 
   if (loading && content.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#ffffff] dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading marketplace...</p>
+          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading marketplace...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-[#ffffff] dark:bg-[#121212]">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -136,13 +136,13 @@ function Marketplace() {
           
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-            <div className="flex bg-white rounded-lg shadow-lg overflow-hidden">
+            <div className="flex bg-white dark:bg-[#171717] rounded-lg shadow-lg overflow-hidden">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for courses, documents, study guides..."
-                className="flex-1 px-6 py-4 text-gray-900 text-lg focus:outline-none"
+                className="flex-1 px-6 py-4 text-[#171717cc] dark:text-[#fafafacc] text-lg focus:outline-none bg-transparent placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
               />
               <button
                 type="submit"
@@ -169,15 +169,15 @@ function Marketplace() {
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Filters and Controls */}
-        <div className="bg-white rounded-2xl shadow-lg p-6 mb-8">
+        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Category Filter */}
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Category:</label>
+              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Category:</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
@@ -190,11 +190,11 @@ function Marketplace() {
 
             {/* Difficulty Filter */}
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Difficulty:</label>
+              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Difficulty:</label>
               <select
                 value={selectedDifficulty}
                 onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Levels</option>
                 <option value="beginner">Beginner</option>
@@ -205,11 +205,11 @@ function Marketplace() {
 
             {/* Content Type Filter */}
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Type:</label>
+              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Type:</label>
               <select
                 value={selectedContentType}
                 onChange={(e) => setSelectedContentType(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Types</option>
                 <option value="document">Documents</option>
@@ -223,11 +223,11 @@ function Marketplace() {
 
             {/* Price Range Filter */}
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Price:</label>
+              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Price:</label>
               <select
                 value={priceRange}
                 onChange={(e) => setPriceRange(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="all">All Prices</option>
                 <option value="free">Free</option>
@@ -240,11 +240,11 @@ function Marketplace() {
 
             {/* Sort Options */}
             <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-gray-700">Sort by:</label>
+              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Sort by:</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="newest">Newest</option>
                 <option value="popular">Most Popular</option>
@@ -255,7 +255,7 @@ function Marketplace() {
             {/* Clear Filters */}
             <button
               onClick={clearFilters}
-              className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              className="text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] text-sm font-medium"
             >
               Clear All
             </button>
@@ -264,7 +264,7 @@ function Marketplace() {
 
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
-          <div className="text-gray-600">
+          <div className="text-[#171717cc] dark:text-[#fafafacc]">
             Showing {content.length} of {totalItems} results
             {selectedCategory && ` in ${categories.find(c => c.value === selectedCategory)?.label}`}
           </div>
@@ -290,12 +290,12 @@ function Marketplace() {
             </button>
           </div>
         ) : content.length === 0 ? (
-          <div className="bg-white rounded-2xl shadow-lg p-12 text-center">
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-12 text-center">
             <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🔍</span>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-2">No content found</h3>
-            <p className="text-gray-600 mb-6">
+            <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">No content found</h3>
+            <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">
               Try adjusting your filters or search terms to find what you're looking for.
             </p>
             <button
@@ -311,7 +311,7 @@ function Marketplace() {
               <Link
                 key={item._id}
                 to={`/marketplace/content/${item._id}`}
-                className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
+                className="bg-white dark:bg-[#171717] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
               >
                 {/* Content Preview */}
                 <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center relative overflow-hidden">
@@ -332,7 +332,7 @@ function Marketplace() {
 
                   {/* Content Type Badge */}
                   <div className="absolute bottom-3 left-3">
-                    <span className="bg-white bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-gray-700">
+                    <span className="bg-white dark:bg-[#171717] bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">
                       {item.contentType}
                     </span>
                   </div>
@@ -341,16 +341,16 @@ function Marketplace() {
                 {/* Content Info */}
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-gray-900 text-lg leading-tight group-hover:text-blue-600 transition-colors">
+                    <h3 className="font-semibold text-[#171717cc] dark:text-[#fafafacc] text-lg leading-tight group-hover:text-blue-600 transition-colors">
                       {item.title}
                     </h3>
                   </div>
                   
-                  <p className="text-gray-600 text-sm mb-3 line-clamp-2">
+                  <p className="text-[#171717cc] dark:text-[#fafafacc] text-sm mb-3 line-clamp-2">
                     {item.description}
                   </p>
                   
-                  <div className="flex items-center justify-between text-sm text-gray-500">
+                  <div className="flex items-center justify-between text-sm text-[#171717cc] dark:text-[#fafafacc]">
                     <span className="flex items-center">
                       <span className="mr-1">📚</span>
                       {item.subject}
@@ -361,7 +361,7 @@ function Marketplace() {
                   </div>
                   
                   {/* Stats */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-[#2E2E2E] text-xs text-[#171717cc] dark:text-[#fafafacc]">
                     <span className="flex items-center">
                       <span className="mr-1">👁️</span>
                       {item.views || 0} views

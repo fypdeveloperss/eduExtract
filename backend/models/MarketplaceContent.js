@@ -60,7 +60,7 @@ const marketplaceContentSchema = new mongoose.Schema({
   contentType: {
     type: String,
     required: true,
-    enum: ['blog', 'slides', 'flashcards', 'quiz', 'summary', 'personal']
+    enum: ['blog', 'slides', 'flashcards', 'quiz', 'summary', 'personal', 'document']
   },
   
   isPersonal: {
@@ -188,6 +188,24 @@ const marketplaceContentSchema = new mongoose.Schema({
     type: String,
     required: false,
     ref: 'User'
+  },
+  
+  // Rejection information
+  rejectedAt: {
+    type: Date,
+    required: false
+  },
+  
+  rejectedBy: {
+    type: String,
+    required: false,
+    ref: 'User'
+  },
+  
+  rejectionReason: {
+    type: String,
+    required: false,
+    maxlength: 500
   }
 });
 

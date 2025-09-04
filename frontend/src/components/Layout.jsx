@@ -38,6 +38,14 @@ const Layout = () => {
                 My Content
               </Link>
             </li>
+            <li className="mb-2">
+              <Link
+                to="/marketplace"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa]"
+              >
+                Marketplace
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>

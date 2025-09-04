@@ -331,7 +331,7 @@ Return a JSON response with:
       let allChecks = [];
       
       for (const result of checkResults) {
-        if (result.score !== undefined && result.confidence > 0) {
+        if (result.score !== undefined && !isNaN(result.score) && result.confidence > 0) {
           const weight = result.confidence / 100;
           totalScore += result.score * weight;
           totalWeight += weight;
@@ -349,18 +349,21 @@ Return a JSON response with:
       
       const overallScore = totalWeight > 0 ? Math.round(totalScore / totalWeight) : 100;
       
+      // Ensure score is never NaN
+      const finalScore = isNaN(overallScore) ? 100 : overallScore;
+      
       // Determine overall risk level
       let riskLevel = 'low';
-      if (overallScore < 50) riskLevel = 'high';
-      else if (overallScore < 80) riskLevel = 'medium';
+      if (finalScore < 50) riskLevel = 'high';
+      else if (finalScore < 80) riskLevel = 'medium';
       
       // Generate recommendations
-      const recommendations = this.generateRecommendations(overallScore, allSources, allChecks);
+      const recommendations = this.generateRecommendations(finalScore, allSources, allChecks);
       
       return {
-        score: overallScore,
+        score: finalScore,
         report: {
-          overallScore: overallScore,
+          overallScore: finalScore,
           riskLevel: riskLevel,
           checks: allChecks,
           sources: allSources,

@@ -142,10 +142,10 @@ function MarketplaceDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
+      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Loading content...</p>
+          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading content...</p>
         </div>
       </div>
     );
@@ -153,13 +153,13 @@ function MarketplaceDetail() {
 
   if (error || !content) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
+      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
+        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
           <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">❌</span>
           </div>
-          <h2 className="text-2xl font-bold text-gray-900 mb-2">Content Not Found</h2>
-          <p className="text-gray-600 mb-6">{error || 'The content you are looking for does not exist.'}</p>
+          <h2 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-2">Content Not Found</h2>
+          <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">{error || 'The content you are looking for does not exist.'}</p>
           <button
             onClick={() => navigate('/marketplace')}
             className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
@@ -174,11 +174,11 @@ function MarketplaceDetail() {
   const canAccessContent = accessInfo?.hasAccess || content.price === 0;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 py-8">
+    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Breadcrumb */}
         <nav className="mb-6">
-          <ol className="flex items-center space-x-2 text-sm text-gray-600">
+          <ol className="flex items-center space-x-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
             <li>
               <button
                 onClick={() => navigate('/marketplace')}
@@ -187,13 +187,13 @@ function MarketplaceDetail() {
                 Marketplace
               </button>
             </li>
-            <li className="text-gray-400">/</li>
-            <li className="text-gray-900 font-medium">{content.title}</li>
+            <li className="text-[#171717cc] dark:text-[#fafafacc]">/</li>
+            <li className="text-[#171717cc] dark:text-[#fafafacc] font-medium">{content.title}</li>
           </ol>
         </nav>
 
         {/* Main Content */}
-        <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden">
           {/* Header Section */}
           <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-8">
             <div className="flex items-start justify-between">
@@ -201,7 +201,7 @@ function MarketplaceDetail() {
                 <div className="flex items-center space-x-3 mb-4">
                   <span className="text-4xl">{getCategoryIcon(content.category)}</span>
                   <div>
-                    <span className="bg-white bg-opacity-20 px-3 py-1 rounded-full text-sm">
+                    <span className="bg-white dark:bg-[#171717] bg-opacity-20 dark:bg-opacity-40 px-3 py-1 rounded-full text-sm text-[#171717cc] dark:text-[#fafafacc]">
                       {content.category}
                     </span>
                     <span className={`ml-2 px-3 py-1 rounded-full text-sm ${getDifficultyColor(content.difficulty)}`}>
@@ -210,7 +210,7 @@ function MarketplaceDetail() {
                   </div>
                 </div>
                 
-                <h1 className="text-3xl md:text-4xl font-bold mb-4">{content.title}</h1>
+                <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">{content.title}</h1>
                 <p className="text-xl text-blue-100 mb-6">{content.description}</p>
                 
                 <div className="flex items-center space-x-6 text-blue-100">
@@ -235,11 +235,11 @@ function MarketplaceDetail() {
               
               {/* Price and Action */}
               <div className="text-center ml-8">
-                <div className="bg-white bg-opacity-20 rounded-2xl p-6 backdrop-blur-sm">
-                  <div className="text-3xl font-bold mb-2">
+                <div className="bg-white dark:bg-[#171717] bg-opacity-20 dark:bg-opacity-40 rounded-2xl p-6 backdrop-blur-sm">
+                  <div className="text-3xl font-bold mb-2 text-[#171717cc] dark:text-[#fafafacc]">
                     {formatPrice(content.price, content.currency)}
                   </div>
-                  <div className="text-blue-100 text-sm mb-4">
+                  <div className="text-[#171717cc] dark:text-[#fafafacc] text-sm mb-4">
                     {content.price === 0 ? 'Free for everyone' : 'One-time purchase'}
                   </div>
                   
@@ -287,8 +287,8 @@ function MarketplaceDetail() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Content */}
               <div className="lg:col-span-2">
-                <div className="bg-gray-50 rounded-xl p-6 mb-8">
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6 mb-8">
+                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                     <span className="mr-2">📄</span>
                     Content Preview
                   </h3>
@@ -300,7 +300,7 @@ function MarketplaceDetail() {
                           <div className="flex items-center space-x-3 mb-3">
                             <span className="text-2xl">📎</span>
                             <div>
-                              <div className="font-medium">{content.contentData?.originalName || 'Document'}</div>
+                              <div className="font-medium text-[#171717cc] dark:text-[#171717cc]">{content.contentData?.originalName || 'Document'}</div>
                               <div className="text-sm text-gray-500">
                                 {content.contentData?.size ? `${(content.contentData.size / 1024 / 1024).toFixed(2)} MB` : ''}
                               </div>
@@ -344,12 +344,12 @@ function MarketplaceDetail() {
                 {/* Tags */}
                 {content.tags && content.tags.length > 0 && (
                   <div className="mb-8">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4">Tags</h3>
+                    <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">Tags</h3>
                     <div className="flex flex-wrap gap-2">
                       {content.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                          className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm"
                         >
                           #{tag}
                         </span>
@@ -360,19 +360,19 @@ function MarketplaceDetail() {
 
                 {/* Reviews Section */}
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 mb-4 flex items-center">
+                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                     <span className="mr-2">⭐</span>
                     Reviews ({reviews.length})
                   </h3>
                   
                   {reviews.length === 0 ? (
-                    <div className="bg-gray-50 rounded-lg p-6 text-center">
-                      <p className="text-gray-600">No reviews yet. Be the first to review this content!</p>
+                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-6 text-center">
+                      <p className="text-[#171717cc] dark:text-[#fafafacc]">No reviews yet. Be the first to review this content!</p>
                     </div>
                   ) : (
                     <div className="space-y-4">
                       {reviews.map((review) => (
-                        <div key={review._id} className="bg-gray-50 rounded-lg p-4">
+                        <div key={review._id} className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4">
                           <div className="flex items-center justify-between mb-2">
                             <div className="flex items-center space-x-2">
                               <div className="flex text-yellow-400">
@@ -382,16 +382,16 @@ function MarketplaceDetail() {
                                   </span>
                                 ))}
                               </div>
-                              <span className="text-sm text-gray-600">
+                              <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                                 by {review.reviewerName || 'Anonymous'}
                               </span>
                             </div>
-                            <span className="text-sm text-gray-500">
+                            <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                               {new Date(review.createdAt).toLocaleDateString()}
                             </span>
                           </div>
                           {review.review && (
-                            <p className="text-gray-700">{review.review}</p>
+                            <p className="text-[#171717cc] dark:text-[#fafafacc]">{review.review}</p>
                           )}
                         </div>
                       ))}
@@ -404,8 +404,8 @@ function MarketplaceDetail() {
               <div className="space-y-6">
                 {/* Creator Info */}
                 {creator && (
-                  <div className="bg-gray-50 rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                  <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6">
+                    <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                       <span className="mr-2">👤</span>
                       Creator
                     </h3>
@@ -413,22 +413,22 @@ function MarketplaceDetail() {
                       <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-2xl">👤</span>
                       </div>
-                      <div className="font-medium text-gray-900">{creator.name || 'Anonymous'}</div>
-                      <div className="text-sm text-gray-600">{creator.email}</div>
+                      <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creator.name || 'Anonymous'}</div>
+                      <div className="text-sm text-[#171717cc] dark:text-[#fafafacc]">{creator.email}</div>
                       
                       {creatorStats && (
                         <div className="mt-4 space-y-2 text-sm">
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Reputation:</span>
-                            <span className="font-medium">{creatorStats.reputationLevel || 'New'}</span>
+                            <span className="text-[#171717cc] dark:text-[#fafafacc]">Reputation:</span>
+                            <span className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creatorStats.reputationLevel || 'New'}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Uploads:</span>
-                            <span className="font-medium">{creatorStats.totalUploads || 0}</span>
+                            <span className="text-[#171717cc] dark:text-[#fafafacc]">Uploads:</span>
+                            <span className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creatorStats.totalUploads || 0}</span>
                           </div>
                           <div className="flex justify-between">
-                            <span className="text-gray-600">Views:</span>
-                            <span className="font-medium">{creatorStats.totalViews || 0}</span>
+                            <span className="text-[#171717cc] dark:text-[#fafafacc]">Views:</span>
+                            <span className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creatorStats.totalViews || 0}</span>
                           </div>
                         </div>
                       )}
@@ -437,37 +437,37 @@ function MarketplaceDetail() {
                 )}
 
                 {/* Content Stats */}
-                <div className="bg-gray-50 rounded-xl p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center">
+                <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                     <span className="mr-2">📊</span>
                     Content Stats
                   </h3>
                   <div className="space-y-3 text-sm">
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Type:</span>
-                      <span className="font-medium capitalize">{content.contentType}</span>
+                      <span className="text-[#171717cc] dark:text-[#fafafacc]">Type:</span>
+                      <span className="font-medium capitalize text-[#171717cc] dark:text-[#fafafacc]">{content.contentType}</span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Created:</span>
-                      <span className="font-medium">
+                      <span className="text-[#171717cc] dark:text-[#fafafacc]">Created:</span>
+                      <span className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
                         {new Date(content.createdAt).toLocaleDateString()}
                       </span>
                     </div>
                     <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
+                      <span className="text-[#171717cc] dark:text-[#fafafacc]">Status:</span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        content.status === 'approved' ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'
+                        content.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200'
                       }`}>
                         {content.status}
                       </span>
                     </div>
                     {content.plagiarismScore !== undefined && (
                       <div className="flex justify-between">
-                        <span className="text-gray-600">Originality:</span>
+                        <span className="text-[#171717cc] dark:text-[#fafafacc]">Originality:</span>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          content.plagiarismScore < 30 ? 'bg-green-100 text-green-800' :
-                          content.plagiarismScore < 70 ? 'bg-yellow-100 text-yellow-800' :
-                          'bg-red-100 text-red-800'
+                          content.plagiarismScore < 30 ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
+                          content.plagiarismScore < 70 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
+                          'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
                         }`}>
                           {100 - content.plagiarismScore}% Original
                         </span>

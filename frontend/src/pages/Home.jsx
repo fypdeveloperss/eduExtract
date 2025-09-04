@@ -315,6 +315,66 @@ export default function Home() {
           </div>
         </main>
 
+        {/* Marketplace Preview Section */}
+        <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-indigo-100">
+          <div className="max-w-7xl mx-auto text-center">
+            <h2 className="text-3xl font-bold text-gray-900 mb-4">
+              Educational Marketplace
+            </h2>
+            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
+              Discover and share educational content with our community. Access high-quality learning materials 
+              created by educators worldwide.
+            </p>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+              <div className="bg-white rounded-lg p-6 shadow-lg">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">🔍</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Browse Content</h3>
+                <p className="text-gray-600 text-sm">
+                  Explore thousands of educational resources including documents, presentations, and more.
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-6 shadow-lg">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">📤</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Share Knowledge</h3>
+                <p className="text-gray-600 text-sm">
+                  Upload your educational content and help others learn while earning from your expertise.
+                </p>
+              </div>
+              
+              <div className="bg-white rounded-lg p-6 shadow-lg">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl">⭐</span>
+                </div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-2">Quality Content</h3>
+                <p className="text-gray-600 text-sm">
+                  All content is reviewed and approved to ensure high quality and educational value.
+                </p>
+              </div>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
+              >
+                Access Marketplace
+              </button>
+              <button
+                onClick={() => navigate("/dashboard")}
+                className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-medium transition-colors"
+              >
+                Get Started
+              </button>
+            </div>
+          </div>
+        </section>
+
         {/* Footer */}
         <footer className="p-4 border-t border-[#EEEEEE]">
           <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-[#171717cc]">

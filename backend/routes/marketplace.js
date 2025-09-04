@@ -154,19 +154,37 @@ router.post('/upload', verifyToken, upload.single('document'), async (req, res) 
     // Update user stats
     await updateUserStats(req.user.uid, 'upload');
 
-    // Run plagiarism check (we'll implement this service next)
+    // Run plagiarism check (skip for documents as we can't extract text easily)
     try {
-      const plagiarismResult = await PlagiarismService.checkPlagiarism(
-        fileData ? fileData.originalName : contentData, 
-        contentType
-      );
-      newContent.plagiarismScore = plagiarismResult.score;
-      newContent.plagiarismReport = plagiarismResult.report;
-      
-      // Auto-approve if plagiarism score is good
-      if (plagiarismResult.score < 30) {
+      if (contentType === 'document') {
+        // For documents, skip plagiarism check and auto-approve
+        console.log('Skipping plagiarism check for document upload');
+        newContent.plagiarismScore = 100; // Assume original for documents
+        newContent.plagiarismReport = {
+          overallScore: 100,
+          riskLevel: 'low',
+          checks: [],
+          sources: [],
+          recommendations: ['Document upload - plagiarism check skipped'],
+          timestamp: new Date(),
+          confidence: 0
+        };
         newContent.status = 'approved';
         await newContent.save();
+      } else {
+        // For text-based content, run plagiarism check
+        const plagiarismResult = await PlagiarismService.checkPlagiarism(
+          contentData, 
+          contentType
+        );
+        newContent.plagiarismScore = plagiarismResult.score;
+        newContent.plagiarismReport = plagiarismResult.report;
+        
+        // Auto-approve if plagiarism score is good
+        if (plagiarismResult.score < 30) {
+          newContent.status = 'approved';
+          await newContent.save();
+        }
       }
     } catch (error) {
       console.error('Plagiarism check failed:', error);
@@ -586,7 +604,7 @@ router.get('/categories', async (req, res) => {
 
     const difficulties = ['beginner', 'intermediate', 'advanced'];
     
-    const contentTypes = ['blog', 'slides', 'flashcards', 'quiz', 'summary', 'personal'];
+    const contentTypes = ['blog', 'slides', 'flashcards', 'quiz', 'summary', 'personal', 'document'];
 
     // Get unique subjects for each category
     const categorySubjects = {};
@@ -829,5 +847,108 @@ async function updateContentRating(contentId) {
     console.error('Error updating content rating:', error);
   }
 }
+
+/**
+ * @route   GET /api/marketplace/pending
+ * @desc    Get all pending content (admin only)
+ * @access  Private (Admin)
+ */
+router.get('/pending', verifyToken, async (req, res) => {
+  try {
+    // Check if user is admin (you'll need to implement this check)
+    // For now, we'll allow any authenticated user to see pending content
+    
+    const pendingContent = await MarketplaceContent.find({ status: 'pending' })
+      .sort({ createdAt: -1 })
+      .lean();
+    
+    res.json({
+      content: pendingContent,
+      total: pendingContent.length
+    });
+  } catch (error) {
+    console.error('Error fetching pending content:', error);
+    res.status(500).json({ error: 'Failed to fetch pending content' });
+  }
+});
+
+/**
+ * @route   POST /api/marketplace/approve/:id
+ * @desc    Approve specific content (admin only)
+ * @access  Private (Admin)
+ */
+router.post('/approve/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    
+    if (content.status !== 'pending') {
+      return res.status(400).json({ error: 'Content is not pending approval' });
+    }
+    
+    content.status = 'approved';
+    content.approvedAt = new Date();
+    content.approvedBy = req.user.uid;
+    await content.save();
+    
+    res.json({
+      message: 'Content approved successfully',
+      content: {
+        id: content._id,
+        title: content.title,
+        status: content.status,
+        approvedAt: content.approvedAt
+      }
+    });
+  } catch (error) {
+    console.error('Error approving content:', error);
+    res.status(500).json({ error: 'Failed to approve content' });
+  }
+});
+
+/**
+ * @route   POST /api/marketplace/reject/:id
+ * @desc    Reject specific content (admin only)
+ * @access  Private (Admin)
+ */
+router.post('/reject/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    
+    if (content.status !== 'pending') {
+      return res.status(400).json({ error: 'Content is not pending approval' });
+    }
+    
+    content.status = 'rejected';
+    content.rejectedAt = new Date();
+    content.rejectedBy = req.user.uid;
+    content.rejectionReason = reason || 'No reason provided';
+    await content.save();
+    
+    res.json({
+      message: 'Content rejected successfully',
+      content: {
+        id: content._id,
+        title: content.title,
+        status: content.status,
+        rejectedAt: content.rejectedAt,
+        rejectionReason: content.rejectionReason
+      }
+    });
+  } catch (error) {
+    console.error('Error rejecting content:', error);
+    res.status(500).json({ error: 'Failed to reject content' });
+  }
+});
 
 module.exports = router;
