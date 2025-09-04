@@ -46,6 +46,14 @@ const Layout = () => {
                 Marketplace
               </Link>
             </li>
+            <li className="mb-2">
+              <Link
+                to="/forum"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa]"
+              >
+                Forum
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>

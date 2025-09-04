@@ -119,6 +119,27 @@ const Admin = () => {
             </button>
           </div>
 
+          {/* Forum Management Card */}
+          <div className="bg-purple-50 dark:bg-purple-900/20 rounded-lg p-6 border border-purple-200 dark:border-purple-800">
+            <div className="flex items-center mb-4">
+              <div className="p-2 bg-purple-100 dark:bg-purple-800 rounded-lg">
+                <svg className="w-6 h-6 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+                </svg>
+              </div>
+              <h3 className="ml-3 text-lg font-semibold text-gray-900 dark:text-white">Forum Management</h3>
+            </div>
+            <p className="text-gray-600 dark:text-gray-400 mb-4">
+              Create and manage forum categories. Organize discussions and control forum structure.
+            </p>
+            <button
+              onClick={() => navigate('/admin/forum')}
+              className="w-full bg-purple-600 hover:bg-purple-700 text-white font-medium py-2 px-4 rounded-lg transition duration-200"
+            >
+              Manage Categories
+            </button>
+          </div>
+
           {/* Analytics Card */}
           <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-6 border border-green-200 dark:border-green-800">
             <div className="flex items-center mb-4">

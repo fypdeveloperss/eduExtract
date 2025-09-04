@@ -15,6 +15,11 @@ import AdminMarketplace from "./pages/AdminMarketplace";
 import Marketplace from "./pages/Marketplace";
 import MarketplaceDetail from "./pages/MarketplaceDetail";
 import MarketplaceUpload from "./pages/MarketplaceUpload";
+import Forum from "./pages/Forum";
+import ForumCategory from "./pages/ForumCategory";
+import ForumTopic from "./pages/ForumTopic";
+import ForumCreate from "./pages/ForumCreate";
+import AdminForum from "./pages/AdminForum";
 
 function App() {
   return (
@@ -31,12 +36,17 @@ function App() {
             <Route path="marketplace" element={<Marketplace />} />
             <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
             <Route path="marketplace/upload" element={<MarketplaceUpload />} />
+            <Route path="forum" element={<Forum />} />
+            <Route path="forum/category/:id" element={<ForumCategory />} />
+            <Route path="forum/topic/:id" element={<ForumTopic />} />
+            <Route path="forum/create" element={<ForumCreate />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Admin />} />
             <Route path="users" element={<Users />} />
             <Route path="admins" element={<AdminManagement />} />
             <Route path="marketplace" element={<AdminMarketplace />} />
+            <Route path="forum" element={<AdminForum />} />
           </Route>
         </Routes>
       </Router>
