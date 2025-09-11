@@ -1,0 +1,138 @@
+.collaboration-space {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+/* Loading and Error States */
+.loading-container,
+.error-container,
+.not-found,
+.auth-required {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 400px;
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.loading-container p {
+  margin-top: 20px;
+  color: #666;
+  font-size: 1.1rem;
+}
+
+.error-container h2,
+.not-found h2,
+.auth-required h2 {
+  color: #f44336;
+  margin-bottom: 16px;
+  font-size: 1.8rem;
+}
+
+.error-container p,
+.not-found p,
+.auth-required p {
+  color: #666;
+  margin-bottom: 24px;
+  font-size: 1.1rem;
+  line-height: 1.5;
+}
+
+.error-actions {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.back-btn,
+.retry-btn {
+  padding: 12px 24px;
+  border: 2px solid #1976d2;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.back-btn {
+  background: white;
+  color: #1976d2;
+}
+
+.back-btn:hover {
+  background: #1976d2;
+  color: white;
+}
+
+.retry-btn {
+  background: #1976d2;
+  color: white;
+}
+
+.retry-btn:hover {
+  background: #1565c0;
+  transform: translateY(-1px);
+}
+
+/* Tab Content */
+.tab-content {
+  margin-top: 30px;
+  min-height: 400px;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .collaboration-space {
+    padding: 15px;
+  }
+
+  .loading-container,
+  .error-container,
+  .not-found,
+  .auth-required {
+    min-height: 300px;
+    padding: 30px 15px;
+  }
+
+  .error-actions {
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .back-btn,
+  .retry-btn {
+    width: 200px;
+    text-align: center;
+  }
+
+  .tab-content {
+    margin-top: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .error-container h2,
+  .not-found h2,
+  .auth-required h2 {
+    font-size: 1.5rem;
+  }
+
+  .error-container p,
+  .not-found p,
+  .auth-required p {
+    font-size: 1rem;
+  }
+
+  .back-btn,
+  .retry-btn {
+    width: 100%;
+    padding: 14px 20px;
+  }
+}

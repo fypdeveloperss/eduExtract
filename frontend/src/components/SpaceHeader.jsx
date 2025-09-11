@@ -1,0 +1,146 @@
+import React from 'react';
+import './SpaceHeader.css';
+
+const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction, onSpaceUpdate }) => {
+  const formatDate = (date) => {
+    return new Date(date).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric'
+    });
+  };
+
+  const getPrivacyIcon = (privacy) => {
+    switch (privacy) {
+      case 'public': return '🌐';
+      case 'private': return '🔒';
+      case 'restricted': return '👥';
+      default: return '🔒';
+    }
+  };
+
+  const getCategoryColor = (category) => {
+    const colors = {
+      'academic': '#3f51b5',
+      'research': '#9c27b0',
+      'project': '#ff5722',
+      'study-group': '#4caf50',
+      'other': '#607d8b'
+    };
+    return colors[category] || colors.other;
+  };
+
+  const getRoleColor = (role) => {
+    switch (role) {
+      case 'admin': return '#4caf50';
+      case 'edit': return '#2196f3';
+      case 'view': return '#9e9e9e';
+      default: return '#9e9e9e';
+    }
+  };
+
+  return (
+    <div className="space-header">
+      <div className="header-main">
+        <div className="space-info">
+          <div className="title-section">
+            <h1 className="space-title">{space.title}</h1>
+            <div className="space-badges">
+              <span 
+                className="category-badge"
+                style={{ backgroundColor: getCategoryColor(space.category) }}
+              >
+                {space.category}
+              </span>
+              <span className="privacy-badge">
+                {getPrivacyIcon(space.privacy)} {space.privacy}
+              </span>
+              <span 
+                className="role-badge"
+                style={{ backgroundColor: getRoleColor(userPermission) }}
+              >
+                {userPermission}
+              </span>
+            </div>
+          </div>
+          
+          <p className="space-description">{space.description}</p>
+          
+          {space.tags && space.tags.length > 0 && (
+            <div className="tags-section">
+              {space.tags.map((tag, index) => (
+                <span key={index} className="tag">
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="header-actions">
+          {canUserPerformAction('invite_users') && (
+            <button className="action-btn primary">
+              Invite Members
+            </button>
+          )}
+          {canUserPerformAction('create_content') && (
+            <button className="action-btn secondary">
+              Add Content
+            </button>
+          )}
+        </div>
+      </div>
+
+      <div className="header-stats">
+        <div className="stats-grid">
+          <div className="stat">
+            <span className="stat-icon">👥</span>
+            <div className="stat-content">
+              <span className="stat-value">{space.stats?.totalCollaborators || 0}</span>
+              <span className="stat-label">Members</span>
+            </div>
+          </div>
+          
+          <div className="stat">
+            <span className="stat-icon">📄</span>
+            <div className="stat-content">
+              <span className="stat-value">{space.stats?.totalContent || 0}</span>
+              <span className="stat-label">Content Items</span>
+            </div>
+          </div>
+          
+          <div className="stat">
+            <span className="stat-icon">👀</span>
+            <div className="stat-content">
+              <span className="stat-value">{space.stats?.totalViews || 0}</span>
+              <span className="stat-label">Total Views</span>
+            </div>
+          </div>
+          
+          <div className="stat">
+            <span className="stat-icon">🕒</span>
+            <div className="stat-content">
+              <span className="stat-value">
+                {space.stats?.lastActivity 
+                  ? formatDate(space.stats.lastActivity)
+                  : formatDate(space.createdAt)
+                }
+              </span>
+              <span className="stat-label">Last Activity</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="header-meta">
+        <div className="owner-info">
+          <span className="owner-label">Created by</span>
+          <span className="owner-name">{space.ownerName}</span>
+          <span className="creation-date">on {formatDate(space.createdAt)}</span>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default SpaceHeader;

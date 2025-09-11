@@ -54,6 +54,14 @@ const Layout = () => {
                 Forum
               </Link>
             </li>
+            <li className="mb-2">
+              <Link
+                to="/collaborate"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa]"
+              >
+                CollaborateHub
+              </Link>
+            </li>
           </ul>
         </nav>
       </aside>

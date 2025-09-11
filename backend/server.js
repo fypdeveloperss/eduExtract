@@ -55,6 +55,7 @@ const userRoutes = require('./routes/users');
 const adminRoutes = require('./routes/admin');
 const contentRoutes = require('./routes/content');
 const marketplaceRoutes = require('./routes/marketplace');
+const collaborationRoutes = require('./routes/collaboration');
 
 // Import generation routes
 const generationRoutes = require('./routes/generation');
@@ -67,6 +68,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/forum', forumRoutes);
+app.use('/api/collaborate', collaborationRoutes);
 
 // Content generation routes (includes both root-level and /api routes)
 app.use('/', generationRoutes);

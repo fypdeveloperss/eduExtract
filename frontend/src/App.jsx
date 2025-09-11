@@ -20,6 +20,8 @@ import ForumCategory from "./pages/ForumCategory";
 import ForumTopic from "./pages/ForumTopic";
 import ForumCreate from "./pages/ForumCreate";
 import AdminForum from "./pages/AdminForum";
+import CollaborateHub from "./pages/CollaborateHub";
+import CollaborationSpace from "./pages/CollaborationSpace";
 
 function App() {
   return (
@@ -40,6 +42,8 @@ function App() {
             <Route path="forum/category/:id" element={<ForumCategory />} />
             <Route path="forum/topic/:id" element={<ForumTopic />} />
             <Route path="forum/create" element={<ForumCreate />} />
+            <Route path="collaborate" element={<CollaborateHub />} />
+            <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
           </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Admin />} />
