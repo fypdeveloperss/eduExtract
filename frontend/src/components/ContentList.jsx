@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useCollaboration } from '../context/CollaborationContext';
 import api from '../utils/axios';
 import './ContentList.css';
 
@@ -11,9 +12,53 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
     search: ''
   });
 
+  const { 
+    contentLocks,
+    typingUsers,
+    cursorPositions,
+    lockContent,
+    unlockContent,
+    addNotification 
+  } = useCollaboration();
+
   useEffect(() => {
     fetchContent();
   }, [spaceId, filters]);
+
+  // Listen for real-time content updates
+  useEffect(() => {
+    const handleContentUpdate = (updatedContent) => {
+      setContent(prevContent => 
+        prevContent.map(item => 
+          item._id === updatedContent._id ? updatedContent : item
+        )
+      );
+      
+      addNotification({
+        type: 'info',
+        message: `Content "${updatedContent.title}" was updated by ${updatedContent.lastModifiedBy?.name || 'someone'}`,
+      });
+    };
+
+    const handleContentCreated = (newContent) => {
+      setContent(prevContent => [newContent, ...prevContent]);
+      
+      addNotification({
+        type: 'success',
+        message: `New content "${newContent.title}" was created by ${newContent.createdBy?.name || 'someone'}`,
+      });
+    };
+
+    // TODO: Add event listeners when Socket.IO events are implemented
+    // socket.on('contentUpdated', handleContentUpdate);
+    // socket.on('contentCreated', handleContentCreated);
+
+    return () => {
+      // TODO: Remove event listeners
+      // socket.off('contentUpdated', handleContentUpdate);
+      // socket.off('contentCreated', handleContentCreated);
+    };
+  }, [addNotification]);
 
   const fetchContent = async () => {
     try {
@@ -48,6 +93,66 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
       'published': '#2196f3'
     };
     return colors[status] || colors.draft;
+  };
+
+  const handleEditContent = async (contentId) => {
+    try {
+      // Check if content is already locked
+      const isLocked = contentLocks[contentId];
+      if (isLocked && isLocked.userId !== currentUser.uid) {
+        addNotification({
+          type: 'warning',
+          message: `Content is being edited by ${isLocked.userName}`,
+        });
+        return;
+      }
+
+      // Lock the content for editing
+      await lockContent(contentId, {
+        userId: currentUser.uid,
+        userName: currentUser.displayName || currentUser.email
+      });
+
+      // Navigate to edit view or open edit modal
+      // This would typically open an editing interface
+      console.log(`Editing content ${contentId}`);
+      
+    } catch (error) {
+      console.error('Error starting edit:', error);
+      addNotification({
+        type: 'error',
+        message: 'Failed to start editing content',
+      });
+    }
+  };
+
+  const getContentLockStatus = (contentId) => {
+    const lock = contentLocks[contentId];
+    if (!lock) return null;
+    
+    const isOwnLock = lock.userId === currentUser.uid;
+    return {
+      isLocked: true,
+      isOwn: isOwnLock,
+      userName: lock.userName,
+      lockedAt: lock.lockedAt
+    };
+  };
+
+  const getTypingIndicator = (contentId) => {
+    const typingInContent = typingUsers[contentId];
+    if (!typingInContent || typingInContent.length === 0) return null;
+    
+    const otherTypers = typingInContent.filter(user => user.userId !== currentUser.uid);
+    if (otherTypers.length === 0) return null;
+    
+    if (otherTypers.length === 1) {
+      return `${otherTypers[0].userName} is typing...`;
+    } else if (otherTypers.length === 2) {
+      return `${otherTypers[0].userName} and ${otherTypers[1].userName} are typing...`;
+    } else {
+      return `${otherTypers[0].userName} and ${otherTypers.length - 1} others are typing...`;
+    }
   };
 
   if (loading) {
@@ -103,52 +208,79 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
 
       {content.length > 0 ? (
         <div className="content-grid">
-          {content.map(item => (
-            <div key={item._id} className="content-card">
-              <div className="content-header">
-                <h3 className="content-title">{item.title}</h3>
-                <div className="content-badges">
-                  <span className="type-badge">{item.contentType}</span>
-                  <span 
-                    className="status-badge"
-                    style={{ backgroundColor: getStatusColor(item.status) }}
-                  >
-                    {item.status}
-                  </span>
+          {content.map(item => {
+            const lockStatus = getContentLockStatus(item._id);
+            const typingIndicator = getTypingIndicator(item._id);
+            
+            return (
+              <div key={item._id} className={`content-card ${lockStatus?.isLocked ? 'locked' : ''}`}>
+                <div className="content-header">
+                  <h3 className="content-title">{item.title}</h3>
+                  <div className="content-badges">
+                    <span className="type-badge">{item.contentType}</span>
+                    <span 
+                      className="status-badge"
+                      style={{ backgroundColor: getStatusColor(item.status) }}
+                    >
+                      {item.status}
+                    </span>
+                    {lockStatus?.isLocked && (
+                      <span className={`lock-badge ${lockStatus.isOwn ? 'own-lock' : 'other-lock'}`}>
+                        🔒 {lockStatus.isOwn ? 'Editing' : `Locked by ${lockStatus.userName}`}
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
 
-              <div className="content-meta">
-                <div className="meta-item">
-                  <span className="meta-label">Created by:</span>
-                  <span className="meta-value">{item.createdByName}</span>
+                <div className="content-meta">
+                  <div className="meta-item">
+                    <span className="meta-label">Created by:</span>
+                    <span className="meta-value">{item.createdByName}</span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-label">Last modified:</span>
+                    <span className="meta-value">
+                      {formatDate(item.updatedAt)} by {item.lastModifiedByName}
+                    </span>
+                  </div>
+                  <div className="meta-item">
+                    <span className="meta-label">Version:</span>
+                    <span className="meta-value">v{item.version}</span>
+                  </div>
                 </div>
-                <div className="meta-item">
-                  <span className="meta-label">Last modified:</span>
-                  <span className="meta-value">
-                    {formatDate(item.updatedAt)} by {item.lastModifiedByName}
-                  </span>
-                </div>
-                <div className="meta-item">
-                  <span className="meta-label">Version:</span>
-                  <span className="meta-value">v{item.version}</span>
-                </div>
-              </div>
 
-              <div className="content-stats">
-                <span className="stat">👀 {item.stats?.views || 0}</span>
-                <span className="stat">💬 {item.stats?.comments || 0}</span>
-                <span className="stat">❤️ {item.stats?.likes || 0}</span>
-              </div>
-
-              <div className="content-actions">
-                <button className="action-btn view">View</button>
-                {canUserPerformAction('edit_content') && (
-                  <button className="action-btn edit">Edit</button>
+                {typingIndicator && (
+                  <div className="typing-indicator">
+                    <span className="typing-dots">●●●</span>
+                    <span className="typing-text">{typingIndicator}</span>
+                  </div>
                 )}
+
+                <div className="content-stats">
+                  <span className="stat">👀 {item.stats?.views || 0}</span>
+                  <span className="stat">💬 {item.stats?.comments || 0}</span>
+                  <span className="stat">❤️ {item.stats?.likes || 0}</span>
+                </div>
+
+                <div className="content-actions">
+                  <button className="action-btn view">View</button>
+                  {canUserPerformAction('edit_content') && (
+                    <button 
+                      className={`action-btn edit ${lockStatus?.isLocked && !lockStatus?.isOwn ? 'disabled' : ''}`}
+                      onClick={() => handleEditContent(item._id)}
+                      disabled={lockStatus?.isLocked && !lockStatus?.isOwn}
+                      title={lockStatus?.isLocked && !lockStatus?.isOwn ? 
+                        `Currently being edited by ${lockStatus.userName}` : 
+                        'Edit this content'
+                      }
+                    >
+                      {lockStatus?.isOwn ? 'Continue Editing' : 'Edit'}
+                    </button>
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       ) : (
         <div className="empty-state">

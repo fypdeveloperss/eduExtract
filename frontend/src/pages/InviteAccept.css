@@ -1,0 +1,263 @@
+.invite-accept {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.invite-container {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  overflow: hidden;
+}
+
+.invite-container.error {
+  text-align: center;
+  padding: 40px;
+}
+
+.error-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.invite-header {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  padding: 30px;
+  text-align: center;
+}
+
+.invite-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+}
+
+.invite-header h1 {
+  margin: 0;
+  font-size: 2rem;
+  font-weight: 600;
+}
+
+.invite-details {
+  padding: 30px;
+}
+
+.invite-details h2 {
+  color: #333;
+  margin: 0 0 16px 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.invite-message {
+  color: #666;
+  font-size: 1.1rem;
+  line-height: 1.6;
+  margin-bottom: 24px;
+}
+
+.personal-message {
+  background: #f8f9fa;
+  border-left: 4px solid #007bff;
+  padding: 16px;
+  margin: 20px 0;
+  border-radius: 4px;
+}
+
+.personal-message h3 {
+  margin: 0 0 8px 0;
+  color: #333;
+  font-size: 1rem;
+}
+
+.personal-message p {
+  margin: 0;
+  color: #555;
+  font-style: italic;
+}
+
+.permission-info {
+  margin: 24px 0;
+}
+
+.permission-info h3 {
+  margin: 0 0 12px 0;
+  color: #333;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.permission-badge {
+  display: inline-block;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: white;
+}
+
+.permission-badge.view {
+  background: #6c757d;
+}
+
+.permission-badge.edit {
+  background: #007bff;
+}
+
+.permission-badge.admin {
+  background: #28a745;
+}
+
+.invite-meta {
+  color: #999;
+  font-size: 14px;
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #eee;
+}
+
+.invite-meta p {
+  margin: 4px 0;
+}
+
+.invite-actions {
+  padding: 20px 30px 30px;
+  display: flex;
+  gap: 12px;
+  justify-content: center;
+}
+
+.auth-required {
+  text-align: center;
+  color: #666;
+  margin-bottom: 16px;
+  font-size: 14px;
+}
+
+.btn {
+  padding: 12px 24px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: none;
+  font-size: 16px;
+  min-width: 120px;
+}
+
+.btn.primary {
+  background: #007bff;
+  color: white;
+}
+
+.btn.primary:hover:not(:disabled) {
+  background: #0056b3;
+  transform: translateY(-1px);
+}
+
+.btn.primary:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.btn.secondary {
+  background: none;
+  border: 2px solid #ddd;
+  color: #666;
+}
+
+.btn.secondary:hover {
+  border-color: #ccc;
+  background: #f8f9fa;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .invite-accept {
+    padding: 16px;
+  }
+  
+  .invite-header {
+    padding: 24px 20px;
+  }
+  
+  .invite-header h1 {
+    font-size: 1.5rem;
+  }
+  
+  .invite-icon {
+    font-size: 36px;
+  }
+  
+  .invite-details {
+    padding: 24px 20px;
+  }
+  
+  .invite-actions {
+    flex-direction: column;
+    padding: 16px 20px 24px;
+  }
+  
+  .btn {
+    width: 100%;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .invite-container {
+    background: #2d2d2d;
+    color: #fff;
+  }
+  
+  .invite-details h2 {
+    color: #fff;
+  }
+  
+  .invite-message {
+    color: #ccc;
+  }
+  
+  .personal-message {
+    background: #404040;
+    border-left-color: #007bff;
+  }
+  
+  .personal-message h3 {
+    color: #fff;
+  }
+  
+  .personal-message p {
+    color: #ccc;
+  }
+  
+  .permission-info h3 {
+    color: #fff;
+  }
+  
+  .invite-meta {
+    color: #999;
+    border-top-color: #404040;
+  }
+  
+  .auth-required {
+    color: #ccc;
+  }
+  
+  .btn.secondary {
+    border-color: #555;
+    color: #ccc;
+  }
+  
+  .btn.secondary:hover {
+    border-color: #666;
+    background: #404040;
+  }
+}

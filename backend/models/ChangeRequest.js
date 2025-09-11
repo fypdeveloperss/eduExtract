@@ -108,6 +108,40 @@ const changeRequestSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  notifications: {
+    requestCreated: {
+      type: Boolean,
+      default: false
+    },
+    reviewStarted: {
+      type: Boolean,
+      default: false
+    },
+    reviewCompleted: {
+      type: Boolean,
+      default: false
+    },
+    changesApplied: {
+      type: Boolean,
+      default: false
+    }
+  },
+  urgency: {
+    type: String,
+    enum: ['low', 'medium', 'high', 'critical'],
+    default: 'medium'
+  },
+  watchers: [{
+    userId: {
+      type: String,
+      ref: 'User'
+    },
+    userName: String,
+    watchingSince: {
+      type: Date,
+      default: Date.now
+    }
+  }],
   metadata: {
     ipAddress: String,
     userAgent: String,

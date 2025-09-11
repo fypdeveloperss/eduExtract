@@ -260,3 +260,35 @@
     margin-bottom: 8px;
   }
 }
+
+/* Join Button Styles */
+.join-btn {
+  background: linear-gradient(135deg, #4CAF50, #45a049);
+  color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: none;
+  box-shadow: 0 2px 8px rgba(76, 175, 80, 0.3);
+}
+
+.join-btn:hover:not(:disabled) {
+  background: linear-gradient(135deg, #45a049, #4CAF50);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+}
+
+.join-btn:disabled {
+  background: #ccc;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.join-btn:active {
+  transform: translateY(0);
+}

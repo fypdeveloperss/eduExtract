@@ -107,6 +107,12 @@ const Header = () => {
                     </Link>
                   )}
                   <Link
+                    to="/collaborate"
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium"
+                  >
+                    Collaborate
+                  </Link>
+                  <Link
                     to="/dashboard"
                     className="bg-[#171717] dark:bg-[#171717] text-white px-4 py-2 rounded-md font-medium"
                   >

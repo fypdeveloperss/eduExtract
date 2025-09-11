@@ -5,6 +5,7 @@ import About from "./pages/About";
 import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/FirebaseAuthContext";
+import { CollaborationProvider } from "./context/CollaborationContext";
 import Content from "./components/Content";
 import MyContent from "./components/MyContent";
 import Admin from "./pages/Admin";
@@ -22,29 +23,34 @@ import ForumCreate from "./pages/ForumCreate";
 import AdminForum from "./pages/AdminForum";
 import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
+import CollaborationInvites from "./pages/CollaborationInvites";
+import InviteAccept from "./pages/InviteAccept";
 
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Routes>
-          <Route index element={<Home />} />
-          <Route path="/about" element={<About />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/" element={<Layout />}>
-            <Route path="dashboard" element={<Dashboard />} />
-            <Route path="content" element={<MyContent/>}/>
-            <Route path="content/:contentId" element={<Content/>}/>
-            <Route path="marketplace" element={<Marketplace />} />
-            <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
-            <Route path="marketplace/upload" element={<MarketplaceUpload />} />
-            <Route path="forum" element={<Forum />} />
-            <Route path="forum/category/:id" element={<ForumCategory />} />
-            <Route path="forum/topic/:id" element={<ForumTopic />} />
-            <Route path="forum/create" element={<ForumCreate />} />
-            <Route path="collaborate" element={<CollaborateHub />} />
-            <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
-          </Route>
+      <CollaborationProvider>
+        <Router>
+          <Routes>
+            <Route index element={<Home />} />
+            <Route path="/about" element={<About />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/" element={<Layout />}>
+              <Route path="dashboard" element={<Dashboard />} />
+              <Route path="content" element={<MyContent/>}/>
+              <Route path="content/:contentId" element={<Content/>}/>
+              <Route path="marketplace" element={<Marketplace />} />
+              <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
+              <Route path="marketplace/upload" element={<MarketplaceUpload />} />
+              <Route path="forum" element={<Forum />} />
+              <Route path="forum/category/:id" element={<ForumCategory />} />
+              <Route path="forum/topic/:id" element={<ForumTopic />} />
+              <Route path="forum/create" element={<ForumCreate />} />
+              <Route path="collaborate" element={<CollaborateHub />} />
+              <Route path="collaborate/invitations" element={<CollaborationInvites />} />
+              <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
+              <Route path="collaborate/invite/:token" element={<InviteAccept />} />
+            </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Admin />} />
             <Route path="users" element={<Users />} />
@@ -54,6 +60,7 @@ function App() {
           </Route>
         </Routes>
       </Router>
+      </CollaborationProvider>
     </AuthProvider>
   );
 }

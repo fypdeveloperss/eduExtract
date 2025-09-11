@@ -1,18 +1,30 @@
 const SharedContent = require('../models/SharedContent');
 const ChangeRequest = require('../models/ChangeRequest');
 const CollaborationSpace = require('../models/CollaborationSpace');
-const CollaborationService = require('./collaborationService');
 
 class SharedContentService {
+  constructor() {
+    // Will use global collaborationService once it's available
+  }
+
+  getCollaborationService() {
+    return global.collaborationService;
+  }
+
   // ===== CONTENT MANAGEMENT =====
 
   async createSharedContent(contentData, collaborationSpaceId, userId, userName) {
     try {
+      const collaborationService = this.getCollaborationService();
+      if (!collaborationService) {
+        throw new Error('Collaboration service not available');
+      }
+
       // Verify user has access to the collaboration space
-      const space = await CollaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
+      const space = await collaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
       
       // Check if user can create content
-      if (!CollaborationService.canUserPerformAction(space, userId, 'create_content')) {
+      if (!collaborationService.canUserPerformAction(space, userId, 'create_content')) {
         throw new Error('Permission denied: You cannot create content in this space');
       }
 
@@ -49,8 +61,13 @@ class SharedContentService {
 
   async getSharedContent(collaborationSpaceId, userId, page = 1, limit = 20, filters = {}) {
     try {
+      const collaborationService = this.getCollaborationService();
+      if (!collaborationService) {
+        throw new Error('Collaboration service not available');
+      }
+
       // Verify user has access to the collaboration space
-      await CollaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
+      await collaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
 
       const skip = (page - 1) * limit;
       let query = { collaborationSpaceId };

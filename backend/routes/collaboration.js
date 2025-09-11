@@ -5,6 +5,14 @@ const CollaborationService = require('../services/collaborationService');
 const SharedContentService = require('../services/sharedContentService');
 const ChangeRequestService = require('../services/changeRequestService');
 
+// Initialize collaboration service (will be updated with socket manager in server.js)
+let collaborationService = new CollaborationService();
+
+// Function to set socket manager
+function setSocketManager(socketManager) {
+  collaborationService = new CollaborationService(socketManager);
+}
+
 // ===== COLLABORATION SPACE ROUTES =====
 
 // Create new collaboration space
@@ -28,7 +36,7 @@ router.post('/spaces', verifyToken, async (req, res) => {
       });
     }
 
-    const space = await CollaborationService.createCollaborationSpace(spaceData, userId, userName, userEmail);
+    const space = await collaborationService.createCollaborationSpace(spaceData, userId, userName, userEmail);
     
     res.status(201).json({
       success: true,
@@ -49,7 +57,7 @@ router.get('/spaces', verifyToken, async (req, res) => {
     const { uid: userId } = req.user;
     const { page = 1, limit = 20, role = 'all' } = req.query;
 
-    const result = await CollaborationService.getUserCollaborationSpaces(
+    const result = await collaborationService.getUserCollaborationSpaces(
       userId, 
       parseInt(page), 
       parseInt(limit), 
@@ -75,7 +83,7 @@ router.get('/spaces/:spaceId', verifyToken, async (req, res) => {
     const { uid: userId } = req.user;
     const { spaceId } = req.params;
 
-    const space = await CollaborationService.getCollaborationSpaceById(spaceId, userId);
+    const space = await collaborationService.getCollaborationSpaceById(spaceId, userId);
     
     res.json({
       success: true,
@@ -97,7 +105,7 @@ router.put('/spaces/:spaceId', verifyToken, async (req, res) => {
     const { spaceId } = req.params;
     const updateData = req.body;
 
-    const space = await CollaborationService.updateCollaborationSpace(spaceId, updateData, userId);
+    const space = await collaborationService.updateCollaborationSpace(spaceId, updateData, userId);
     
     res.json({
       success: true,
@@ -118,7 +126,7 @@ router.delete('/spaces/:spaceId', verifyToken, async (req, res) => {
     const { uid: userId } = req.user;
     const { spaceId } = req.params;
 
-    const result = await CollaborationService.deleteCollaborationSpace(spaceId, userId);
+    const result = await collaborationService.deleteCollaborationSpace(spaceId, userId);
     
     res.json({
       success: true,
@@ -138,11 +146,20 @@ router.delete('/spaces/:spaceId', verifyToken, async (req, res) => {
 // Invite collaborator
 router.post('/spaces/:spaceId/invite', verifyToken, async (req, res) => {
   try {
+    console.log('Invite request received:', {
+      userId: req.user.uid,
+      userName: req.user.name,
+      spaceId: req.params.spaceId,
+      inviteData: req.body
+    });
+    
     const { uid: userId, name: userName } = req.user;
     const { spaceId } = req.params;
     const inviteData = req.body;
 
-    const result = await CollaborationService.inviteCollaborator(spaceId, inviteData, userId, userName);
+    const result = await collaborationService.inviteCollaborator(spaceId, inviteData, userId, userName);
+    
+    console.log('Invite sent successfully:', result);
     
     res.status(201).json({
       success: true,
@@ -157,6 +174,174 @@ router.post('/spaces/:spaceId/invite', verifyToken, async (req, res) => {
   }
 });
 
+// Get user's invitations for dashboard
+router.get('/invitations', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+
+    const invitations = await collaborationService.getUserInvitations(userId);
+    
+    res.json({
+      success: true,
+      invitations
+    });
+  } catch (error) {
+    console.error('Error getting user invitations:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// FOR TESTING ONLY - Remove invitation by email
+router.delete('/invitations/test/remove/:email', verifyToken, async (req, res) => {
+  try {
+    const { email } = req.params;
+    const { spaceId } = req.query;
+
+    const removedCount = await collaborationService.removeInvitationByEmail(email, spaceId);
+    
+    res.json({
+      success: true,
+      message: `Removed ${removedCount} invitations for ${email}`,
+      removedCount
+    });
+  } catch (error) {
+    console.error('Error removing invitation:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Accept an invitation from dashboard
+router.post('/invitations/:inviteId/accept', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { inviteId } = req.params;
+
+    const result = await collaborationService.acceptInvitation(inviteId, userId);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error accepting invitation:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Decline an invitation from dashboard
+router.post('/invitations/:inviteId/decline', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { inviteId } = req.params;
+
+    const result = await collaborationService.declineInvitation(inviteId, userId);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error declining invitation:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get pending invites for a space
+router.get('/spaces/:spaceId/invites', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { spaceId } = req.params;
+
+    const pendingInvites = await collaborationService.getPendingInvites(spaceId, userId);
+    
+    res.json({
+      success: true,
+      invites: pendingInvites
+    });
+  } catch (error) {
+    console.error('Error getting pending invites:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Cancel an invitation
+router.delete('/spaces/:spaceId/invites/:inviteId', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { spaceId, inviteId } = req.params;
+
+    const result = await collaborationService.cancelInvite(spaceId, inviteId, userId);
+    
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error cancelling invite:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Join public collaboration space
+router.post('/spaces/:spaceId/join', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId, name: userName, email: userEmail } = req.user;
+    const { spaceId } = req.params;
+
+    const space = await collaborationService.joinPublicSpace(spaceId, userId, userName, userEmail);
+    
+    res.json({
+      success: true,
+      space,
+      message: 'Successfully joined the collaboration space'
+    });
+  } catch (error) {
+    console.error('Error joining space:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get invitation details
+router.get('/invites/:token', async (req, res) => {
+  try {
+    const { token } = req.params;
+
+    const invite = await collaborationService.getInviteDetails(token);
+    
+    res.json({
+      success: true,
+      invite
+    });
+  } catch (error) {
+    console.error('Error getting invite details:', error);
+    res.status(404).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Accept collaboration invite
 router.post('/invites/:token/accept', verifyToken, async (req, res) => {
   try {
@@ -164,7 +349,7 @@ router.post('/invites/:token/accept', verifyToken, async (req, res) => {
     const { token } = req.params;
     const { responseMessage } = req.body;
 
-    const space = await CollaborationService.acceptInvite(token, userId, userName);
+    const space = await collaborationService.acceptInvite(token, userId, userName);
     
     res.json({
       success: true,
@@ -194,7 +379,7 @@ router.put('/spaces/:spaceId/collaborators/:userId', verifyToken, async (req, re
       });
     }
 
-    const space = await CollaborationService.updateCollaboratorPermission(
+    const space = await collaborationService.updateCollaboratorPermission(
       spaceId, 
       collaboratorUserId, 
       permission, 
@@ -220,7 +405,7 @@ router.delete('/spaces/:spaceId/collaborators/:userId', verifyToken, async (req,
     const { uid: removerId } = req.user;
     const { spaceId, userId: collaboratorUserId } = req.params;
 
-    const space = await CollaborationService.removeCollaborator(spaceId, collaboratorUserId, removerId);
+    const space = await collaborationService.removeCollaborator(spaceId, collaboratorUserId, removerId);
     
     res.json({
       success: true,
@@ -582,7 +767,7 @@ router.get('/discover', async (req, res) => {
       filters.tags = tags.split(',');
     }
 
-    const result = await CollaborationService.searchPublicSpaces(
+    const result = await collaborationService.searchPublicSpaces(
       query, 
       parseInt(page), 
       parseInt(limit), 
@@ -631,7 +816,7 @@ router.get('/stats', verifyToken, async (req, res) => {
   try {
     const { uid: userId } = req.user;
 
-    const stats = await CollaborationService.getCollaborationStats(userId);
+    const stats = await collaborationService.getCollaborationStats(userId);
     
     res.json({
       success: true,
@@ -699,3 +884,4 @@ router.get('/pending-reviews', verifyToken, async (req, res) => {
 });
 
 module.exports = router;
+module.exports.setSocketManager = setSocketManager;

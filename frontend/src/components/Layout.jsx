@@ -93,7 +93,10 @@ const Layout = () => {
           </div>
         </header>
         {/* Page Content */}
-        <main className="pt-20 p-6 min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300">
+        <main 
+          className="pt-20 p-6 min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
+          style={{ position: 'relative', zIndex: 1, minHeight: '100vh', overflow: 'visible', background: '#fff' }}
+        >
           <Outlet />
         </main>
       </div>

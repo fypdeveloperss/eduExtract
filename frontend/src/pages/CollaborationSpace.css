@@ -1,8 +1,103 @@
 .collaboration-space {
-  max-width: 1200px;
+  display: flex;
+  max-width: 1400px;
   margin: 0 auto;
   padding: 20px;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+  gap: 20px;
+  min-height: calc(100vh - 80px);
+}
+
+.collaboration-main {
+  flex: 1;
+  min-width: 0;
+}
+
+.notifications-sidebar {
+  width: 320px;
+  flex-shrink: 0;
+}
+
+.collaboration-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 20px;
+  padding: 0 4px;
+}
+
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.connection-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.status-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+  background: #28a745;
+}
+
+.status-dot.disconnected {
+  background: #dc3545;
+}
+
+.status-text {
+  color: var(--text-secondary, #666);
+}
+
+.notifications-btn {
+  position: relative;
+  background: none;
+  border: 1px solid var(--border-color, #e0e0e0);
+  border-radius: 8px;
+  padding: 8px 12px;
+  font-size: 16px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  color: var(--text-secondary, #666);
+}
+
+.notifications-btn:hover {
+  background: var(--background-hover, #f0f0f0);
+  border-color: var(--border-hover, #ccc);
+}
+
+.notifications-btn.has-notifications {
+  border-color: var(--primary-color, #007bff);
+  color: var(--primary-color, #007bff);
+}
+
+.notification-badge {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  background: var(--primary-color, #007bff);
+  color: white;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 5px;
+  border-radius: 10px;
+  min-width: 16px;
+  text-align: center;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 /* Loading and Error States */
@@ -134,5 +229,63 @@
   .retry-btn {
     width: 100%;
     padding: 14px 20px;
+  }
+}
+
+/* Real-time Collaboration Responsive Design */
+@media (max-width: 1024px) {
+  .collaboration-space {
+    flex-direction: column;
+    padding: 16px;
+  }
+  
+  .notifications-sidebar {
+    width: 100%;
+    order: -1;
+  }
+  
+  .collaboration-toolbar {
+    flex-direction: column;
+    gap: 12px;
+    align-items: stretch;
+  }
+  
+  .toolbar-actions {
+    justify-content: center;
+  }
+}
+
+@media (max-width: 768px) {
+  .collaboration-space {
+    padding: 12px;
+    gap: 16px;
+  }
+  
+  .toolbar-actions {
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .connection-status {
+    justify-content: center;
+  }
+  
+  .notifications-btn {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+/* Dark theme support */
+@media (prefers-color-scheme: dark) {
+  .collaboration-space {
+    --background-primary: #1e1e1e;
+    --background-secondary: #2d2d2d;
+    --background-hover: #3d3d3d;
+    --text-primary: #ffffff;
+    --text-secondary: #cccccc;
+    --border-color: #404040;
+    --border-hover: #555555;
+    --primary-color: #0d7377;
   }
 }

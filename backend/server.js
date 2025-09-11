@@ -100,7 +100,7 @@ app.use((req, res) => {
 });
 
 // Start server
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Server running at http://localhost:${port}`);
   console.log('Available routes:');
   console.log('  - Authentication: /api/auth/*');
@@ -108,6 +108,30 @@ app.listen(port, () => {
   console.log('  - Admin: /api/admin/*');
   console.log('  - Content: /api/content/*');
   console.log('  - Marketplace: /api/marketplace/*');
+  console.log('  - Collaboration: /api/collaborate/*');
   console.log('  - Generation: /generate-*, /process-file, /api/chat');
   console.log('  - Health check: /health');
 });
+
+// Initialize Socket.IO for real-time collaboration
+const SocketManager = require('./services/socketManager');
+const CollaborationService = require('./services/collaborationService');
+
+// Create collaboration service first
+const collaborationService = new CollaborationService();
+
+// Create socket manager with collaboration service
+const socketManager = new SocketManager(server);
+socketManager.setCollaborationService(collaborationService);
+
+// Update collaboration service with socket manager
+const collaborationServiceWithSocket = new CollaborationService(socketManager);
+
+console.log('Socket.IO initialized for real-time collaboration');
+
+// Make socket manager available globally for other services
+global.socketManager = socketManager;
+global.collaborationService = collaborationServiceWithSocket;
+
+// Initialize collaboration routes with socket manager
+collaborationRoutes.setSocketManager(socketManager);

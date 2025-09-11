@@ -77,6 +77,49 @@ const sharedContentSchema = new mongoose.Schema({
       ref: 'User'
     }]
   },
+  versionHistory: [{
+    version: {
+      type: Number,
+      required: true
+    },
+    content: {
+      type: mongoose.Schema.Types.Mixed
+    },
+    modifiedBy: {
+      type: String,
+      required: true,
+      ref: 'User'
+    },
+    modifiedByName: {
+      type: String,
+      required: true
+    },
+    modifiedAt: {
+      type: Date,
+      default: Date.now
+    },
+    changes: {
+      type: mongoose.Schema.Types.Mixed
+    },
+    comment: {
+      type: String,
+      trim: true
+    }
+  }],
+  isLocked: {
+    type: Boolean,
+    default: false
+  },
+  lockedBy: {
+    type: String,
+    ref: 'User'
+  },
+  lockedAt: {
+    type: Date
+  },
+  lockExpiry: {
+    type: Date
+  },
   stats: {
     views: {
       type: Number,
@@ -91,6 +134,10 @@ const sharedContentSchema = new mongoose.Schema({
       default: 0
     },
     likes: {
+      type: Number,
+      default: 0
+    },
+    collaborators: {
       type: Number,
       default: 0
     }

@@ -1,7 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
+import InviteModal from './InviteModal';
 import './SpaceHeader.css';
 
 const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction, onSpaceUpdate }) => {
+  const [showInviteModal, setShowInviteModal] = useState(false);
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -36,6 +39,17 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
       case 'edit': return '#2196f3';
       case 'view': return '#9e9e9e';
       default: return '#9e9e9e';
+    }
+  };
+
+  const handleInviteSent = (inviteData) => {
+    console.log('Invite sent:', inviteData);
+    setShowInviteModal(false);
+    
+    if (inviteData.userExists) {
+      alert(`✅ Invitation sent successfully!\n\n${inviteData.message}\n\nThe user will see this invitation in their CollabHub dashboard.`);
+    } else {
+      alert(`📧 Invitation sent!\n\n${inviteData.message}\n\nShare this invitation link with them:\n${inviteData.inviteUrl}`);
     }
   };
 
@@ -79,7 +93,10 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
 
         <div className="header-actions">
           {canUserPerformAction('invite_users') && (
-            <button className="action-btn primary">
+            <button 
+              className="action-btn primary"
+              onClick={() => setShowInviteModal(true)}
+            >
               Invite Members
             </button>
           )}
@@ -139,6 +156,14 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
           <span className="creation-date">on {formatDate(space.createdAt)}</span>
         </div>
       </div>
+
+      <InviteModal
+        spaceId={space._id}
+        spaceName={space.title}
+        isOpen={showInviteModal}
+        onClose={() => setShowInviteModal(false)}
+        onInviteSent={handleInviteSent}
+      />
     </div>
   );
 };

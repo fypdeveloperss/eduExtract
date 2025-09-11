@@ -1,10 +1,38 @@
-import React from 'react';
+import React, { useState } from 'react';
+import api from '../utils/axios';
 import './CollaborationSpaceCard.css';
 
-const CollaborationSpaceCard = ({ space, currentUser, onClick }) => {
+const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) => {
+  const [joining, setJoining] = useState(false);
   const isOwner = space.ownerId === currentUser?.uid;
   const userCollaborator = space.collaborators?.find(c => c.userId === currentUser?.uid);
-  const userRole = isOwner ? 'owner' : userCollaborator?.permission || 'viewer';
+  const userRole = isOwner ? 'owner' : userCollaborator?.permission || null;
+  const isMember = isOwner || userCollaborator;
+  const canJoin = space.privacy === 'public' && !isMember;
+
+  const handleJoinSpace = async (e) => {
+    e.stopPropagation(); // Prevent card click
+    
+    if (joining || !canJoin) return;
+
+    try {
+      setJoining(true);
+      
+      // Join public space directly
+      const response = await api.post(`/api/collaborate/spaces/${space._id}/join`);
+      
+      if (response.data.success) {
+        alert('Successfully joined the collaboration space!');
+        onJoinSpace?.(space._id);
+        // Space has been joined, the card will update from parent
+      }
+    } catch (error) {
+      console.error('Error joining space:', error);
+      alert(error.response?.data?.error || 'Failed to join space');
+    } finally {
+      setJoining(false);
+    }
+  };
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -67,7 +95,7 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick }) => {
             className="role-badge"
             style={{ backgroundColor: getRoleColor(userRole) }}
           >
-            {userRole}
+            {userRole || 'Not a member'}
           </span>
         </div>
       </div>
@@ -130,7 +158,19 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick }) => {
 
       <div className="card-overlay">
         <div className="overlay-content">
-          <span className="view-text">View Space</span>
+          {canJoin ? (
+            <button 
+              className="join-btn"
+              onClick={handleJoinSpace}
+              disabled={joining}
+            >
+              {joining ? 'Joining...' : '👥 Join Space'}
+            </button>
+          ) : (
+            <span className="view-text">
+              {isMember ? 'Open Space' : 'View Details'}
+            </span>
+          )}
         </div>
       </div>
     </div>

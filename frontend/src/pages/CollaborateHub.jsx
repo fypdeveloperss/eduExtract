@@ -14,7 +14,7 @@ const CollaborateHub = () => {
   const [spaces, setSpaces] = useState([]);
   const [stats, setStats] = useState({});
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [filter, setFilter] = useState('all'); // all, owner, collaborator
+  const [filter, setFilter] = useState('all'); // all, owner, collaborator, public
   const [searchQuery, setSearchQuery] = useState('');
   const [pagination, setPagination] = useState({
     currentPage: 1,
@@ -80,6 +80,12 @@ const CollaborateHub = () => {
     navigate(`/collaborate/space/${spaceId}`);
   };
 
+  const handleJoinSpace = async (spaceId) => {
+    // Refresh the spaces list after joining
+    await fetchSpaces(pagination.currentPage);
+    await fetchStats();
+  };
+
   const filteredSpaces = spaces.filter(space =>
     space.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
     space.description.toLowerCase().includes(searchQuery.toLowerCase())
@@ -123,6 +129,10 @@ const CollaborateHub = () => {
           <p>Collaborating Spaces</p>
         </div>
         <div className="stat-card">
+          <h3>{stats.publicSpaces || 0}</h3>
+          <p>Public Spaces</p>
+        </div>
+        <div className="stat-card">
           <h3>{stats.totalContent || 0}</h3>
           <p>Total Content</p>
         </div>
@@ -153,6 +163,12 @@ const CollaborateHub = () => {
           >
             Collaborating ({stats.collaboratingSpaces || 0})
           </button>
+          <button 
+            className={filter === 'public' ? 'active' : ''}
+            onClick={() => setFilter('public')}
+          >
+            Discover Public ({stats.publicSpaces || 0})
+          </button>
         </div>
 
         <div className="search-section">
@@ -181,6 +197,7 @@ const CollaborateHub = () => {
                   space={space}
                   currentUser={user}
                   onClick={() => handleSpaceClick(space._id)}
+                  onJoinSpace={handleJoinSpace}
                 />
               ))}
             </div>
@@ -236,8 +253,14 @@ const CollaborateHub = () => {
         <button onClick={() => navigate('/collaborate/discover')}>
           🔍 Discover Public Spaces
         </button>
-        <button onClick={() => navigate('/collaborate/invites')}>
+        <button 
+          onClick={() => navigate('/collaborate/invitations')}
+          className="invitations-btn"
+        >
           📧 Manage Invitations
+          {stats.pendingInvites > 0 && (
+            <span className="notification-badge">{stats.pendingInvites}</span>
+          )}
         </button>
         <button onClick={() => navigate('/collaborate/requests')}>
           📝 Change Requests
