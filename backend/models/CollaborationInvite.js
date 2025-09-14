@@ -43,8 +43,7 @@ const collaborationInviteSchema = new mongoose.Schema({
   },
   inviteToken: {
     type: String,
-    required: true,
-    unique: true
+    required: true
   },
   message: {
     type: String,
@@ -83,13 +82,12 @@ const collaborationInviteSchema = new mongoose.Schema({
 });
 
 // Indexes for better performance
-collaborationInviteSchema.index({ inviteToken: 1 });
+collaborationInviteSchema.index({ inviteToken: 1 }, { unique: true });
 collaborationInviteSchema.index({ collaborationSpaceId: 1, status: 1 });
 collaborationInviteSchema.index({ invitedEmail: 1, status: 1 });
 collaborationInviteSchema.index({ invitedUserId: 1 });
-collaborationInviteSchema.index({ expiresAt: 1 });
 
-// Auto-expire invites
+// Auto-expire invites (this also creates an index on expiresAt)
 collaborationInviteSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
 // Update the updatedAt field before saving

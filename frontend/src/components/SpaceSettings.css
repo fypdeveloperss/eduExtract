@@ -432,6 +432,209 @@
   }
 }
 
+/* Join Request Styles - Instagram-like Design */
+.join-requests-container {
+  background: white;
+  border-radius: 12px;
+  border: 1px solid #e0e0e0;
+  overflow: hidden;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.join-request-card {
+  display: flex;
+  padding: 16px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: background-color 0.2s ease;
+  background: white;
+}
+
+.join-request-card:last-child {
+  border-bottom: none;
+}
+
+.join-request-card:hover {
+  background-color: #fafafa;
+}
+
+.request-avatar {
+  margin-right: 12px;
+  flex-shrink: 0;
+}
+
+.avatar-circle {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: 600;
+  font-size: 18px;
+  text-transform: uppercase;
+}
+
+.request-content {
+  flex: 1;
+  min-width: 0; /* Allows content to shrink */
+}
+
+.request-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 8px;
+}
+
+.requester-info {
+  flex: 1;
+}
+
+.requester-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: #262626;
+  margin: 0 0 2px 0;
+  line-height: 1.2;
+}
+
+.requester-email {
+  font-size: 12px;
+  color: #8e8e8e;
+  display: block;
+}
+
+.request-time {
+  font-size: 12px;
+  color: #8e8e8e;
+  white-space: nowrap;
+  margin-left: 8px;
+}
+
+.request-details {
+  margin-bottom: 8px;
+}
+
+.permission-badge {
+  display: inline-block;
+  background: #e3f2fd;
+  color: #1976d2;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 8px;
+  border-radius: 4px;
+  text-transform: capitalize;
+}
+
+.request-message {
+  margin: 8px 0;
+  padding: 8px 12px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 3px solid #2196f3;
+}
+
+.request-message p {
+  margin: 0;
+  font-size: 13px;
+  color: #444;
+  font-style: italic;
+  line-height: 1.4;
+}
+
+.request-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+.action-btn {
+  flex: 1;
+  padding: 8px 16px;
+  border: 1px solid;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  min-height: 32px;
+}
+
+.approve-btn {
+  background: #0095f6;
+  color: white;
+  border-color: #0095f6;
+}
+
+.approve-btn:hover {
+  background: #1877f2;
+  border-color: #1877f2;
+  transform: translateY(-1px);
+}
+
+.reject-btn {
+  background: white;
+  color: #262626;
+  border-color: #dbdbdb;
+}
+
+.reject-btn:hover {
+  background: #f9f9f9;
+  border-color: #c7c7c7;
+}
+
+.loading-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 20px;
+  color: #8e8e8e;
+}
+
+.loading-spinner {
+  width: 24px;
+  height: 24px;
+  border: 2px solid #f0f0f0;
+  border-top: 2px solid #0095f6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 12px;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.empty-requests-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: #8e8e8e;
+}
+
+.empty-icon {
+  font-size: 48px;
+  margin-bottom: 16px;
+  opacity: 0.5;
+}
+
+.empty-requests-state h3 {
+  margin: 0 0 8px 0;
+  color: #262626;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.empty-requests-state p {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
 @media (max-width: 480px) {
   .settings-header h2 {
     font-size: 1.4rem;
@@ -444,5 +647,53 @@
   .delete-modal {
     margin: 10px;
     max-height: calc(100vh - 20px);
+  }
+
+  /* Mobile styles for Instagram-like join requests */
+  .join-request-card {
+    padding: 12px;
+  }
+
+  .avatar-circle {
+    width: 40px;
+    height: 40px;
+    font-size: 16px;
+  }
+
+  .request-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .request-time {
+    margin-left: 0;
+  }
+
+  .request-actions {
+    margin-top: 8px;
+  }
+
+  .action-btn {
+    font-size: 12px;
+    padding: 6px 12px;
+    min-height: 28px;
+  }
+
+  .requester-name {
+    font-size: 13px;
+  }
+
+  .requester-email {
+    font-size: 11px;
+  }
+
+  .permission-badge {
+    font-size: 11px;
+    padding: 3px 6px;
+  }
+
+  .request-message p {
+    font-size: 12px;
   }
 }

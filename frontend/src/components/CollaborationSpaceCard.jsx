@@ -1,19 +1,46 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import api from '../utils/axios';
+import JoinRequestModal from './JoinRequestModal';
 import './CollaborationSpaceCard.css';
 
 const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) => {
   const [joining, setJoining] = useState(false);
+  const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
+  const [joinRequestStatus, setJoinRequestStatus] = useState(null);
+  
   const isOwner = space.ownerId === currentUser?.uid;
-  const userCollaborator = space.collaborators?.find(c => c.userId === currentUser?.uid);
+  const userCollaborator = space.collaborators?.find(c => 
+    c.userId === currentUser?.uid && c.status === 'active'
+  );
   const userRole = isOwner ? 'owner' : userCollaborator?.permission || null;
   const isMember = isOwner || userCollaborator;
-  const canJoin = space.privacy === 'public' && !isMember;
+  
+  // Can join public spaces directly, need to request for restricted spaces
+  const canJoinDirectly = space.privacy === 'public' && !isMember && !space.settings?.requireApprovalForJoin;
+  const canRequestToJoin = (space.privacy === 'public' || space.privacy === 'restricted') && !isMember;
+
+  // Fetch join request status on component mount
+  useEffect(() => {
+    if (canRequestToJoin && currentUser) {
+      fetchJoinRequestStatus();
+    }
+  }, [space._id, currentUser]);
+
+  const fetchJoinRequestStatus = async () => {
+    try {
+      const response = await api.get(`/api/collaborate/spaces/${space._id}/join-request-status`);
+      if (response.data.success) {
+        setJoinRequestStatus(response.data.status);
+      }
+    } catch (error) {
+      console.error('Error fetching join request status:', error);
+    }
+  };
 
   const handleJoinSpace = async (e) => {
     e.stopPropagation(); // Prevent card click
     
-    if (joining || !canJoin) return;
+    if (joining || !canJoinDirectly) return;
 
     try {
       setJoining(true);
@@ -31,6 +58,26 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
       alert(error.response?.data?.error || 'Failed to join space');
     } finally {
       setJoining(false);
+    }
+  };
+
+  const handleRequestToJoin = (e) => {
+    e.stopPropagation();
+    setShowJoinRequestModal(true);
+  };
+
+  const handleSubmitJoinRequest = async (requestData) => {
+    try {
+      const response = await api.post('/api/collaborate/join-requests', requestData);
+      
+      if (response.data.success) {
+        alert('Join request sent successfully! The space owner will review your request.');
+        setJoinRequestStatus({ hasRequest: true, status: 'pending' });
+        setShowJoinRequestModal(false);
+      }
+    } catch (error) {
+      console.error('Error submitting join request:', error);
+      throw new Error(error.response?.data?.error || 'Failed to submit join request');
     }
   };
 
@@ -73,107 +120,142 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
   };
 
   return (
-    <div className="collaboration-space-card" onClick={onClick}>
-      <div className="card-header">
-        <div className="space-info">
-          <h3 className="space-title">{space.title}</h3>
-          <div className="space-meta">
-            <span className="privacy-indicator">
-              {getPrivacyIcon(space.privacy)} {space.privacy}
-            </span>
+    <>
+      <div className="collaboration-space-card" onClick={onClick}>
+        <div className="card-header">
+          <div className="space-info">
+            <h3 className="space-title">{space.title}</h3>
+            <div className="space-meta">
+              <span className="privacy-indicator">
+                {getPrivacyIcon(space.privacy)} {space.privacy}
+              </span>
+              <span 
+                className="category-badge"
+                style={{ backgroundColor: getCategoryColor(space.category) }}
+              >
+                {space.category}
+              </span>
+            </div>
+          </div>
+          
+          <div className="user-role">
             <span 
-              className="category-badge"
-              style={{ backgroundColor: getCategoryColor(space.category) }}
+              className="role-badge"
+              style={{ backgroundColor: getRoleColor(userRole) }}
             >
-              {space.category}
+              {userRole || 'Not a member'}
             </span>
           </div>
         </div>
-        
-        <div className="user-role">
-          <span 
-            className="role-badge"
-            style={{ backgroundColor: getRoleColor(userRole) }}
-          >
-            {userRole || 'Not a member'}
-          </span>
+
+        <div className="card-body">
+          <p className="space-description">
+            {space.description.length > 120 
+              ? `${space.description.substring(0, 120)}...` 
+              : space.description
+            }
+          </p>
+
+          {space.tags && space.tags.length > 0 && (
+            <div className="tags-container">
+              {space.tags.slice(0, 3).map((tag, index) => (
+                <span key={index} className="tag">
+                  {tag}
+                </span>
+              ))}
+              {space.tags.length > 3 && (
+                <span className="tag more-tags">
+                  +{space.tags.length - 3} more
+                </span>
+              )}
+            </div>
+          )}
         </div>
-      </div>
 
-      <div className="card-body">
-        <p className="space-description">
-          {space.description.length > 120 
-            ? `${space.description.substring(0, 120)}...` 
-            : space.description
-          }
-        </p>
+        <div className="card-footer">
+          <div className="stats-row">
+            <div className="stat">
+              <span className="stat-icon">👥</span>
+              <span className="stat-value">{space.stats?.totalCollaborators || 0}</span>
+              <span className="stat-label">Members</span>
+            </div>
+            
+            <div className="stat">
+              <span className="stat-icon">📄</span>
+              <span className="stat-value">{space.stats?.totalContent || 0}</span>
+              <span className="stat-label">Content</span>
+            </div>
+            
+            <div className="stat">
+              <span className="stat-icon">👀</span>
+              <span className="stat-value">{space.stats?.totalViews || 0}</span>
+              <span className="stat-label">Views</span>
+            </div>
+          </div>
 
-        {space.tags && space.tags.length > 0 && (
-          <div className="tags-container">
-            {space.tags.slice(0, 3).map((tag, index) => (
-              <span key={index} className="tag">
-                {tag}
-              </span>
-            ))}
-            {space.tags.length > 3 && (
-              <span className="tag more-tags">
-                +{space.tags.length - 3} more
+          <div className="footer-meta">
+            <span className="owner-name">by {space.ownerName}</span>
+            <span className="last-activity">
+              {space.stats?.lastActivity 
+                ? `Updated ${formatDate(space.stats.lastActivity)}`
+                : `Created ${formatDate(space.createdAt)}`
+              }
+            </span>
+          </div>
+
+          {/* Action Area - Always visible */}
+          <div className="card-actions">
+            {canJoinDirectly ? (
+              <button 
+                className="action-btn join-btn"
+                onClick={handleJoinSpace}
+                disabled={joining}
+              >
+                {joining ? 'Joining...' : '👥 Join Space'}
+              </button>
+            ) : canRequestToJoin ? (
+              (joinRequestStatus?.hasRequest && joinRequestStatus.status === 'pending') ? (
+                <div className="request-status-inline">
+                  <span className="status-pending">📋 Request Pending</span>
+                </div>
+              ) : (joinRequestStatus?.hasRequest && joinRequestStatus.status === 'rejected') ? (
+                <button 
+                  className="action-btn request-btn"
+                  onClick={handleRequestToJoin}
+                >
+                  🔄 Request Again
+                </button>
+              ) : (
+                <button 
+                  className="action-btn request-btn"
+                  onClick={handleRequestToJoin}
+                >
+                  📋 Request to Join
+                </button>
+              )
+            ) : (
+              <span className="view-hint">
+                {isMember ? 'Click to open space' : 'Click to view details'}
               </span>
             )}
           </div>
-        )}
-      </div>
-
-      <div className="card-footer">
-        <div className="stats-row">
-          <div className="stat">
-            <span className="stat-icon">👥</span>
-            <span className="stat-value">{space.stats?.totalCollaborators || 0}</span>
-            <span className="stat-label">Members</span>
-          </div>
-          
-          <div className="stat">
-            <span className="stat-icon">📄</span>
-            <span className="stat-value">{space.stats?.totalContent || 0}</span>
-            <span className="stat-label">Content</span>
-          </div>
-          
-          <div className="stat">
-            <span className="stat-icon">👀</span>
-            <span className="stat-value">{space.stats?.totalViews || 0}</span>
-            <span className="stat-label">Views</span>
-          </div>
         </div>
 
-        <div className="footer-meta">
-          <span className="owner-name">by {space.ownerName}</span>
-          <span className="last-activity">
-            {space.stats?.lastActivity 
-              ? `Updated ${formatDate(space.stats.lastActivity)}`
-              : `Created ${formatDate(space.createdAt)}`
-            }
-          </span>
+        {/* Simplified overlay for main card click */}
+        <div className="card-overlay" onClick={onClick}>
         </div>
       </div>
 
-      <div className="card-overlay">
-        <div className="overlay-content">
-          {canJoin ? (
-            <button 
-              className="join-btn"
-              onClick={handleJoinSpace}
-              disabled={joining}
-            >
-              {joining ? 'Joining...' : '👥 Join Space'}
-            </button>
-          ) : (
-            <span className="view-text">
-              {isMember ? 'Open Space' : 'View Details'}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
+      {/* Join Request Modal - Rendered outside card container */}
+      {showJoinRequestModal && (
+        <JoinRequestModal
+          space={space}
+          currentUser={currentUser}
+          onClose={() => setShowJoinRequestModal(false)}
+          onSubmit={handleSubmitJoinRequest}
+        />
+      )}
+    </>
   );
 };
 

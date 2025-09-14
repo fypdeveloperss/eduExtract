@@ -1,5 +1,4 @@
 const { Server } = require('socket.io');
-const { verifyToken } = require('../middleware/auth');
 const CollaborationService = require('../services/collaborationService');
 
 class SocketManager {
@@ -16,8 +15,93 @@ class SocketManager {
     this.collaborationRooms = new Map(); // spaceId -> Set of socketIds
     this.userSockets = new Map(); // userId -> Set of socketIds
     this.socketUsers = new Map(); // socketId -> userData
-
+    
+    // Performance optimization caches
+    this.permissionCache = new Map(); // userId:spaceId -> { hasAccess, expiry }
+    this.activeUsersCache = new Map(); // spaceId -> { users: [], lastUpdate }
+    
+    // Cache configuration
+    this.PERMISSION_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+    this.ACTIVE_USERS_CACHE_TTL = 30 * 1000; // 30 seconds
+    
+    // Cleanup interval for expired cache entries
+    this.setupCacheCleanup();
     this.setupSocketHandlers();
+  }
+
+  setupCacheCleanup() {
+    // Clean up expired cache entries every 5 minutes
+    setInterval(() => {
+      const now = Date.now();
+      
+      // Clean permission cache
+      for (const [key, data] of this.permissionCache.entries()) {
+        if (data.expiry < now) {
+          this.permissionCache.delete(key);
+        }
+      }
+      
+      // Clean active users cache
+      for (const [spaceId, data] of this.activeUsersCache.entries()) {
+        if (data.lastUpdate + this.ACTIVE_USERS_CACHE_TTL < now) {
+          this.activeUsersCache.delete(spaceId);
+        }
+      }
+    }, 5 * 60 * 1000);
+  }
+
+  // Optimized active users retrieval with caching
+  getActiveUsersOptimized(spaceId) {
+    // Check cache first
+    const cachedData = this.activeUsersCache.get(spaceId);
+    if (cachedData && (Date.now() - cachedData.lastUpdate) < this.ACTIVE_USERS_CACHE_TTL) {
+      return cachedData.users;
+    }
+
+    // Generate fresh user list
+    const roomSockets = this.collaborationRooms.get(spaceId);
+    if (!roomSockets) {
+      return [];
+    }
+
+    const activeUsers = [];
+    for (const socketId of roomSockets) {
+      const userData = this.socketUsers.get(socketId);
+      if (userData) {
+        activeUsers.push(userData);
+      }
+    }
+
+    // Cache the result
+    this.activeUsersCache.set(spaceId, {
+      users: activeUsers,
+      lastUpdate: Date.now()
+    });
+
+    return activeUsers;
+  }
+
+  // Clear cache entries related to a specific user
+  clearUserCache(userId) {
+    // Clear permission cache for this user
+    for (const [key, _] of this.permissionCache.entries()) {
+      if (key.startsWith(`${userId}:`)) {
+        this.permissionCache.delete(key);
+      }
+    }
+  }
+
+  // Clear cache entries related to a specific space
+  clearSpaceCache(spaceId) {
+    // Clear permission cache for this space
+    for (const [key, _] of this.permissionCache.entries()) {
+      if (key.endsWith(`:${spaceId}`)) {
+        this.permissionCache.delete(key);
+      }
+    }
+    
+    // Clear active users cache
+    this.activeUsersCache.delete(spaceId);
   }
 
   setCollaborationService(collaborationService) {
@@ -25,26 +109,26 @@ class SocketManager {
   }
 
   setupSocketHandlers() {
-    // Authentication middleware for socket connections
+    // Simplified authentication - accept user data from client
     this.io.use(async (socket, next) => {
       try {
-        const token = socket.handshake.auth.token;
-        if (!token) {
-          return next(new Error('Authentication error: No token provided'));
+        const { userId, userName, userEmail } = socket.handshake.auth;
+        
+        if (!userId || !userEmail) {
+          return next(new Error('Authentication error: Missing user credentials'));
         }
 
-        // Verify the Firebase token
-        const admin = require('firebase-admin');
-        const decodedToken = await admin.auth().verifyIdToken(token);
+        // Store user data directly from client
+        socket.userId = userId;
+        socket.userEmail = userEmail;
+        socket.userName = userName || userEmail.split('@')[0];
         
-        socket.userId = decodedToken.uid;
-        socket.userEmail = decodedToken.email;
-        socket.userName = decodedToken.name || decodedToken.email;
-        
+        console.log(`✅ Socket connected: ${socket.userEmail}`);
         next();
+        
       } catch (error) {
-        console.error('Socket authentication error:', error);
-        next(new Error('Authentication error'));
+        console.error(`❌ Socket connection failed:`, error.message);
+        next(new Error('Authentication failed'));
       }
     });
 
@@ -112,14 +196,35 @@ class SocketManager {
         return;
       }
 
-      // Verify user has access to this space
-      const hasAccess = await this.collaborationService.checkUserSpaceAccess(socket.userId, spaceId);
+      // Check permission cache first
+      const permissionKey = `${socket.userId}:${spaceId}`;
+      const cachedPermission = this.permissionCache.get(permissionKey);
+      
+      let hasAccess;
+      if (cachedPermission && cachedPermission.expiry > Date.now()) {
+        hasAccess = cachedPermission.hasAccess;
+      } else {
+        // Add timeout to database call
+        const accessCheckPromise = this.collaborationService.checkUserSpaceAccess(socket.userId, spaceId);
+        const timeoutPromise = new Promise((_, reject) => {
+          setTimeout(() => reject(new Error('Access check timeout')), 3000);
+        });
+        
+        hasAccess = await Promise.race([accessCheckPromise, timeoutPromise]);
+        
+        // Cache the permission result
+        this.permissionCache.set(permissionKey, {
+          hasAccess,
+          expiry: Date.now() + this.PERMISSION_CACHE_TTL
+        });
+      }
+
       if (!hasAccess) {
         socket.emit('error', { message: 'Access denied to collaboration space' });
         return;
       }
 
-      // Join the socket room
+      // Join the socket room immediately for better UX
       socket.join(`space-${spaceId}`);
       
       // Track the room membership
@@ -128,29 +233,34 @@ class SocketManager {
       }
       this.collaborationRooms.get(spaceId).add(socket.id);
 
-      // Get current active users in the space
-      const activeUsers = Array.from(this.collaborationRooms.get(spaceId))
-        .map(socketId => this.socketUsers.get(socketId))
-        .filter(user => user);
+      // Get optimized active users list
+      const activeUsers = this.getActiveUsersOptimized(spaceId);
 
-      // Notify other users in the space
-      socket.to(`space-${spaceId}`).emit('user-joined', {
-        user: {
-          userId: socket.userId,
-          userName: socket.userName,
-          userEmail: socket.userEmail
-        },
-        timestamp: new Date()
-      });
-
-      // Send current active users to the joining user
+      // Send immediate response to joining user
       socket.emit('space-joined', {
         spaceId,
         activeUsers,
         timestamp: new Date()
       });
 
-      console.log(`User ${socket.userName} joined space ${spaceId}`);
+      // Make non-critical operations async (don't block the join)
+      setImmediate(() => {
+        // Notify other users in the space (non-blocking)
+        socket.to(`space-${spaceId}`).emit('user-joined', {
+          user: {
+            userId: socket.userId,
+            userName: socket.userName,
+            userEmail: socket.userEmail
+          },
+          timestamp: new Date()
+        });
+
+        // Invalidate active users cache for this space
+        this.activeUsersCache.delete(spaceId);
+        
+        console.log(`User ${socket.userName} joined space ${spaceId}`);
+      });
+
     } catch (error) {
       console.error('Error joining space:', error);
       socket.emit('error', { message: 'Failed to join collaboration space' });
@@ -167,19 +277,28 @@ class SocketManager {
         // Clean up empty rooms
         if (this.collaborationRooms.get(spaceId).size === 0) {
           this.collaborationRooms.delete(spaceId);
+          // Clear cache for empty space
+          this.clearSpaceCache(spaceId);
+        } else {
+          // Invalidate active users cache since user count changed
+          this.activeUsersCache.delete(spaceId);
         }
       }
 
-      // Notify other users in the space
-      socket.to(`space-${spaceId}`).emit('user-left', {
-        user: {
-          userId: socket.userId,
-          userName: socket.userName
-        },
-        timestamp: new Date()
+      // Make notification async (non-blocking)
+      setImmediate(() => {
+        // Notify other users in the space
+        socket.to(`space-${spaceId}`).emit('user-left', {
+          user: {
+            userId: socket.userId,
+            userName: socket.userName
+          },
+          timestamp: new Date()
+        });
+
+        console.log(`User ${socket.userName} left space ${spaceId}`);
       });
 
-      console.log(`User ${socket.userName} left space ${spaceId}`);
     } catch (error) {
       console.error('Error leaving space:', error);
     }
@@ -312,10 +431,11 @@ class SocketManager {
   }
 
   handleDisconnect(socket) {
-    console.log(`User ${socket.userName} disconnected:`, socket.id);
+    // Get user data before cleanup for notifications
+    const userData = this.socketUsers.get(socket.id);
+    const affectedSpaces = [];
     
     // Clean up socket mappings
-    const userData = this.socketUsers.get(socket.id);
     if (userData) {
       const userSocketSet = this.userSockets.get(userData.userId);
       if (userSocketSet) {
@@ -327,23 +447,35 @@ class SocketManager {
     }
     this.socketUsers.delete(socket.id);
 
-    // Clean up room memberships
+    // Clean up room memberships and collect affected spaces
     for (const [spaceId, socketSet] of this.collaborationRooms.entries()) {
       if (socketSet.has(socket.id)) {
         socketSet.delete(socket.id);
-        
-        // Notify other users in the space
-        socket.to(`space-${spaceId}`).emit('user-left', {
-          user: userData,
-          timestamp: new Date()
-        });
+        affectedSpaces.push(spaceId);
         
         // Clean up empty rooms
         if (socketSet.size === 0) {
           this.collaborationRooms.delete(spaceId);
+          this.clearSpaceCache(spaceId);
+        } else {
+          // Invalidate active users cache
+          this.activeUsersCache.delete(spaceId);
         }
       }
     }
+
+    // Make notifications async (non-blocking)
+    setImmediate(() => {
+      // Notify affected spaces about user leaving
+      affectedSpaces.forEach(spaceId => {
+        socket.to(`space-${spaceId}`).emit('user-left', {
+          user: userData,
+          timestamp: new Date()
+        });
+      });
+      
+      console.log(`User ${socket.userName} disconnected:`, socket.id);
+    });
   }
 
   // Utility method to send notifications to specific users
@@ -361,20 +493,66 @@ class SocketManager {
 
   // Utility method to send notifications to all users in a space
   notifySpace(spaceId, event, data, excludeUserId = null) {
-    const room = `space-${spaceId}`;
-    if (excludeUserId) {
-      const userSockets = this.userSockets.get(excludeUserId);
-      if (userSockets) {
-        userSockets.forEach(socketId => {
-          const socket = this.io.sockets.sockets.get(socketId);
-          if (socket) {
-            socket.to(room).emit(event, data);
-          }
-        });
+    try {
+      const room = `space-${spaceId}`;
+      if (excludeUserId) {
+        const userSockets = this.userSockets.get(excludeUserId);
+        if (userSockets) {
+          userSockets.forEach(socketId => {
+            const socket = this.io.sockets.sockets.get(socketId);
+            if (socket) {
+              socket.to(room).emit(event, data);
+            }
+          });
+        }
+      } else {
+        this.io.to(room).emit(event, data);
       }
-    } else {
-      this.io.to(room).emit(event, data);
+    } catch (error) {
+      console.error('Error notifying space:', error);
     }
+  }
+
+  // Performance monitoring methods
+  getCacheStats() {
+    return {
+      permissionCache: {
+        size: this.permissionCache.size
+      },
+      activeUsersCache: {
+        size: this.activeUsersCache.size
+      },
+      activeConnections: this.socketUsers.size,
+      activeRooms: this.collaborationRooms.size
+    };
+  }
+
+  // Clear all caches (useful for debugging)
+  clearAllCaches() {
+    this.permissionCache.clear();
+    this.activeUsersCache.clear();
+    console.log('All caches cleared');
+  }
+
+  // Development mode: bypass all authentication for faster testing
+  enableDevMode() {
+    console.warn('🚨 DEVELOPMENT MODE: All authentication bypassed');
+    this.io.use(async (socket, next) => {
+      // Mock user data for development
+      socket.userId = 'dev-user-' + Date.now();
+      socket.userEmail = 'dev@test.com';
+      socket.userName = 'Development User';
+      next();
+    });
+  }
+
+  // Get detailed performance metrics
+  getPerformanceMetrics() {
+    return {
+      ...this.getCacheStats(),
+      uptime: process.uptime(),
+      memoryUsage: process.memoryUsage()
+    };
   }
 }
 

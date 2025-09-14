@@ -1,7 +1,16 @@
-import React from 'react';
+import React, { useState } from 'react';
+import InviteModal from './InviteModal';
+import ChangeRoleModal from './ChangeRoleModal';
+import ConfirmRemovalModal from './ConfirmRemovalModal';
 import './MembersList.css';
 
 const MembersList = ({ space, currentUser, userPermission, canUserPerformAction, onSpaceUpdate }) => {
+  // State for modals
+  const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showChangeRoleModal, setShowChangeRoleModal] = useState(false);
+  const [showRemovalModal, setShowRemovalModal] = useState(false);
+  const [selectedMember, setSelectedMember] = useState(null);
+
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -10,23 +19,58 @@ const MembersList = ({ space, currentUser, userPermission, canUserPerformAction,
     });
   };
 
-  const getRoleColor = (permission) => {
-    const colors = {
-      'admin': '#4caf50',
-      'edit': '#2196f3',
-      'view': '#9e9e9e'
-    };
-    return colors[permission] || colors.view;
+  const activeMembers = space.collaborators?.filter(member => member.status === 'active') || [];
+
+  // Handler functions
+  const handleInviteMember = () => {
+    setShowInviteModal(true);
   };
 
-  const activeMembers = space.collaborators?.filter(member => member.status === 'active') || [];
+  const handleChangeRole = (member) => {
+    setSelectedMember(member);
+    setShowChangeRoleModal(true);
+  };
+
+  const handleRemoveMember = (member) => {
+    setSelectedMember(member);
+    setShowRemovalModal(true);
+  };
+
+  const handleInviteSent = (inviteData) => {
+    console.log('Invite sent:', inviteData);
+    // Optionally show a success message
+    if (onSpaceUpdate) {
+      onSpaceUpdate();
+    }
+  };
+
+  const handleRoleChanged = (updatedSpace) => {
+    console.log('Role updated:', updatedSpace);
+    if (onSpaceUpdate) {
+      onSpaceUpdate();
+    }
+  };
+
+  const handleMemberRemoved = (updatedSpace) => {
+    console.log('Member removed:', updatedSpace);
+    if (onSpaceUpdate) {
+      onSpaceUpdate();
+    }
+  };
+
+  const closeModals = () => {
+    setShowInviteModal(false);
+    setShowChangeRoleModal(false);
+    setShowRemovalModal(false);
+    setSelectedMember(null);
+  };
 
   return (
     <div className="members-list">
       <div className="members-header">
         <h2>Members ({activeMembers.length})</h2>
         {canUserPerformAction('invite_users') && (
-          <button className="invite-btn">
+          <button className="invite-btn" onClick={handleInviteMember}>
             + Invite Members
           </button>
         )}
@@ -58,10 +102,7 @@ const MembersList = ({ space, currentUser, userPermission, canUserPerformAction,
                 </div>
 
                 <div className="member-role">
-                  <span 
-                    className="role-badge"
-                    style={{ backgroundColor: getRoleColor(member.permission) }}
-                  >
+                  <span className={`role-badge role-${member.permission}`}>
                     {member.permission}
                   </span>
                   {space.ownerId === member.userId && (
@@ -71,10 +112,16 @@ const MembersList = ({ space, currentUser, userPermission, canUserPerformAction,
 
                 {canUserPerformAction('manage_permissions') && member.userId !== currentUser.uid && space.ownerId !== member.userId && (
                   <div className="member-actions">
-                    <button className="action-btn edit-role">
+                    <button 
+                      className="action-btn edit-role"
+                      onClick={() => handleChangeRole(member)}
+                    >
                       Change Role
                     </button>
-                    <button className="action-btn remove-member">
+                    <button 
+                      className="action-btn remove-member"
+                      onClick={() => handleRemoveMember(member)}
+                    >
                       Remove
                     </button>
                   </div>
@@ -87,7 +134,7 @@ const MembersList = ({ space, currentUser, userPermission, canUserPerformAction,
             <h3>No members yet</h3>
             <p>Start collaborating by inviting team members to this space.</p>
             {canUserPerformAction('invite_users') && (
-              <button className="invite-btn">
+              <button className="invite-btn" onClick={handleInviteMember}>
                 Invite Your First Member
               </button>
             )}
@@ -95,13 +142,30 @@ const MembersList = ({ space, currentUser, userPermission, canUserPerformAction,
         )}
       </div>
 
-      {/* Pending Invites Section */}
-      <div className="pending-section">
-        <h3>Pending Invitations</h3>
-        <div className="pending-info">
-          <p>No pending invitations</p>
-        </div>
-      </div>
+      {/* Modals */}
+      <InviteModal
+        spaceId={space._id}
+        spaceName={space.name || space.title}
+        isOpen={showInviteModal}
+        onClose={closeModals}
+        onInviteSent={handleInviteSent}
+      />
+
+      <ChangeRoleModal
+        isOpen={showChangeRoleModal}
+        onClose={closeModals}
+        onRoleChanged={handleRoleChanged}
+        member={selectedMember}
+        spaceId={space._id}
+      />
+
+      <ConfirmRemovalModal
+        isOpen={showRemovalModal}
+        onClose={closeModals}
+        onMemberRemoved={handleMemberRemoved}
+        member={selectedMember}
+        spaceId={space._id}
+      />
     </div>
   );
 };

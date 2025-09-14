@@ -1,13 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
-import axios from '../utils/axios';
+import api from '../utils/axios';
 import Spinner from './Spinner';
 import './SpaceSettings.css';
 
 const SpaceSettings = ({ space, onUpdate, onDelete }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  
+  // Debug logging
+  console.log('SpaceSettings rendered with:', { space: space?._id, user: user?.uid });
+  
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -32,62 +36,169 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
     inviteExpiration: space?.inviteSettings?.inviteExpiration || 7
   });
 
-  useEffect(() => {
-    if (space) {
-      setFormData({
-        title: space.title || '',
-        description: space.description || '',
-        isPrivate: space.isPrivate || false,
-        defaultPermission: space.defaultPermission || 'view',
-        allowInvites: space.allowInvites !== false,
-        autoApproveRequests: space.autoApproveRequests || false,
-        maxMembers: space.maxMembers || 50
-      });
+  const [joinRequestSettings, setJoinRequestSettings] = useState({
+    autoApproveJoinRequests: space?.settings?.autoApproveJoinRequests || false
+  });
 
-      setInviteSettings({
-        requireApproval: space.inviteSettings?.requireApproval || false,
-        allowMemberInvites: space.inviteSettings?.allowMemberInvites !== false,
-        inviteExpiration: space.inviteSettings?.inviteExpiration || 7
-      });
+  const [joinRequests, setJoinRequests] = useState([]);
+  const [loadingJoinRequests, setLoadingJoinRequests] = useState(false);
+
+  useEffect(() => {
+    try {
+      if (space) {
+        console.log('Updating form data for space:', space._id);
+        setFormData({
+          title: space.title || '',
+          description: space.description || '',
+          isPrivate: space.isPrivate || false,
+          defaultPermission: space.defaultPermission || 'view',
+          allowInvites: space.allowInvites !== false,
+          autoApproveRequests: space.autoApproveRequests || false,
+          maxMembers: space.maxMembers || 50
+        });
+
+        setInviteSettings({
+          requireApproval: space.inviteSettings?.requireApproval || false,
+          allowMemberInvites: space.inviteSettings?.allowMemberInvites !== false,
+          inviteExpiration: space.inviteSettings?.inviteExpiration || 7
+        });
+
+        setJoinRequestSettings({
+          autoApproveJoinRequests: space.settings?.autoApproveJoinRequests || false
+        });
+      }
+    } catch (error) {
+      console.error('Error updating form data:', error);
     }
-  }, [space]);
+  }, [space?._id]); // Only depend on space ID to prevent unnecessary re-renders
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    let processedValue = value;
+    
+    // Handle number inputs
+    if (type === 'number') {
+      processedValue = parseInt(value) || 0;
+    }
+    
     setFormData(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : processedValue
     }));
   };
 
   const handleInviteSettingChange = (e) => {
     const { name, value, type, checked } = e.target;
+    
+    let processedValue = value;
+    
+    // Handle number inputs
+    if (type === 'number') {
+      processedValue = parseInt(value) || 0;
+    }
+    
     setInviteSettings(prev => ({
       ...prev,
-      [name]: type === 'checkbox' ? checked : value
+      [name]: type === 'checkbox' ? checked : processedValue
     }));
+  };
+
+  const handleJoinRequestSettingChange = (e) => {
+    const { name, type, checked } = e.target;
+    
+    setJoinRequestSettings(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : prev[name]
+    }));
+  };
+
+  const fetchJoinRequests = async () => {
+    try {
+      setLoadingJoinRequests(true);
+      const response = await api.get(`/api/collaborate/spaces/${space._id}/join-requests`);
+      if (response.data.success) {
+        setJoinRequests(response.data.joinRequests);
+      }
+    } catch (error) {
+      console.error('Error fetching join requests:', error);
+    } finally {
+      setLoadingJoinRequests(false);
+    }
+  };
+
+  const handleApproveJoinRequest = async (requestId) => {
+    try {
+      const response = await api.put(`/api/collaborate/join-requests/${requestId}/approve`, {
+        reviewMessage: '' // Send empty review message
+      });
+      if (response.data.success) {
+        alert('Join request approved successfully!');
+        fetchJoinRequests(); // Refresh list
+        onUpdate?.(); // Update parent component
+      }
+    } catch (error) {
+      console.error('Error approving join request:', error);
+      alert(error.response?.data?.error || 'Failed to approve join request');
+    }
+  };
+
+  const handleRejectJoinRequest = async (requestId) => {
+    try {
+      const reviewMessage = prompt('Optional rejection message:');
+      const response = await api.put(`/api/collaborate/join-requests/${requestId}/reject`, {
+        reviewMessage
+      });
+      if (response.data.success) {
+        alert('Join request rejected.');
+        fetchJoinRequests(); // Refresh list
+      }
+    } catch (error) {
+      console.error('Error rejecting join request:', error);
+      alert(error.response?.data?.error || 'Failed to reject join request');
+    }
+  };
+
+  // Fetch join requests when tab becomes active
+  useEffect(() => {
+    if (activeTab === 'invites' && space?._id) {
+      fetchJoinRequests();
+    }
+  }, [activeTab, space?._id]);
+
+  // Helper function to format time ago like Instagram
+  const formatTimeAgo = (date) => {
+    const now = new Date();
+    const requestDate = new Date(date);
+    const diffInSeconds = Math.floor((now - requestDate) / 1000);
+    
+    if (diffInSeconds < 60) return 'just now';
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m`;
+    if (diffInSeconds < 86400) return `${Math.floor(diffInSeconds / 3600)}h`;
+    if (diffInSeconds < 604800) return `${Math.floor(diffInSeconds / 86400)}d`;
+    return `${Math.floor(diffInSeconds / 604800)}w`;
   };
 
   const handleSaveSettings = async () => {
     try {
       setSaving(true);
-      const token = await user.getIdToken();
 
       const updateData = {
         ...formData,
-        inviteSettings: inviteSettings
+        inviteSettings: inviteSettings,
+        settings: {
+          ...space.settings,
+          ...joinRequestSettings
+        }
       };
 
-      const response = await axios.put(
-        `/collaborate/spaces/${space._id}`,
-        updateData,
-        {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+      const response = await api.put(
+        `/api/collaborate/spaces/${space._id}`,
+        updateData
       );
 
       if (onUpdate) {
-        onUpdate(response.data.space);
+        onUpdate(); // Just call the update function to trigger refresh
       }
 
       alert('Settings updated successfully!');
@@ -100,18 +211,17 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
   };
 
   const handleDeleteSpace = async () => {
-    if (deleteConfirmText !== space.title) {
+    const spaceTitle = space?.title || 'Unknown Space';
+    
+    if (deleteConfirmText !== spaceTitle) {
       alert('Please enter the exact space title to confirm deletion.');
       return;
     }
 
     try {
       setDeleting(true);
-      const token = await user.getIdToken();
 
-      await axios.delete(`/collaborate/spaces/${space._id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
+      await api.delete(`/api/collaborate/spaces/${space._id}`);
 
       if (onDelete) {
         onDelete(space._id);
@@ -130,14 +240,31 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
 
   const canManageSpace = () => {
     if (!space || !user) return false;
-    return space.owner._id === user.uid || 
-           space.collaborators?.some(c => c.user._id === user.uid && c.role === 'admin');
+    
+    // Check if user is the owner
+    if (space.ownerId === user.uid) return true;
+    
+    // Check if user is an admin collaborator
+    const userCollaborator = space.collaborators?.find(c => 
+      c.userId === user.uid && c.status === 'active'
+    );
+    
+    return userCollaborator?.permission === 'admin';
   };
 
   if (loading) {
     return (
       <div className="space-settings-loading">
         <Spinner />
+      </div>
+    );
+  }
+
+  if (!space) {
+    return (
+      <div className="space-settings-error">
+        <h3>Space Not Found</h3>
+        <p>Unable to load space settings. Please try refreshing the page.</p>
       </div>
     );
   }
@@ -332,6 +459,95 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
                 </div>
               </>
             )}
+
+            {/* Join Request Settings */}
+            <h4 style={{ marginTop: '32px', marginBottom: '16px', color: '#333' }}>Join Request Settings</h4>
+            
+            <div className="form-group checkbox-group">
+              <label className="checkbox-label">
+                <input
+                  type="checkbox"
+                  name="autoApproveJoinRequests"
+                  checked={joinRequestSettings.autoApproveJoinRequests}
+                  onChange={handleJoinRequestSettingChange}
+                />
+                <span className="checkbox-text">
+                  Auto-approve Join Requests
+                  <small>Automatically approve all join requests without manual review</small>
+                </span>
+              </label>
+            </div>
+
+            {/* Pending Join Requests */}
+            <h4 style={{ marginTop: '32px', marginBottom: '16px', color: '#333' }}>
+              Join Requests ({joinRequests.filter(req => req.status === 'pending').length})
+            </h4>
+            
+            {loadingJoinRequests ? (
+              <div className="loading-state">
+                <div className="loading-spinner"></div>
+                <p>Loading requests...</p>
+              </div>
+            ) : joinRequests.filter(req => req.status === 'pending').length === 0 ? (
+              <div className="empty-requests-state">
+                <div className="empty-icon">👥</div>
+                <h3>No pending requests</h3>
+                <p>When users request to join your space, they'll appear here.</p>
+              </div>
+            ) : (
+              <div className="join-requests-container">
+                {joinRequests
+                  .filter(req => req.status === 'pending')
+                  .map(request => (
+                    <div key={request._id} className="join-request-card">
+                      <div className="request-avatar">
+                        <div className="avatar-circle">
+                          {request.requesterName.charAt(0).toUpperCase()}
+                        </div>
+                      </div>
+                      
+                      <div className="request-content">
+                        <div className="request-header">
+                          <div className="requester-info">
+                            <h4 className="requester-name">{request.requesterName}</h4>
+                            <span className="requester-email">{request.requesterEmail}</span>
+                          </div>
+                          <div className="request-time">
+                            {formatTimeAgo(request.createdAt)}
+                          </div>
+                        </div>
+                        
+                        <div className="request-details">
+                          <span className="permission-badge">
+                            Wants {request.requestedPermission} access
+                          </span>
+                        </div>
+                        
+                        {request.message && (
+                          <div className="request-message">
+                            <p>"{request.message}"</p>
+                          </div>
+                        )}
+                        
+                        <div className="request-actions">
+                          <button
+                            className="action-btn approve-btn"
+                            onClick={() => handleApproveJoinRequest(request._id)}
+                          >
+                            Accept
+                          </button>
+                          <button
+                            className="action-btn reject-btn"
+                            onClick={() => handleRejectJoinRequest(request._id)}
+                          >
+                            Decline
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            )}
           </div>
         )}
 
@@ -387,7 +603,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
                   <strong>This action cannot be undone.</strong>
                 </p>
                 <p>
-                  This will permanently delete the "{space.title}" collaboration space and all of its data, including:
+                  This will permanently delete the "{space?.title || 'Unknown Space'}" collaboration space and all of its data, including:
                 </p>
                 <ul>
                   <li>All shared content and files</li>
@@ -399,7 +615,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
 
               <div className="confirm-input">
                 <label>
-                  Type the space title <strong>"{space.title}"</strong> to confirm:
+                  Type the space title <strong>"{space?.title || 'Unknown Space'}"</strong> to confirm:
                 </label>
                 <input
                   type="text"
@@ -414,7 +630,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
               <button
                 className="confirm-delete-btn"
                 onClick={handleDeleteSpace}
-                disabled={deleting || deleteConfirmText !== space.title}
+                disabled={deleting || deleteConfirmText !== (space?.title || 'Unknown Space')}
               >
                 {deleting ? 'Deleting...' : 'Delete Space'}
               </button>

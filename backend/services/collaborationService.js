@@ -2,7 +2,9 @@ const CollaborationSpace = require('../models/CollaborationSpace');
 const SharedContent = require('../models/SharedContent');
 const ChangeRequest = require('../models/ChangeRequest');
 const CollaborationInvite = require('../models/CollaborationInvite');
+const JoinRequest = require('../models/JoinRequest');
 const User = require('../models/User');
+const NotificationService = require('./notificationService');
 const crypto = require('crypto');
 
 class CollaborationService {
@@ -45,8 +47,12 @@ class CollaborationService {
         query.ownerId = userId;
       } else if (role === 'collaborator') {
         query = {
-          'collaborators.userId': userId,
-          'collaborators.status': 'active',
+          'collaborators': {
+            $elemMatch: {
+              userId: userId,
+              status: 'active'
+            }
+          },
           ownerId: { $ne: userId }
         };
       } else if (role === 'public') {
@@ -54,7 +60,14 @@ class CollaborationService {
         query = {
           privacy: 'public',
           ownerId: { $ne: userId },
-          'collaborators.userId': { $ne: userId }
+          'collaborators': {
+            $not: {
+              $elemMatch: {
+                userId: userId,
+                status: 'active'
+              }
+            }
+          }
         };
       } else {
         // All spaces where user is owner, active collaborator, OR public spaces
@@ -62,13 +75,24 @@ class CollaborationService {
           $or: [
             { ownerId: userId },
             {
-              'collaborators.userId': userId,
-              'collaborators.status': 'active'
+              'collaborators': {
+                $elemMatch: {
+                  userId: userId,
+                  status: 'active'
+                }
+              }
             },
             {
               privacy: 'public',
               ownerId: { $ne: userId },
-              'collaborators.userId': { $ne: userId }
+              'collaborators': {
+                $not: {
+                  $elemMatch: {
+                    userId: userId,
+                    status: 'active'
+                  }
+                }
+              }
             }
           ]
         };
@@ -81,11 +105,35 @@ class CollaborationService {
         .skip(skip)
         .limit(limit)
         .lean();
+      
+      // Additional filtering to ensure user has valid access
+      const validSpaces = spaces.filter(space => {
+        // Check if user is owner
+        if (space.ownerId === userId) {
+          return true;
+        }
+        
+        // Check if user is active collaborator
+        const userCollaborator = space.collaborators?.find(
+          c => c.userId === userId && c.status === 'active'
+        );
+        
+        if (userCollaborator) {
+          return true;
+        }
+        
+        // Check if it's a public space
+        if (space.privacy === 'public') {
+          return true;
+        }
+        
+        return false;
+      });
 
       const total = await CollaborationSpace.countDocuments(query);
 
       return {
-        spaces,
+        spaces: validSpaces, // Return filtered spaces instead of all spaces
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),
@@ -113,9 +161,52 @@ class CollaborationService {
         throw new Error('Access denied to this collaboration space');
       }
 
+      // Calculate and update real-time stats
+      await this.updateSpaceStats(space);
+
       return space;
     } catch (error) {
       throw new Error(`Failed to get collaboration space: ${error.message}`);
+    }
+  }
+
+  // Helper method to calculate and update space stats in real-time
+  async updateSpaceStats(space) {
+    try {
+      const SharedContent = require('../models/SharedContent');
+      
+      // Calculate total collaborators (active only)
+      const totalCollaborators = space.collaborators.filter(c => c.status === 'active').length;
+      
+      // Calculate total content items in this space
+      const totalContent = await SharedContent.countDocuments({
+        collaborationSpaceId: space._id
+      });
+      
+      // Calculate total views across all content in this space
+      const contentWithViews = await SharedContent.find({
+        collaborationSpaceId: space._id
+      }, 'stats.views');
+      
+      const totalViews = contentWithViews.reduce((total, content) => {
+        return total + (content.stats?.views || 0);
+      }, 0);
+      
+      // Update space stats
+      space.stats = {
+        ...space.stats,
+        totalCollaborators,
+        totalContent,
+        totalViews,
+        lastActivity: space.stats?.lastActivity || space.updatedAt || space.createdAt
+      };
+      
+      // Save the updated stats
+      await space.save();
+      
+    } catch (error) {
+      console.error('Error updating space stats:', error);
+      // Don't throw error here to prevent breaking the main flow
     }
   }
 
@@ -674,6 +765,26 @@ class CollaborationService {
       space.stats.lastActivity = new Date();
       await space.save();
 
+      // Emit real-time events
+      if (this.socketManager) {
+        // Notify the user whose permission was updated
+        this.socketManager.notifyUser(collaboratorUserId, 'permission-updated', {
+          spaceId: space._id,
+          spaceName: space.name || space.title,
+          newPermission,
+          updatedBy: updaterId
+        });
+
+        // Notify other space members about the permission change
+        this.socketManager.notifySpace(spaceId, 'member-permission-updated', {
+          spaceId: space._id,
+          userId: collaboratorUserId,
+          userName: collaborator.name,
+          newPermission,
+          updatedBy: updaterId
+        });
+      }
+
       return space;
     } catch (error) {
       throw new Error(`Failed to update collaborator permission: ${error.message}`);
@@ -699,18 +810,47 @@ class CollaborationService {
         throw new Error('Cannot remove space owner');
       }
 
-      // Find and update collaborator status
-      const collaborator = space.collaborators.find(
+      // Find and remove collaborator completely
+      const collaboratorIndex = space.collaborators.findIndex(
         c => c.userId === collaboratorUserId && c.status === 'active'
       );
 
-      if (!collaborator) {
+      if (collaboratorIndex === -1) {
         throw new Error('Collaborator not found');
       }
 
-      collaborator.status = 'inactive';
+      const collaborator = space.collaborators[collaboratorIndex];
+      
+      // Remove collaborator from array completely
+      space.collaborators.splice(collaboratorIndex, 1);
+      
+      // Clean up any approved join requests for this user in this space
+      await JoinRequest.deleteMany({
+        requesterId: collaboratorUserId,
+        spaceId: spaceId,
+        status: 'approved'
+      });
+      
       space.stats.lastActivity = new Date();
       await space.save();
+
+      // Emit real-time events
+      if (this.socketManager) {
+        // Notify the removed member that they've been removed
+        this.socketManager.notifyUser(collaboratorUserId, 'member-removed', {
+          spaceId: space._id,
+          spaceName: space.name || space.title,
+          removedBy: removerId
+        });
+
+        // Notify other space members about the removal
+        this.socketManager.notifySpace(spaceId, 'space-member-removed', {
+          spaceId: space._id,
+          removedUserId: collaboratorUserId,
+          removedUserName: collaborator.name,
+          removedBy: removerId
+        });
+      }
 
       return space;
     } catch (error) {
@@ -1391,6 +1531,268 @@ class CollaborationService {
       return space;
     } catch (error) {
       throw new Error(`Failed to update member permission: ${error.message}`);
+    }
+  }
+
+  // ===== JOIN REQUEST MANAGEMENT =====
+
+  async createJoinRequest(requestData) {
+    try {
+      const { requesterId, requesterName, requesterEmail, spaceId, message, requestedPermission } = requestData;
+
+      // Get space details
+      const space = await CollaborationSpace.findById(spaceId);
+      if (!space) {
+        throw new Error('Collaboration space not found');
+      }
+
+      // Check if user is already a collaborator
+      const existingCollaborator = space.collaborators.find(c => 
+        c.userId === requesterId && c.status === 'active'
+      );
+      if (existingCollaborator) {
+        throw new Error('You are already a collaborator in this space');
+      }
+
+      // Check if user is the owner
+      if (space.ownerId === requesterId) {
+        throw new Error('You cannot request to join your own space');
+      }
+
+      // Check if there's already a pending request
+      const existingRequest = await JoinRequest.findOne({
+        requesterId,
+        spaceId,
+        status: 'pending'
+      });
+      if (existingRequest) {
+        throw new Error('You already have a pending request for this space');
+      }
+
+      // Clean up any old approved/rejected requests for this user in this space
+      // This ensures clean state when user requests to join again after leaving
+      await JoinRequest.deleteMany({
+        requesterId,
+        spaceId,
+        status: { $in: ['approved', 'rejected'] }
+      });
+
+      // Create the join request
+      const joinRequest = new JoinRequest({
+        requesterId,
+        requesterName,
+        requesterEmail,
+        spaceId,
+        spaceName: space.title,
+        spaceOwnerId: space.ownerId,
+        message: message || '',
+        requestedPermission: requestedPermission || 'view'
+      });
+
+      // Check if auto-approval is enabled
+      if (space.settings.autoApproveJoinRequests) {
+        joinRequest.status = 'approved';
+        joinRequest.autoApproved = true;
+        joinRequest.reviewedAt = new Date();
+        
+        // Add user as collaborator immediately
+        space.collaborators.push({
+          userId: requesterId,
+          name: requesterName,
+          email: requesterEmail,
+          permission: requestedPermission || 'view',
+          status: 'active',
+          invitedBy: space.ownerId,
+          joinedAt: new Date()
+        });
+        
+        await space.save();
+        
+        // Notify the user of auto-approval
+        if (global.socketManager) {
+          global.socketManager.notifyUser(requesterId, 'join-request-auto-approved', {
+            spaceId: space._id,
+            spaceName: space.title,
+            permission: requestedPermission || 'view'
+          });
+        }
+
+        // Notify all members of new collaborator
+        await NotificationService.notifyNewMemberJoined(space, {
+          userId: requesterId,
+          name: requesterName,
+          permission: requestedPermission || 'view'
+        });
+      } else {
+        // Notify space owner of new request
+        await NotificationService.notifyJoinRequestCreated(joinRequest, space);
+      }
+
+      await joinRequest.save();
+      return joinRequest;
+    } catch (error) {
+      throw new Error(`Failed to create join request: ${error.message}`);
+    }
+  }
+
+  async getJoinRequestsForSpace(spaceId, userId, status = 'pending') {
+    try {
+      // Verify user is space owner
+      const space = await CollaborationSpace.findById(spaceId);
+      if (!space) {
+        throw new Error('Collaboration space not found');
+      }
+      
+      if (space.ownerId !== userId) {
+        throw new Error('Only space owners can view join requests');
+      }
+
+      const query = { spaceId };
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+
+      const joinRequests = await JoinRequest.find(query)
+        .sort({ createdAt: -1 });
+
+      return joinRequests;
+    } catch (error) {
+      throw new Error(`Failed to fetch join requests: ${error.message}`);
+    }
+  }
+
+  async getUserJoinRequests(userId, status) {
+    try {
+      const query = { requesterId: userId };
+      if (status && status !== 'all') {
+        query.status = status;
+      }
+
+      const joinRequests = await JoinRequest.find(query)
+        .sort({ createdAt: -1 });
+
+      return joinRequests;
+    } catch (error) {
+      throw new Error(`Failed to fetch user join requests: ${error.message}`);
+    }
+  }
+
+  async approveJoinRequest(requestId, reviewerId, reviewMessage) {
+    try {
+      const joinRequest = await JoinRequest.findById(requestId);
+      if (!joinRequest) {
+        throw new Error('Join request not found');
+      }
+
+      // Verify reviewer is space owner
+      const space = await CollaborationSpace.findById(joinRequest.spaceId);
+      if (!space) {
+        throw new Error('Collaboration space not found');
+      }
+      
+      if (space.ownerId !== reviewerId) {
+        throw new Error('Only space owners can approve join requests');
+      }
+
+      if (joinRequest.status !== 'pending') {
+        throw new Error('Join request has already been processed');
+      }
+
+      // Update join request
+      joinRequest.status = 'approved';
+      joinRequest.reviewedBy = reviewerId;
+      joinRequest.reviewedAt = new Date();
+      joinRequest.reviewMessage = reviewMessage || '';
+
+      // Add user as collaborator
+      space.collaborators.push({
+        userId: joinRequest.requesterId,
+        name: joinRequest.requesterName,
+        email: joinRequest.requesterEmail,
+        permission: joinRequest.requestedPermission,
+        status: 'active',
+        invitedBy: reviewerId,
+        joinedAt: new Date()
+      });
+
+      await Promise.all([joinRequest.save(), space.save()]);
+
+      // Notify the requester of approval
+      await NotificationService.notifyJoinRequestApproved(joinRequest, space, reviewMessage);
+
+      // Notify all space members of new collaborator
+      await NotificationService.notifyNewMemberJoined(space, {
+        userId: joinRequest.requesterId,
+        name: joinRequest.requesterName,
+        permission: joinRequest.requestedPermission
+      });
+
+      return { joinRequest, space };
+    } catch (error) {
+      throw new Error(`Failed to approve join request: ${error.message}`);
+    }
+  }
+
+  async rejectJoinRequest(requestId, reviewerId, reviewMessage) {
+    try {
+      const joinRequest = await JoinRequest.findById(requestId);
+      if (!joinRequest) {
+        throw new Error('Join request not found');
+      }
+
+      // Verify reviewer is space owner
+      const space = await CollaborationSpace.findById(joinRequest.spaceId);
+      if (!space) {
+        throw new Error('Collaboration space not found');
+      }
+      
+      if (space.ownerId !== reviewerId) {
+        throw new Error('Only space owners can reject join requests');
+      }
+
+      if (joinRequest.status !== 'pending') {
+        throw new Error('Join request has already been processed');
+      }
+
+      // Update join request
+      joinRequest.status = 'rejected';
+      joinRequest.reviewedBy = reviewerId;
+      joinRequest.reviewedAt = new Date();
+      joinRequest.reviewMessage = reviewMessage || '';
+
+      await joinRequest.save();
+
+      // Notify the requester of rejection
+      await NotificationService.notifyJoinRequestRejected(joinRequest, space, reviewMessage);
+
+      return joinRequest;
+    } catch (error) {
+      throw new Error(`Failed to reject join request: ${error.message}`);
+    }
+  }
+
+  async getJoinRequestStatus(spaceId, userId) {
+    try {
+      // Check if user has any join requests for this space
+      const joinRequest = await JoinRequest.findOne({
+        requesterId: userId,
+        spaceId
+      }).sort({ createdAt: -1 }); // Get most recent request
+
+      if (!joinRequest) {
+        return { hasRequest: false, status: null };
+      }
+
+      return {
+        hasRequest: true,
+        status: joinRequest.status,
+        requestId: joinRequest._id,
+        createdAt: joinRequest.createdAt,
+        reviewedAt: joinRequest.reviewedAt,
+        reviewMessage: joinRequest.reviewMessage
+      };
+    } catch (error) {
+      throw new Error(`Failed to get join request status: ${error.message}`);
     }
   }
 }

@@ -86,6 +86,10 @@ const collaborationSpaceSchema = new mongoose.Schema({
       type: Boolean,
       default: true
     },
+    autoApproveJoinRequests: {
+      type: Boolean,
+      default: false
+    },
     enableComments: {
       type: Boolean,
       default: true

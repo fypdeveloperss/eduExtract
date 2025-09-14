@@ -91,6 +91,69 @@ app.use((err, req, res, next) => {
   });
 });
 
+// Performance monitoring routes
+app.get('/api/performance/firebase', (req, res) => {
+  try {
+    const { getFirebaseMetrics } = require('./config/firebase-admin');
+    res.json({
+      success: true,
+      metrics: getFirebaseMetrics(),
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.get('/api/performance/socket', (req, res) => {
+  try {
+    // This will be set after socketManager is initialized
+    if (global.socketManager) {
+      res.json({
+        success: true,
+        metrics: global.socketManager.getPerformanceMetrics(),
+        timestamp: new Date().toISOString()
+      });
+    } else {
+      res.json({
+        success: false,
+        error: 'Socket manager not initialized yet'
+      });
+    }
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+app.post('/api/performance/clear-cache', (req, res) => {
+  try {
+    // Clear Firebase cache
+    const { clearFirebaseCache } = require('./config/firebase-admin');
+    clearFirebaseCache();
+    
+    // Clear Socket cache if available
+    if (global.socketManager) {
+      global.socketManager.clearAllCaches();
+    }
+    
+    res.json({
+      success: true,
+      message: 'All caches cleared successfully'
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // 404 handler - catch all remaining routes
 app.use((req, res) => {
   res.status(404).json({ 
@@ -132,8 +195,13 @@ socketManager.setCollaborationService(collaborationService);
 
 // Make services available globally (but keep limited exposure)
 global.collaborationService = collaborationService;
+global.socketManager = socketManager; // Add this for performance monitoring
 
 // Initialize collaboration routes with socket manager
 collaborationRoutes.setSocketManager(socketManager);
 
 console.log('Socket.IO and services initialized for real-time collaboration');
+console.log('🚀 Performance monitoring available at:');
+console.log('  - Firebase metrics: GET /api/performance/firebase');
+console.log('  - Socket metrics: GET /api/performance/socket');
+console.log('  - Clear caches: POST /api/performance/clear-cache');

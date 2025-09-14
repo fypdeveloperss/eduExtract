@@ -1,8 +1,10 @@
-const { verifyToken, verifyAdmin, verifyAdminEnhanced, isAdmin } = require('../config/firebase-admin');
+const { verifyToken, verifyAdmin, verifyAdminEnhanced, isAdmin, getFirebaseMetrics, clearFirebaseCache } = require('../config/firebase-admin');
 
 module.exports = {
   verifyToken,
   verifyAdmin,
   verifyAdminEnhanced,
-  isAdmin
+  isAdmin,
+  getFirebaseMetrics,
+  clearFirebaseCache
 }; 

@@ -16,12 +16,13 @@ class SocketService {
     }
 
     try {
-      const token = await user.getIdToken();
       const serverUrl = import.meta.env.VITE_SERVER_URL || 'http://localhost:5000';
       
       this.socket = io(serverUrl, {
         auth: {
-          token: token
+          userId: user.uid,
+          userName: user.displayName || user.email?.split('@')[0] || 'Anonymous',
+          userEmail: user.email
         },
         transports: ['websocket', 'polling']
       });

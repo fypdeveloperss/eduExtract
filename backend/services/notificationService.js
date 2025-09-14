@@ -392,6 +392,107 @@ class NotificationService {
       console.error('Error removing watcher:', error);
     }
   }
+
+  // ===== JOIN REQUEST NOTIFICATIONS =====
+
+  async notifyJoinRequestCreated(joinRequest, space) {
+    try {
+      // Notify space owner of new join request
+      const notificationData = {
+        type: 'join_request_created',
+        requestId: joinRequest._id,
+        spaceId: space._id,
+        spaceName: space.title,
+        requesterName: joinRequest.requesterName,
+        requesterEmail: joinRequest.requesterEmail,
+        requestedPermission: joinRequest.requestedPermission,
+        message: joinRequest.message,
+        timestamp: new Date()
+      };
+
+      if (this.socketManager) {
+        this.socketManager.notifyUser(space.ownerId, 'join-request-created', notificationData);
+      }
+
+      console.log(`Notified space owner ${space.ownerId} of new join request from ${joinRequest.requesterName}`);
+    } catch (error) {
+      console.error('Error notifying join request created:', error);
+    }
+  }
+
+  async notifyJoinRequestApproved(joinRequest, space, reviewMessage) {
+    try {
+      // Notify requester that their request was approved
+      const notificationData = {
+        type: 'join_request_approved',
+        requestId: joinRequest._id,
+        spaceId: space._id,
+        spaceName: space.title,
+        permission: joinRequest.requestedPermission,
+        reviewMessage,
+        autoApproved: joinRequest.autoApproved,
+        timestamp: new Date()
+      };
+
+      if (this.socketManager) {
+        this.socketManager.notifyUser(joinRequest.requesterId, 'join-request-approved', notificationData);
+      }
+
+      console.log(`Notified user ${joinRequest.requesterId} that their join request was approved for space ${space.title}`);
+    } catch (error) {
+      console.error('Error notifying join request approved:', error);
+    }
+  }
+
+  async notifyJoinRequestRejected(joinRequest, space, reviewMessage) {
+    try {
+      // Notify requester that their request was rejected
+      const notificationData = {
+        type: 'join_request_rejected',
+        requestId: joinRequest._id,
+        spaceId: space._id,
+        spaceName: space.title,
+        reviewMessage,
+        timestamp: new Date()
+      };
+
+      if (this.socketManager) {
+        this.socketManager.notifyUser(joinRequest.requesterId, 'join-request-rejected', notificationData);
+      }
+
+      console.log(`Notified user ${joinRequest.requesterId} that their join request was rejected for space ${space.title}`);
+    } catch (error) {
+      console.error('Error notifying join request rejected:', error);
+    }
+  }
+
+  async notifyNewMemberJoined(space, newMember) {
+    try {
+      // Notify all active collaborators of new member
+      const notificationData = {
+        type: 'new_member_joined',
+        spaceId: space._id,
+        spaceName: space.title,
+        memberName: newMember.name,
+        memberPermission: newMember.permission,
+        timestamp: new Date()
+      };
+
+      const activeCollaborators = space.collaborators.filter(c => 
+        c.status === 'active' && c.userId !== newMember.userId
+      );
+
+      for (const collaborator of activeCollaborators) {
+        if (this.socketManager) {
+          this.socketManager.notifyUser(collaborator.userId, 'new-member-joined', notificationData);
+        }
+      }
+
+      console.log(`Notified ${activeCollaborators.length} members of new member ${newMember.name} joining space ${space.title}`);
+    } catch (error) {
+      console.error('Error notifying new member joined:', error);
+    }
+  }
 }
 
 module.exports = new NotificationService();

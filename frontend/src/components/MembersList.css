@@ -130,6 +130,19 @@
   letter-spacing: 0.5px;
 }
 
+/* Role-specific colors */
+.role-badge.role-admin {
+  background: #4caf50;
+}
+
+.role-badge.role-edit {
+  background: #2196f3;
+}
+
+.role-badge.role-view {
+  background: #9e9e9e;
+}
+
 .owner-badge {
   background: #ff9800;
   color: white;

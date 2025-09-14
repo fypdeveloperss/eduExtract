@@ -85,6 +85,16 @@ router.get('/spaces/:spaceId', verifyToken, async (req, res) => {
 
     const space = await collaborationService.getCollaborationSpaceById(spaceId, userId);
     
+    // Also trigger a background stats refresh for the space header
+    // This ensures the most up-to-date stats are displayed
+    setImmediate(async () => {
+      try {
+        await collaborationService.updateSpaceStats(space);
+      } catch (error) {
+        console.error('Background stats update failed:', error);
+      }
+    });
+    
     res.json({
       success: true,
       space
@@ -931,6 +941,151 @@ router.get('/pending-reviews', verifyToken, async (req, res) => {
     });
   } catch (error) {
     console.error('Error getting pending review requests:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// ===== JOIN REQUEST ROUTES =====
+
+// Create a join request
+router.post('/join-requests', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId, name: userName, email: userEmail } = req.user;
+    const { spaceId, message, requestedPermission } = req.body;
+
+    if (!spaceId) {
+      return res.status(400).json({
+        success: false,
+        error: 'Space ID is required'
+      });
+    }
+
+    const joinRequest = await collaborationService.createJoinRequest({
+      requesterId: userId,
+      requesterName: userName,
+      requesterEmail: userEmail,
+      spaceId,
+      message,
+      requestedPermission
+    });
+
+    res.status(201).json({
+      success: true,
+      joinRequest
+    });
+  } catch (error) {
+    console.error('Error creating join request:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get join requests for a space (space owner only)
+router.get('/spaces/:spaceId/join-requests', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { spaceId } = req.params;
+    const { status = 'pending' } = req.query;
+
+    const joinRequests = await collaborationService.getJoinRequestsForSpace(spaceId, userId, status);
+
+    res.json({
+      success: true,
+      joinRequests
+    });
+  } catch (error) {
+    console.error('Error fetching join requests:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Get user's own join requests
+router.get('/my-join-requests', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { status } = req.query;
+
+    const joinRequests = await collaborationService.getUserJoinRequests(userId, status);
+
+    res.json({
+      success: true,
+      joinRequests
+    });
+  } catch (error) {
+    console.error('Error fetching user join requests:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Approve a join request
+router.put('/join-requests/:requestId/approve', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { requestId } = req.params;
+    const reviewMessage = req.body?.reviewMessage || '';
+
+    const result = await collaborationService.approveJoinRequest(requestId, userId, reviewMessage);
+
+    res.json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error approving join request:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Reject a join request
+router.put('/join-requests/:requestId/reject', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { requestId } = req.params;
+    const reviewMessage = req.body?.reviewMessage || '';
+
+    const result = await collaborationService.rejectJoinRequest(requestId, userId, reviewMessage);
+
+    res.json({
+      success: true,
+      result
+    });
+  } catch (error) {
+    console.error('Error rejecting join request:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+// Check if user has pending join request for a space
+router.get('/spaces/:spaceId/join-request-status', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { spaceId } = req.params;
+
+    const status = await collaborationService.getJoinRequestStatus(spaceId, userId);
+
+    res.json({
+      success: true,
+      status
+    });
+  } catch (error) {
+    console.error('Error checking join request status:', error);
     res.status(500).json({
       success: false,
       error: error.message

@@ -346,6 +346,36 @@ export const CollaborationProvider = ({ children }) => {
       });
     });
 
+    // Handle member removal
+    socketService.addEventListener('member-removed', (data) => {
+      addNotification({
+        type: 'warning',
+        message: `You have been removed from "${data.spaceName}"`,
+        timestamp: Date.now()
+      });
+
+      // Trigger a custom event that other components can listen to
+      window.dispatchEvent(new CustomEvent('memberRemovedFromSpace', {
+        detail: { spaceId: data.spaceId, spaceName: data.spaceName }
+      }));
+
+      // If currently in the removed space, redirect to collaborate hub
+      if (currentSpace && currentSpace._id === data.spaceId) {
+        window.location.href = '/collaborate';
+      }
+    });
+
+    socketService.addEventListener('space-member-removed', (data) => {
+      // Update active users list
+      setActiveUsers(prev => prev.filter(user => user.userId !== data.removedUserId));
+
+      addNotification({
+        type: 'info',
+        message: `${data.removedUserName} was removed from the space`,
+        timestamp: Date.now()
+      });
+    });
+
     // Version control events
     socketService.addEventListener('content-version-saved', (data) => {
       addNotification({

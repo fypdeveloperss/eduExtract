@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
-import './ContentList.css'; // Reuse existing CSS for consistent styling
+import './SpaceContentList.css'; // Use dedicated CSS for modern styling
 
 const SpaceContentList = ({ spaceId }) => {
   const [contentList, setContentList] = useState([]);
@@ -55,21 +55,38 @@ const SpaceContentList = ({ spaceId }) => {
     });
   };
 
+  const getContentIcon = (contentType) => {
+    switch (contentType?.toLowerCase()) {
+      case 'blog': return '📝';
+      case 'summary': return '📄';
+      case 'flashcards': return '🗂️';
+      case 'quiz': return '❓';
+      case 'slides': return '📊';
+      case 'document': return '📋';
+      case 'video': return '🎥';
+      default: return '📄';
+    }
+  };
+
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading space content...</p>
+      <div className="space-content-loading">
+        <div className="loading-spinner-modern">
+          <div className="spinner"></div>
+        </div>
+        <p className="loading-text">Loading shared content...</p>
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="error-container">
-        <h3>Error</h3>
-        <p>{error}</p>
-        <button onClick={() => window.location.reload()} className="retry-button">
+      <div className="space-content-error">
+        <div className="error-icon">⚠️</div>
+        <h3 className="error-title">Unable to Load Content</h3>
+        <p className="error-message">{error}</p>
+        <button onClick={() => window.location.reload()} className="retry-btn-modern">
+          <span className="retry-icon">🔄</span>
           Try Again
         </button>
       </div>
@@ -78,33 +95,78 @@ const SpaceContentList = ({ spaceId }) => {
 
   if (!contentList || contentList.length === 0) {
     return (
-      <div className="empty-state">
-        <h3>No Content</h3>
-        <p>This collaboration space doesn't have any content yet.</p>
+      <div className="space-content-empty">
+        <div className="empty-icon">📭</div>
+        <h3 className="empty-title">No Content Yet</h3>
+        <p className="empty-description">
+          This collaboration space is ready for content. Start by adding some shared materials to get the conversation going!
+        </p>
       </div>
     );
   }
 
   return (
-    <div className="content-list-container">
-      <h2 className="content-list-title">Shared Content</h2>
-      <div className="content-items">
+    <div className="space-content-container">
+      <div className="content-header">
+        <h2 className="content-title">
+          <span className="title-icon">📚</span>
+          Shared Content
+        </h2>
+        <div className="content-stats">
+          <span className="content-count">{contentList.length} items</span>
+        </div>
+      </div>
+      
+      <div className="content-grid">
         {contentList.map(item => (
-          <div key={item._id} className="content-item" onClick={() => handleViewContent(item._id)}>
-            <div className="content-item-header">
-              <h3 className="content-item-title">{item.title}</h3>
-              <span className="content-item-type">{item.contentType || item.type || 'Content'}</span>
-            </div>
-            <div className="content-item-meta">
-              <div className="content-item-author">
-                By {item.createdByName || 'Unknown'}
+          <div 
+            key={item._id} 
+            className="content-card" 
+            onClick={() => handleViewContent(item._id)}
+          >
+            <div className="content-card-header">
+              <div className={`content-type-badge content-type-${(item.contentType || item.type || 'default').toLowerCase()}`}>
+                <span className="content-icon">{getContentIcon(item.contentType || item.type)}</span>
+                <span className="content-type-text">{item.contentType || item.type || 'Content'}</span>
               </div>
-              <div className="content-item-date">
-                {formatDate(item.createdAt)}
+              <div className="content-menu">⋮</div>
+            </div>
+            
+            <div className="content-card-body">
+              <h3 className="content-card-title">{item.title}</h3>
+              <div className="content-card-meta">
+                <div className="author-info">
+                  <span className="author-avatar">👤</span>
+                  <span className="author-name">{item.createdByName || 'Unknown'}</span>
+                </div>
+                <div className="content-date">
+                  <span className="date-icon">🕒</span>
+                  <span className="date-text">{formatDate(item.createdAt)}</span>
+                </div>
               </div>
             </div>
-            <div className="content-item-footer">
-              <button className="view-content-btn">View Content</button>
+            
+            <div className="content-card-footer">
+              <div className="content-stats-row">
+                <div className="stat-item">
+                  <span className="stat-icon">👁️</span>
+                  <span className="stat-value">{item.stats?.views || 0}</span>
+                </div>
+                <div className="stat-item">
+                  <span className="stat-icon">💬</span>
+                  <span className="stat-value">{item.stats?.comments || 0}</span>
+                </div>
+              </div>
+              <button className="view-btn-modern">
+                <span className="btn-text">View</span>
+                <span className="btn-arrow">→</span>
+              </button>
+            </div>
+            
+            <div className="card-hover-overlay">
+              <div className="hover-content">
+                <span className="hover-text">Click to view content</span>
+              </div>
             </div>
           </div>
         ))}
