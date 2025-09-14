@@ -1,0 +1,266 @@
+.content-detail {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 2rem;
+  background-color: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.content-header {
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #eaeaea;
+  padding-bottom: 1.5rem;
+}
+
+.back-btn {
+  background-color: transparent;
+  border: 1px solid #ddd;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  margin-bottom: 1rem;
+  cursor: pointer;
+  font-weight: 500;
+  transition: all 0.2s;
+}
+
+.back-btn:hover {
+  background-color: #f5f5f5;
+  border-color: #ccc;
+}
+
+.content-title {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #333;
+  margin: 0.5rem 0;
+}
+
+.content-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  color: #666;
+}
+
+.content-type {
+  font-weight: 500;
+  background-color: #f0f7ff;
+  color: #0066cc;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+}
+
+.content-author, .content-date {
+  color: #777;
+}
+
+.content-body {
+  padding-top: 1rem;
+}
+
+.notes-content p {
+  margin-bottom: 1rem;
+  line-height: 1.6;
+}
+
+.flashcards-preview, .quiz-preview {
+  background-color: #f9f9f9;
+  border-radius: 8px;
+  padding: 1.5rem;
+  margin-top: 1rem;
+}
+
+.flashcards-preview h3, .quiz-preview h3 {
+  margin-top: 0;
+  margin-bottom: 1.5rem;
+  font-size: 1.25rem;
+  color: #333;
+  border-bottom: 1px solid #eee;
+  padding-bottom: 0.75rem;
+}
+
+.flashcard-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 1rem;
+}
+
+.flashcard-preview {
+  border: 1px solid #ddd;
+  border-radius: 6px;
+  padding: 1rem;
+  background-color: white;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.card-front {
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px dashed #eee;
+}
+
+.card-back {
+  color: #555;
+}
+
+.question-list {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.question-preview {
+  background-color: white;
+  border: 1px solid #eee;
+  border-radius: 6px;
+  padding: 1rem;
+}
+
+.question-text {
+  font-weight: 600;
+  margin-bottom: 0.75rem;
+}
+
+.options-list {
+  list-style-type: none;
+  padding-left: 0;
+}
+
+.options-list li {
+  padding: 0.5rem;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  background-color: #f5f5f5;
+}
+
+.correct-option {
+  background-color: #e3f7e3 !important;
+  border-left: 3px solid #4caf50;
+}
+
+.generic-content {
+  padding: 1rem 0;
+}
+
+.content-description {
+  line-height: 1.6;
+  color: #444;
+}
+
+.file-download {
+  margin-top: 2rem;
+  text-align: center;
+}
+
+.download-btn {
+  display: inline-block;
+  background-color: #4285f4;
+  color: white;
+  padding: 0.75rem 1.5rem;
+  border-radius: 4px;
+  text-decoration: none;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.download-btn:hover {
+  background-color: #3367d6;
+}
+
+.auth-required, .loading-container, .error-container, .not-found {
+  text-align: center;
+  padding: 3rem 2rem;
+}
+
+.loading-container .spinner {
+  margin: 0 auto 1rem;
+  border: 4px solid rgba(0, 0, 0, 0.1);
+  border-left-color: #4285f4;
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.error-container h2, .not-found h2, .auth-required h2 {
+  color: #d32f2f;
+  margin-bottom: 1rem;
+}
+
+.error-actions, .not-found button {
+  margin-top: 1.5rem;
+}
+
+.error-actions button, .not-found button {
+  margin: 0 0.5rem;
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.retry-btn {
+  background-color: #4285f4;
+  color: white;
+  border: none;
+}
+
+.retry-btn:hover {
+  background-color: #3367d6;
+}
+
+.blog-content {
+  padding: 20px;
+  border-radius: 8px;
+  background-color: #f9f9f9;
+  line-height: 1.6;
+}
+
+.blog-content h1,
+.blog-content h2,
+.blog-content h3 {
+  color: #333;
+  margin-bottom: 10px;
+}
+
+.blog-content p {
+  margin-bottom: 15px;
+}
+
+.blog-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 8px;
+  margin: 15px 0;
+}
+
+.video-content {
+    margin-top: 20px;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .content-detail {
+    padding: 1.5rem;
+    margin: 0 1rem;
+  }
+  
+  .content-title {
+    font-size: 1.5rem;
+  }
+  
+  .content-meta {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .flashcard-list {
+    grid-template-columns: 1fr;
+  }
+}

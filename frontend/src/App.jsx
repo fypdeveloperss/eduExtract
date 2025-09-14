@@ -25,6 +25,7 @@ import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
 import CollaborationInvites from "./pages/CollaborationInvites";
 import InviteAccept from "./pages/InviteAccept";
+import SharedContentView from "./pages/SharedContentView";
 
 function App() {
   return (
@@ -50,6 +51,7 @@ function App() {
               <Route path="collaborate/invitations" element={<CollaborationInvites />} />
               <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
               <Route path="collaborate/invite/:token" element={<InviteAccept />} />
+              <Route path="collaborate/content/:contentId" element={<SharedContentView />} />
             </Route>
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Admin />} />

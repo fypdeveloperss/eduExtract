@@ -5,7 +5,7 @@ import { useCollaboration } from '../context/CollaborationContext';
 import api from '../utils/axios';
 import CollaborationTabs from '../components/CollaborationTabs';
 import SpaceHeader from '../components/SpaceHeader';
-import ContentList from '../components/ContentList';
+import SpaceContentList from '../components/SpaceContentList';
 import MembersList from '../components/MembersList';
 import ChangeRequestsList from '../components/ChangeRequestsList';
 import SpaceSettings from '../components/SpaceSettings';
@@ -86,8 +86,9 @@ const CollaborationSpace = () => {
     }
   };
 
-  const handleSpaceUpdate = (updatedSpace) => {
-    setSpace(updatedSpace);
+  // Re-fetch space from backend after updates
+  const handleSpaceUpdate = () => {
+    fetchSpace();
   };
 
   const handleTabChange = (tab) => {
@@ -214,13 +215,7 @@ const CollaborationSpace = () => {
 
         <div className="tab-content">
           {activeTab === 'content' && (
-            <ContentList
-              spaceId={spaceId}
-              space={space}
-              currentUser={user}
-              userPermission={getUserPermission()}
-              canUserPerformAction={canUserPerformAction}
-            />
+            <SpaceContentList spaceId={spaceId} />
           )}
 
           {activeTab === 'members' && (

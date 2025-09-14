@@ -1,9 +1,48 @@
 import React, { useState } from 'react';
 import InviteModal from './InviteModal';
+import ContentSelectionModal from './ContentSelectionModal';
+import { authenticatedFetch } from '../utils/auth';
 import './SpaceHeader.css';
 
 const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction, onSpaceUpdate }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
+  const [showContentModal, setShowContentModal] = useState(false);
+
+  const handleAddContent = async (selectedContent) => {
+    try {
+      const contentIds = selectedContent.map(content => content._id);
+      
+      const response = await authenticatedFetch(`/api/collaborate/spaces/${space._id}/content/add-existing`, {
+        method: 'POST',
+        body: JSON.stringify({ contentIds }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add content');
+      }
+
+      // Show success message
+      if (result.summary) {
+        const { successful, failed, total } = result.summary;
+        if (failed > 0) {
+          alert(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`);
+        } else {
+          alert(`Successfully added ${successful} content items to the space!`);
+        }
+      }
+
+      // Trigger space update to refresh content list
+      if (onSpaceUpdate) {
+        onSpaceUpdate(); // Now always triggers a re-fetch in parent
+      }
+
+    } catch (error) {
+      console.error('Error adding content:', error);
+      alert(`Failed to add content: ${error.message}`);
+    }
+  };
 
   const formatDate = (date) => {
     return new Date(date).toLocaleDateString('en-US', {
@@ -101,7 +140,10 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
             </button>
           )}
           {canUserPerformAction('create_content') && (
-            <button className="action-btn secondary">
+            <button 
+              className="action-btn secondary"
+              onClick={() => setShowContentModal(true)}
+            >
               Add Content
             </button>
           )}
@@ -163,6 +205,14 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
         isOpen={showInviteModal}
         onClose={() => setShowInviteModal(false)}
         onInviteSent={handleInviteSent}
+      />
+
+      <ContentSelectionModal
+        spaceId={space._id}
+        spaceName={space.title}
+        isOpen={showContentModal}
+        onClose={() => setShowContentModal(false)}
+        onConfirm={handleAddContent}
       />
     </div>
   );

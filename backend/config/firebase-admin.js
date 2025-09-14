@@ -35,12 +35,53 @@ const verifyToken = async (req, res, next) => {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Additional validation for token format
+    if (!token || token.length < 10) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+
+    // Check if token has the basic JWT structure (header.payload.signature)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return res.status(401).json({ 
+        error: 'Invalid token structure. Expected JWT format with 3 parts.' 
+      });
+    }
+
+    // Try to decode the header to check for 'kid' claim
+    try {
+      const header = JSON.parse(Buffer.from(tokenParts[0], 'base64').toString());
+      if (!header.kid) {
+        console.error('Token header missing "kid" claim:', header);
+        return res.status(401).json({ 
+          error: 'Invalid Firebase ID token: missing "kid" claim. Please ensure you are using a proper Firebase ID token.' 
+        });
+      }
+    } catch (headerError) {
+      console.error('Error parsing token header:', headerError);
+      return res.status(401).json({ error: 'Invalid token header format' });
+    }
+
+    // Verify the token with Firebase
+    const decodedToken = await admin.auth().verifyIdToken(token, true);
     req.user = decodedToken;
     next();
   } catch (error) {
     console.error('Error verifying token:', error);
-    res.status(401).json({ error: 'Invalid token' });
+    
+    // Provide more specific error messages
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ error: 'Token has expired. Please log in again.' });
+    } else if (error.code === 'auth/id-token-revoked') {
+      return res.status(401).json({ error: 'Token has been revoked. Please log in again.' });
+    } else if (error.code === 'auth/argument-error') {
+      return res.status(401).json({ 
+        error: 'Invalid token format. Please ensure you are sending a proper Firebase ID token.' 
+      });
+    } else {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
   }
 };
 
@@ -54,7 +95,35 @@ const verifyAdmin = async (req, res, next) => {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Additional validation for token format
+    if (!token || token.length < 10) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+
+    // Check if token has the basic JWT structure
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return res.status(401).json({ 
+        error: 'Invalid token structure. Expected JWT format with 3 parts.' 
+      });
+    }
+
+    // Try to decode the header to check for 'kid' claim
+    try {
+      const header = JSON.parse(Buffer.from(tokenParts[0], 'base64').toString());
+      if (!header.kid) {
+        console.error('Admin token header missing "kid" claim:', header);
+        return res.status(401).json({ 
+          error: 'Invalid Firebase ID token: missing "kid" claim. Please ensure you are using a proper Firebase ID token.' 
+        });
+      }
+    } catch (headerError) {
+      console.error('Error parsing admin token header:', headerError);
+      return res.status(401).json({ error: 'Invalid token header format' });
+    }
+
+    const decodedToken = await admin.auth().verifyIdToken(token, true);
     
     // Check if user is in admin list
     if (!ADMIN_UIDS.includes(decodedToken.uid)) {
@@ -65,7 +134,19 @@ const verifyAdmin = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error verifying admin token:', error);
-    res.status(401).json({ error: 'Invalid token' });
+    
+    // Provide more specific error messages
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ error: 'Token has expired. Please log in again.' });
+    } else if (error.code === 'auth/id-token-revoked') {
+      return res.status(401).json({ error: 'Token has been revoked. Please log in again.' });
+    } else if (error.code === 'auth/argument-error') {
+      return res.status(401).json({ 
+        error: 'Invalid token format. Please ensure you are sending a proper Firebase ID token.' 
+      });
+    } else {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
   }
 };
 
@@ -84,7 +165,35 @@ const verifyAdminEnhanced = async (req, res, next) => {
     }
 
     const token = authHeader.split('Bearer ')[1];
-    const decodedToken = await admin.auth().verifyIdToken(token);
+    
+    // Additional validation for token format
+    if (!token || token.length < 10) {
+      return res.status(401).json({ error: 'Invalid token format' });
+    }
+
+    // Check if token has the basic JWT structure
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      return res.status(401).json({ 
+        error: 'Invalid token structure. Expected JWT format with 3 parts.' 
+      });
+    }
+
+    // Try to decode the header to check for 'kid' claim
+    try {
+      const header = JSON.parse(Buffer.from(tokenParts[0], 'base64').toString());
+      if (!header.kid) {
+        console.error('Enhanced admin token header missing "kid" claim:', header);
+        return res.status(401).json({ 
+          error: 'Invalid Firebase ID token: missing "kid" claim. Please ensure you are using a proper Firebase ID token.' 
+        });
+      }
+    } catch (headerError) {
+      console.error('Error parsing enhanced admin token header:', headerError);
+      return res.status(401).json({ error: 'Invalid token header format' });
+    }
+
+    const decodedToken = await admin.auth().verifyIdToken(token, true);
     
     // Check admin status using AdminService
     const AdminService = require('../services/adminService');
@@ -99,7 +208,19 @@ const verifyAdminEnhanced = async (req, res, next) => {
     next();
   } catch (error) {
     console.error('Error verifying enhanced admin token:', error);
-    res.status(401).json({ error: 'Invalid token' });
+    
+    // Provide more specific error messages
+    if (error.code === 'auth/id-token-expired') {
+      return res.status(401).json({ error: 'Token has expired. Please log in again.' });
+    } else if (error.code === 'auth/id-token-revoked') {
+      return res.status(401).json({ error: 'Token has been revoked. Please log in again.' });
+    } else if (error.code === 'auth/argument-error') {
+      return res.status(401).json({ 
+        error: 'Invalid token format. Please ensure you are sending a proper Firebase ID token.' 
+      });
+    } else {
+      return res.status(401).json({ error: 'Invalid token' });
+    }
   }
 };
 

@@ -450,6 +450,61 @@ router.post('/spaces/:spaceId/content', verifyToken, async (req, res) => {
   }
 });
 
+// Add existing user content to collaboration space
+router.post('/spaces/:spaceId/content/add-existing', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId, name: userName } = req.user;
+    const { spaceId } = req.params;
+    const { contentIds } = req.body;
+
+    if (!contentIds || !Array.isArray(contentIds) || contentIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content IDs array is required'
+      });
+    }
+
+    // First, get the user's content by IDs to ensure they own it
+    const GeneratedContent = require('../models/GeneratedContent');
+    const userContent = await GeneratedContent.find({
+      _id: { $in: contentIds },
+      userId: userId
+    });
+
+    if (userContent.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: 'No valid content found for the provided IDs'
+      });
+    }
+
+    if (userContent.length !== contentIds.length) {
+      return res.status(400).json({
+        success: false,
+        error: 'Some content IDs are invalid or you do not have access to them'
+      });
+    }
+
+    const result = await SharedContentService.addExistingContentToSpace(
+      userContent, 
+      spaceId, 
+      userId, 
+      userName
+    );
+    
+    res.status(201).json({
+      success: true,
+      ...result
+    });
+  } catch (error) {
+    console.error('Error adding existing content to space:', error);
+    res.status(400).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
 // Get shared content for a space
 router.get('/spaces/:spaceId/content', verifyToken, async (req, res) => {
   try {

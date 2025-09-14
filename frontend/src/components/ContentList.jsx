@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { useCollaboration } from '../context/CollaborationContext';
+import ContentSelectionModal from './ContentSelectionModal';
+import { authenticatedFetch } from '../utils/auth';
 import api from '../utils/axios';
 import './ContentList.css';
 
 const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerformAction }) => {
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showContentModal, setShowContentModal] = useState(false);
   const [filters, setFilters] = useState({
     contentType: '',
     status: '',
@@ -74,6 +77,40 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
       console.error('Error fetching content:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleAddContent = async (selectedContent) => {
+    try {
+      const contentIds = selectedContent.map(content => content._id);
+      
+      const response = await authenticatedFetch(`/api/collaborate/spaces/${spaceId}/content/add-existing`, {
+        method: 'POST',
+        body: JSON.stringify({ contentIds }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to add content');
+      }
+
+      // Show success message
+      if (result.summary) {
+        const { successful, failed, total } = result.summary;
+        if (failed > 0) {
+          alert(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`);
+        } else {
+          alert(`Successfully added ${successful} content items to the space!`);
+        }
+      }
+
+      // Refresh content list
+      fetchContent();
+
+    } catch (error) {
+      console.error('Error adding content:', error);
+      alert(`Failed to add content: ${error.message}`);
     }
   };
 
@@ -164,7 +201,10 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
       <div className="content-header">
         <h2>Shared Content</h2>
         {canUserPerformAction('create_content') && (
-          <button className="add-content-btn">
+          <button 
+            className="add-content-btn"
+            onClick={() => setShowContentModal(true)}
+          >
             + Add Content
           </button>
         )}
@@ -292,12 +332,23 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
             }
           </p>
           {canUserPerformAction('create_content') && (
-            <button className="add-content-btn">
+            <button 
+              className="add-content-btn"
+              onClick={() => setShowContentModal(true)}
+            >
               Add First Content
             </button>
           )}
         </div>
       )}
+
+      <ContentSelectionModal
+        spaceId={spaceId}
+        spaceName={space?.title || 'Collaboration Space'}
+        isOpen={showContentModal}
+        onClose={() => setShowContentModal(false)}
+        onConfirm={handleAddContent}
+      />
     </div>
   );
 };

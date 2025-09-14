@@ -7,14 +7,27 @@ const sharedContentSchema = new mongoose.Schema({
     trim: true,
     maxlength: 200
   },
+  // Support both old and new field names for backward compatibility
   content: {
-    type: mongoose.Schema.Types.Mixed, // Can store any type of content
-    required: true
+    type: mongoose.Schema.Types.Mixed,
+    required: false // Make optional for backward compatibility
+  },
+  contentData: {
+    type: mongoose.Schema.Types.Mixed,
+    required: false // Make optional for forward compatibility
+  },
+  originalText: {
+    type: String,
+    required: false // Make optional for backward compatibility
+  },
+  url: {
+    type: String,
+    required: false // Make optional for forward compatibility
   },
   contentType: {
     type: String,
     required: true,
-    enum: ['document', 'slide', 'quiz', 'flashcard', 'summary', 'note', 'other']
+    enum: ['blog', 'summary', 'flashcards', 'quiz', 'slides', 'document', 'slide', 'flashcard', 'note', 'other']
   },
   collaborationSpaceId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -140,6 +153,26 @@ const sharedContentSchema = new mongoose.Schema({
     collaborators: {
       type: Number,
       default: 0
+    }
+  },
+  // Reference to original user content if this was shared from personal content
+  originalContentId: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'GeneratedContent',
+    required: false
+  },
+  // Additional metadata for shared content
+  metadata: {
+    sourceType: {
+      type: String,
+      enum: ['user_content', 'new_content', 'imported'],
+      default: 'new_content'
+    },
+    originalCreatedAt: {
+      type: Date
+    },
+    originalUpdatedAt: {
+      type: Date
     }
   },
   createdAt: {
