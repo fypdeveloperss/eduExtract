@@ -69,7 +69,7 @@ const Layout = () => {
       <div className="ml-64 relative">
         {/* Topbar */}
         <header className="fixed top-0 left-64 right-0 h-16 bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] flex justify-between items-center px-6 z-10 shadow-sm">
-          <h1 className="text-lg font-semibold text-[#121212] dark:text-[#fafafa]">Dashboard</h1>
+          <h1 className="text-lg font-semibold text-[#121212] dark:text-[#fafafa]"></h1>
           <div className="flex items-center gap-4">
             <ThemeToggle />
             {user ? (
@@ -95,7 +95,7 @@ const Layout = () => {
         {/* Page Content */}
         <main 
           className="pt-20 p-6 min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
-          style={{ position: 'relative', zIndex: 1, minHeight: '100vh', overflow: 'visible', background: '#fff' }}
+          style={{ position: 'relative', zIndex: 1, minHeight: '100vh', overflow: 'visible', background: '#' }}
         >
           <Outlet />
         </main>

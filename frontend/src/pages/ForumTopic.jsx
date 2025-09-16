@@ -222,24 +222,31 @@ function ForumTopic() {
                   </div>
                 </div>
                 
-                {user && user.uid === post.authorId && (
+                {user && (user.uid === post.authorId || user.isAdmin) && (
                   <div className="flex space-x-2">
-                    <button
-                      onClick={() => {
-                        const newContent = prompt('Edit post:', post.content);
-                        if (newContent && newContent !== post.content) {
-                          handleEditPost(post._id, newContent);
-                        }
-                      }}
-                      className="text-blue-600 hover:text-blue-800 text-sm"
-                    >
-                      Edit
-                    </button>
+                    {user.uid === post.authorId && (
+                      <button
+                        onClick={() => {
+                          const newContent = prompt('Edit post:', post.content);
+                          if (newContent && newContent !== post.content) {
+                            handleEditPost(post._id, newContent);
+                          }
+                        }}
+                        className="text-blue-600 hover:text-blue-800 text-sm"
+                      >
+                        Edit
+                      </button>
+                    )}
                     <button
                       onClick={() => handleDeletePost(post._id)}
-                      className="text-red-600 hover:text-red-800 text-sm"
+                      className={`text-sm ${
+                        user.uid === post.authorId 
+                          ? 'text-red-600 hover:text-red-800' 
+                          : 'text-red-500 hover:text-red-700 bg-red-50 hover:bg-red-100 px-2 py-1 rounded'
+                      }`}
+                      title={user.uid === post.authorId ? 'Delete your post' : 'Admin: Delete this post'}
                     >
-                      Delete
+                      {user.uid === post.authorId ? 'Delete' : '🗑️ Delete'}
                     </button>
                   </div>
                 )}

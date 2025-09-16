@@ -38,7 +38,7 @@ const Header = () => {
       {/* Navigation */}
       <nav
         className={`fixed w-full z-50 transition-all duration-300 ${
-          isScrolled ? "bg-white dark:bg-gray-800 shadow-md" : "bg-transparent"
+          isScrolled ? "bg-white dark:bg-white shadow-md" : "bg-transparent"
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

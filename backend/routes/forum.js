@@ -231,8 +231,8 @@ router.delete('/posts/:id', verifyToken, async (req, res) => {
     }
     
     // Check if user owns the post or is admin
-    if (post.authorId !== uid) {
-      // TODO: Add admin check here
+    const isAdmin = await verifyAdmin(req, res, () => {});
+    if (post.authorId !== uid && !isAdmin) {
       return res.status(403).json({ success: false, error: 'You can only delete your own posts' });
     }
     
@@ -400,6 +400,177 @@ router.get('/admin/categories', verifyToken, verifyAdmin, async (req, res) => {
   } catch (error) {
     console.error('Error fetching admin categories:', error);
     res.status(500).json({ success: false, error: 'Failed to fetch categories' });
+  }
+});
+
+// Get all posts for admin moderation
+router.get('/admin/posts', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, categoryId, topicId } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let query = {};
+    
+    if (search) {
+      query.$or = [
+        { content: { $regex: search, $options: 'i' } },
+        { authorName: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (topicId) {
+      query.topicId = topicId;
+    }
+    
+    // If categoryId is provided, find posts from topics in that category
+    if (categoryId) {
+      const topics = await ForumTopic.find({ categoryId }).select('_id');
+      query.topicId = { $in: topics.map(t => t._id) };
+    }
+    
+    const posts = await ForumPost.find(query)
+      .populate('topicId', 'title categoryId')
+      .populate({
+        path: 'topicId',
+        populate: {
+          path: 'categoryId',
+          select: 'name'
+        }
+      })
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+    
+    const total = await ForumPost.countDocuments(query);
+    
+    res.json({ 
+      success: true, 
+      posts, 
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin posts:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch posts' });
+  }
+});
+
+// Get all topics for admin moderation
+router.get('/admin/topics', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { page = 1, limit = 20, search, categoryId } = req.query;
+    const skip = (page - 1) * limit;
+    
+    let query = {};
+    
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { content: { $regex: search, $options: 'i' } },
+        { authorName: { $regex: search, $options: 'i' } }
+      ];
+    }
+    
+    if (categoryId) {
+      query.categoryId = categoryId;
+    }
+    
+    const topics = await ForumTopic.find(query)
+      .populate('categoryId', 'name')
+      .populate('lastPostId', 'authorName createdAt')
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+    
+    const total = await ForumTopic.countDocuments(query);
+    
+    res.json({ 
+      success: true, 
+      topics, 
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / limit)
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching admin topics:', error);
+    res.status(500).json({ success: false, error: 'Failed to fetch topics' });
+  }
+});
+
+// Admin delete post (with reason)
+router.delete('/admin/posts/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const post = await ForumPost.findById(id);
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+    
+    await ForumPost.findByIdAndDelete(id);
+    
+    res.json({ 
+      success: true, 
+      message: 'Post deleted successfully',
+      deletedPost: {
+        id: post._id,
+        content: post.content.substring(0, 100) + '...',
+        authorName: post.authorName,
+        reason: reason || 'No reason provided'
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting post:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete post' });
+  }
+});
+
+// Admin delete topic (with reason)
+router.delete('/admin/topics/:id', verifyToken, verifyAdmin, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    
+    const topic = await ForumTopic.findById(id);
+    if (!topic) {
+      return res.status(404).json({ success: false, error: 'Topic not found' });
+    }
+    
+    // Delete all posts in this topic first
+    await ForumPost.deleteMany({ topicId: id });
+    
+    // Delete the topic
+    await ForumTopic.findByIdAndDelete(id);
+    
+    // Update category topic count
+    const category = await ForumCategory.findById(topic.categoryId);
+    if (category) {
+      await category.updateTopicCount();
+    }
+    
+    res.json({ 
+      success: true, 
+      message: 'Topic and all its posts deleted successfully',
+      deletedTopic: {
+        id: topic._id,
+        title: topic.title,
+        authorName: topic.authorName,
+        reason: reason || 'No reason provided'
+      }
+    });
+  } catch (error) {
+    console.error('Error deleting topic:', error);
+    res.status(500).json({ success: false, error: 'Failed to delete topic' });
   }
 });
 

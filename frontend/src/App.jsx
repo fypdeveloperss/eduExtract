@@ -21,6 +21,7 @@ import ForumCategory from "./pages/ForumCategory";
 import ForumTopic from "./pages/ForumTopic";
 import ForumCreate from "./pages/ForumCreate";
 import AdminForum from "./pages/AdminForum";
+import AdminForumModeration from "./pages/AdminForumModeration";
 import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
 import CollaborationInvites from "./pages/CollaborationInvites";
@@ -59,6 +60,7 @@ function App() {
             <Route path="admins" element={<AdminManagement />} />
             <Route path="marketplace" element={<AdminMarketplace />} />
             <Route path="forum" element={<AdminForum />} />
+            <Route path="forum-moderation" element={<AdminForumModeration />} />
           </Route>
         </Routes>
       </Router>

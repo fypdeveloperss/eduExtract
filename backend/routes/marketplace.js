@@ -1153,4 +1153,52 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @route   DELETE /api/marketplace/content/:id
+ * @desc    Delete marketplace content (creator only)
+ * @access  Private
+ */
+router.delete('/content/:id', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.uid;
+    
+    // Find the content
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    
+    // Check if user is the creator of the content
+    if (content.creatorId !== userId) {
+      return res.status(403).json({ error: 'You can only delete your own content' });
+    }
+    
+    // Delete associated file if it exists
+    if (content.filePath && fs.existsSync(content.filePath)) {
+      try {
+        fs.unlinkSync(content.filePath);
+        console.log('Deleted file:', content.filePath);
+      } catch (fileError) {
+        console.error('Error deleting file:', fileError);
+        // Continue with content deletion even if file deletion fails
+      }
+    }
+    
+    // Delete the content from database
+    await MarketplaceContent.findByIdAndDelete(id);
+    
+    // Update user stats
+    await updateUserStats(userId, 'upload', -1);
+    
+    res.json({
+      message: 'Content deleted successfully',
+      contentId: id
+    });
+  } catch (error) {
+    console.error('Error deleting content:', error);
+    res.status(500).json({ error: 'Failed to delete content' });
+  }
+});
+
 module.exports = router;
