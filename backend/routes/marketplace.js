@@ -951,4 +951,206 @@ router.post('/reject/:id', verifyToken, async (req, res) => {
   }
 });
 
+/**
+ * @route   POST /api/marketplace/publish-existing
+ * @desc    Publish existing user content to marketplace
+ * @access  Private
+ */
+router.post('/publish-existing', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const { contentItems } = req.body;
+
+    if (!contentItems || !Array.isArray(contentItems) || contentItems.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content items array is required'
+      });
+    }
+
+    // Get the GeneratedContent model to fetch user's content
+    const GeneratedContent = require('../models/GeneratedContent');
+    
+    const results = [];
+    let successCount = 0;
+    let errorCount = 0;
+
+    for (const item of contentItems) {
+      try {
+        const { _id: contentId, marketplaceMetadata } = item;
+        
+        // Verify user owns this content
+        const userContent = await GeneratedContent.findOne({
+          _id: contentId,
+          userId: userId
+        });
+
+        if (!userContent) {
+          results.push({
+            success: false,
+            originalId: contentId,
+            title: item.title || 'Unknown',
+            error: 'Content not found or you do not have access to it'
+          });
+          errorCount++;
+          continue;
+        }
+
+        // Validate marketplace metadata
+        const { price, category, subject, difficulty, description, tags } = marketplaceMetadata;
+        
+        if (!subject || !description || !category || !difficulty) {
+          results.push({
+            success: false,
+            originalId: contentId,
+            title: userContent.title,
+            error: 'Missing required marketplace metadata (subject, description, category, difficulty)'
+          });
+          errorCount++;
+          continue;
+        }
+
+        // Validate category and difficulty
+        const validCategories = ['mathematics', 'science', 'history', 'literature', 'languages', 'arts', 'technology', 'business', 'health', 'other'];
+        const validDifficulties = ['beginner', 'intermediate', 'advanced'];
+        
+        if (!validCategories.includes(category)) {
+          results.push({
+            success: false,
+            originalId: contentId,
+            title: userContent.title,
+            error: 'Invalid category'
+          });
+          errorCount++;
+          continue;
+        }
+        
+        if (!validDifficulties.includes(difficulty)) {
+          results.push({
+            success: false,
+            originalId: contentId,
+            title: userContent.title,
+            error: 'Invalid difficulty level'
+          });
+          errorCount++;
+          continue;
+        }
+
+        // Check if user already has marketplace content with the same title
+        const existingContent = await MarketplaceContent.findOne({
+          creatorId: userId,
+          title: userContent.title,
+          status: { $in: ['pending', 'approved'] }
+        });
+
+        if (existingContent) {
+          results.push({
+            success: false,
+            originalId: contentId,
+            title: userContent.title,
+            error: 'You already have marketplace content with this title'
+          });
+          errorCount++;
+          continue;
+        }
+
+        // Map user content type to marketplace content type
+        const contentTypeMapping = {
+          'blog': 'blog',
+          'summary': 'summary',
+          'flashcards': 'flashcards',
+          'quiz': 'quiz',
+          'slides': 'slides',
+          'text': 'document',
+          'video': 'document',
+          'document': 'document'
+        };
+        
+        const marketplaceContentType = contentTypeMapping[userContent.type] || 'document';
+
+        // Create marketplace content
+        const newMarketplaceContent = new MarketplaceContent({
+          contentId: userContent._id,
+          creatorId: userId,
+          title: userContent.title.trim(),
+          description: description.trim(),
+          category,
+          subject: subject.trim(),
+          difficulty,
+          tags: tags || [],
+          contentType: marketplaceContentType,
+          isPersonal: false,
+          contentData: userContent.contentData || userContent.content,
+          price: Math.max(0, price || 0),
+          status: 'pending',
+          // Add metadata to track source
+          metadata: {
+            sourceType: 'user_content',
+            originalContentId: userContent._id,
+            originalCreatedAt: userContent.createdAt,
+            originalUpdatedAt: userContent.updatedAt
+          }
+        });
+
+        await newMarketplaceContent.save();
+
+        // For existing user content, auto-approve since it's already been created by the user
+        // and we trust their existing content library
+        try {
+          newMarketplaceContent.status = 'approved';
+          newMarketplaceContent.approvedAt = new Date();
+          newMarketplaceContent.approvedBy = 'system_auto_approve';
+          await newMarketplaceContent.save();
+        } catch (approvalError) {
+          console.error('Auto-approval failed:', approvalError);
+          // Continue with pending status if auto-approval fails
+        }
+
+        // Update user stats
+        await updateUserStats(userId, 'upload', 1);
+
+        results.push({
+          success: true,
+          originalId: contentId,
+          marketplaceContentId: newMarketplaceContent._id,
+          title: userContent.title,
+          status: newMarketplaceContent.status,
+          message: newMarketplaceContent.status === 'approved' ? 
+            'Content published and approved automatically' : 
+            'Content published and pending approval'
+        });
+        successCount++;
+
+      } catch (contentError) {
+        console.error(`Error publishing content ${item._id}:`, contentError);
+        results.push({
+          success: false,
+          originalId: item._id,
+          title: item.title || 'Unknown',
+          error: contentError.message
+        });
+        errorCount++;
+      }
+    }
+
+    res.status(201).json({
+      success: true,
+      results,
+      summary: {
+        total: contentItems.length,
+        successful: successCount,
+        failed: errorCount
+      }
+    });
+
+  } catch (error) {
+    console.error('Error publishing existing content:', error);
+    res.status(500).json({ 
+      success: false,
+      error: 'Failed to publish content to marketplace',
+      details: error.message 
+    });
+  }
+});
+
 module.exports = router;

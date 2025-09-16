@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
+import MarketplaceContentSelectionModal from '../components/MarketplaceContentSelectionModal';
+import { authenticatedFetch } from '../utils/auth';
 
 function Marketplace() {
   const { user } = useAuth();
@@ -22,6 +24,9 @@ function Marketplace() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
+
+  // Modal state
+  const [showPublishModal, setShowPublishModal] = useState(false);
 
   useEffect(() => {
     fetchCategories();
@@ -67,6 +72,48 @@ function Marketplace() {
     e.preventDefault();
     setCurrentPage(1);
     fetchContent();
+  };
+
+  const handlePublishContent = async (contentItems) => {
+    try {
+      const response = await authenticatedFetch('/api/marketplace/publish-existing', {
+        method: 'POST',
+        body: JSON.stringify({ contentItems }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to publish content');
+      }
+
+      // Show success message
+      if (result.summary) {
+        const { successful, failed, total } = result.summary;
+        const approvedCount = result.results.filter(r => r.success && r.status === 'approved').length;
+        const pendingCount = result.results.filter(r => r.success && r.status === 'pending').length;
+        
+        if (failed > 0) {
+          alert(`Published ${successful} out of ${total} items. ${failed} items failed to publish. Check console for details.`);
+          console.log('Failed items:', result.results.filter(r => !r.success));
+        } else {
+          let message = `Successfully published ${successful} items to the marketplace!`;
+          if (approvedCount > 0) {
+            message += `\n✅ ${approvedCount} items are now live and visible.`;
+          }
+          if (pendingCount > 0) {
+            message += `\n⏳ ${pendingCount} items are pending admin approval.`;
+          }
+          alert(message);
+        }
+      }
+
+      // Refresh content list to show new items
+      fetchContent();
+    } catch (error) {
+      console.error('Error publishing content:', error);
+      alert(`Error: ${error.message}`);
+    }
   };
 
   const clearFilters = () => {
@@ -154,14 +201,22 @@ function Marketplace() {
           </form>
 
           {user && (
-            <div className="mt-8">
+            <div className="mt-8 flex flex-wrap gap-4">
               <Link
                 to="/marketplace/upload"
                 className="inline-flex items-center bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
               >
                 <span className="mr-2">🚀</span>
-                Upload Your Content
+                Upload New Content
               </Link>
+              
+              <button
+                onClick={() => setShowPublishModal(true)}
+                className="inline-flex items-center bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
+                <span className="mr-2">📚</span>
+                Publish My Content
+              </button>
             </div>
           )}
         </div>
@@ -418,6 +473,13 @@ function Marketplace() {
           </div>
         )}
       </div>
+
+      {/* Marketplace Content Selection Modal */}
+      <MarketplaceContentSelectionModal
+        isOpen={showPublishModal}
+        onClose={() => setShowPublishModal(false)}
+        onConfirm={handlePublishContent}
+      />
     </div>
   );
 }
