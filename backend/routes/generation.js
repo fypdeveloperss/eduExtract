@@ -585,6 +585,313 @@ router.post("/api/chat", verifyToken, async (req, res) => {
   }
 });
 
-// Add other file processing routes and file-related helper functions here...
+// Helper function to save user content
+async function saveUserContent(userId, title, type, originalContent, generatedContent) {
+  try {
+    const newContent = new GeneratedContent({
+      userId,
+      type,
+      title,
+      contentData: generatedContent,
+      originalContent: originalContent
+    });
+    await newContent.save();
+    return newContent;
+  } catch (error) {
+    console.error('Error saving user content:', error);
+    throw error;
+  }
+}
+
+// Helper function to cleanup uploaded files
+function cleanupFile(filePath) {
+  if (filePath && fs.existsSync(filePath)) {
+    try {
+      fs.unlinkSync(filePath);
+      console.log(`Cleaned up file: ${filePath}`);
+    } catch (error) {
+      console.error(`Error cleaning up file ${filePath}:`, error);
+    }
+  }
+}
+
+// File processing endpoint
+router.post("/process-file", verifyToken, upload.single('file'), async (req, res) => {
+  const { type } = req.body;
+  const userId = req.user.uid;
+  let filePath = null;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    if (!type) {
+      return res.status(400).json({ error: "Content type is required" });
+    }
+
+    filePath = req.file.path;
+    console.log(`Processing file: ${req.file.originalname} for ${type}`);
+
+    // Extract text content from file
+    let fileContent = "";
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+
+    if (fileExtension === '.pdf') {
+      const dataBuffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(dataBuffer);
+      fileContent = pdfData.text;
+    } else if (fileExtension === '.docx') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      fileContent = result.value;
+    } else if (fileExtension === '.txt') {
+      fileContent = fs.readFileSync(filePath, 'utf8');
+    } else if (fileExtension === '.pptx') {
+      // For PPTX files, we'll need to implement extraction
+      return res.status(400).json({ error: "PPTX file processing not yet implemented. Please use PDF, DOCX, or TXT files." });
+    } else {
+      return res.status(400).json({ error: "Unsupported file type. Please upload PDF, DOCX, or TXT files." });
+    }
+
+    if (!fileContent.trim()) {
+      return res.status(400).json({ error: "No text content found in the file" });
+    }
+
+    console.log(`Extracted ${fileContent.length} characters from file`);
+
+    let generatedContentData;
+    let contentTitle;
+    let result;
+
+    // Generate content based on type
+    switch (type) {
+      case 'blog':
+        const blogCompletion = await withRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 2048,
+            messages: [
+              {
+                role: "system",
+                content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the provided content.
+                - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
+                - Include an engaging introduction and a thoughtful conclusion.
+                - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
+                - Return only valid HTML without CSS or markdown.
+                - Do not include any JSON formatting or code blocks.`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
+        
+        generatedContentData = blogCompletion.choices[0].message.content.replace(
+          /```html|```/g,
+          ""
+        );
+        contentTitle = `Blog from ${req.file.originalname}`;
+        result = { blog: generatedContentData };
+        break;
+
+      case 'flashcards':
+        const flashcards = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1024,
+            messages: [
+              {
+                role: "system",
+                content: `Generate exactly 5-8 educational flashcards as a JSON array.
+Each flashcard must have exactly these fields:
+{
+  "question": "Clear, specific question text",
+  "answer": "Concise, accurate answer text"
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each question should be educational and based on the content
+- Start response with [ and end with ]
+- Example format: [{"question":"What is...?","answer":"It is..."},{"question":"How does...?","answer":"It works by..."}]`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
+
+        // Validate each flashcard has required fields
+        const validFlashcards = flashcards.filter(card => 
+          card && typeof card === 'object' && 
+          typeof card.question === 'string' && card.question.trim() &&
+          typeof card.answer === 'string' && card.answer.trim()
+        );
+        
+        if (validFlashcards.length === 0) {
+          throw new Error("No valid flashcards found in response");
+        }
+        
+        console.log(`Generated ${validFlashcards.length} valid flashcards`);
+        
+        generatedContentData = validFlashcards;
+        contentTitle = `Flashcards from ${req.file.originalname}`;
+        result = { flashcards: validFlashcards };
+        break;
+
+      case 'slides':
+        const slides = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1500,
+            messages: [
+              {
+                role: "system",
+                content: `Create exactly 6-10 slide objects based on this content. 
+Return a valid JSON array where each object has:
+{
+  "title": "Clear slide title",
+  "points": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each slide should have 2-4 bullet points
+- Start response with [ and end with ]
+- Points should be clear and concise`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
+
+        // Validate slide structure
+        const validSlides = slides.filter(slide => 
+          slide && typeof slide === 'object' && 
+          typeof slide.title === 'string' && slide.title.trim() &&
+          Array.isArray(slide.points) && slide.points.length > 0
+        );
+
+        if (validSlides.length === 0) {
+          throw new Error("No valid slides found in response");
+        }
+
+        console.log(`Generated ${validSlides.length} valid slides`);
+        
+        generatedContentData = validSlides;
+        contentTitle = `Slides from ${req.file.originalname}`;
+        result = { slides: validSlides };
+        break;
+
+      case 'quiz':
+        const quiz = await parseAIResponseWithRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 1200,
+            messages: [
+              {
+                role: "system",
+                content: `Generate exactly 6-8 multiple-choice quiz questions in JSON format.
+Each object must include:
+{
+  "question": "Clear question text",
+  "options": ["Option A", "Option B", "Option C", "Option D"],
+  "answer": "Option A"
+}
+
+IMPORTANT:
+- Return ONLY a valid JSON array
+- No markdown, no code blocks, no explanations
+- Each question should have exactly 4 options
+- The answer should be one of the options (exact match)
+- Start response with [ and end with ]`,
+              },
+              { role: "user", content: fileContent },
+            ],
+          });
+        }, 3);
+
+        // Validate quiz structure
+        const validQuiz = quiz.filter(q => 
+          q && typeof q === 'object' && 
+          typeof q.question === 'string' && q.question.trim() &&
+          Array.isArray(q.options) && q.options.length === 4 &&
+          typeof q.answer === 'string' && q.answer.trim() &&
+          q.options.includes(q.answer)
+        );
+
+        if (validQuiz.length === 0) {
+          throw new Error("No valid quiz questions found in response");
+        }
+
+        console.log(`Generated ${validQuiz.length} valid quiz questions`);
+        
+        generatedContentData = validQuiz;
+        contentTitle = `Quiz from ${req.file.originalname}`;
+        result = { quiz: validQuiz };
+        break;
+
+      case 'summary':
+        const summaryCompletion = await withRetry(async () => {
+          return await groq.chat.completions.create({
+            model: "meta-llama/llama-4-scout-17b-16e-instruct",
+            temperature: 0.7,
+            max_tokens: 512,
+            messages: [
+              {
+                role: "system",
+                content: `You are tasked with creating a summary of the provided content. 
+                Create a concise and informative summary that:
+                - Is 150-200 words long
+                - Focuses on the main topics and key points
+                - Uses clear, engaging prose
+                - Does not use markdown, code formatting, or bullet points
+                - Provides value to someone who hasn't read the original content
+                
+                The user will provide the content for you to summarize.`,
+              },
+              { role: "user", content: `Please summarize this content:\n\n${fileContent}` },
+            ],
+          });
+        }, 3);
+        
+        let summary = summaryCompletion.choices[0].message.content;
+        summary = summary.replace(/```(json|text)?/g, "").trim();
+        
+        // Remove any potential prefixes like "Summary:" or "Content Summary:"
+        summary = summary.replace(/^(summary|content summary):\s*/i, "");
+        
+        generatedContentData = summary;
+        contentTitle = `Summary from ${req.file.originalname}`;
+        result = { summary: generatedContentData };
+        break;
+
+      default:
+        return res.status(400).json({ error: "Invalid content type" });
+    }
+
+    // Save generated content to MongoDB
+    const savedContent = await saveUserContent(userId, contentTitle, type, fileContent, generatedContentData);
+
+    // Add contentId to the response
+    result.contentId = savedContent._id;
+
+    console.log(`Successfully processed file for ${type}`);
+    res.json(result);
+  } catch (error) {
+    console.error("File processing error:", error);
+    res.status(500).json({ 
+      error: "Error processing file",
+      details: error.message 
+    });
+  } finally {
+    // Clean up the uploaded file
+    cleanupFile(filePath);
+  }
+});
 
 module.exports = router;
