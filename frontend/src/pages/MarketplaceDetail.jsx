@@ -19,6 +19,8 @@ function MarketplaceDetail() {
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState('');
   const [downloading, setDownloading] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     fetchContentDetails();
@@ -106,6 +108,29 @@ function MarketplaceDetail() {
       setError('Failed to download content. Please try again.');
     } finally {
       setDownloading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!window.confirm('Are you sure you want to delete this content? This action cannot be undone.')) {
+      return;
+    }
+
+    try {
+      setDeleting(true);
+      await api.delete(`/api/marketplace/content/${id}`);
+      
+      // Show success message and redirect
+      setError('Content deleted successfully. Redirecting to marketplace...');
+      setTimeout(() => {
+        navigate('/marketplace');
+      }, 2000);
+    } catch (error) {
+      console.error('Failed to delete content:', error);
+      setError(error.response?.data?.error || 'Failed to delete content');
+    } finally {
+      setDeleting(false);
+      setShowDeleteConfirm(false);
     }
   };
 
@@ -275,6 +300,27 @@ function MarketplaceDetail() {
                     >
                       <span className="mr-2">💳</span>
                       Purchase Now
+                    </button>
+                  )}
+
+                  {/* Delete Button for Content Creator */}
+                  {user && content.creatorId === user.uid && (
+                    <button
+                      onClick={handleDelete}
+                      disabled={deleting}
+                      className="w-full mt-3 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center"
+                    >
+                      {deleting ? (
+                        <>
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          Deleting...
+                        </>
+                      ) : (
+                        <>
+                          <span className="mr-2">🗑️</span>
+                          Delete Content
+                        </>
+                      )}
                     </button>
                   )}
                 </div>
