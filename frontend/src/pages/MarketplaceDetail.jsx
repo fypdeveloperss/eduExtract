@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
 import PaymentModal from '../components/PaymentModal';
+import ContentDetail from '../components/ContentDetail';
 
 function MarketplaceDetail() {
   const { id } = useParams();
@@ -357,14 +358,11 @@ function MarketplaceDetail() {
                           </p>
                         </div>
                       ) : (
-                        <div className="bg-white rounded-lg p-4 border">
-                          <pre className="whitespace-pre-wrap text-gray-800 text-sm font-mono">
-                            {typeof content.contentData === 'string' 
-                              ? content.contentData 
-                              : JSON.stringify(content.contentData, null, 2)
-                            }
-                          </pre>
-                        </div>
+                        <ContentDetail content={{
+                          ...content,
+                          type: content.contentType, // Map contentType to type for ContentDetail compatibility
+                          contentData: content.contentData || content.description // Fallback to description if contentData is empty
+                        }} />
                       )}
                     </div>
                   ) : (

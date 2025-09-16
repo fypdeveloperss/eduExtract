@@ -5,8 +5,20 @@ const ContentDetail = ({ content }) => {
     return <div className="p-4 text-center text-gray-500">No content selected</div>;
   }
 
+  // Ensure we have a content type to work with
+  const contentType = content.type || content.contentType;
+  if (!contentType) {
+    return (
+      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+        <p className="text-red-700 dark:text-red-300">
+          Content type is missing. Unable to display content properly.
+        </p>
+      </div>
+    );
+  }
+
   const renderContent = () => {
-    switch (content.type) {
+    switch (contentType) {
       case 'blog':
         // For HTML content, use dangerouslySetInnerHTML
         return (
@@ -72,8 +84,59 @@ const ContentDetail = ({ content }) => {
         return (
           <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg">{content.contentData}</p>
         );
+      case 'document':
+      case 'personal':
+        // Handle marketplace document/personal content types
+        if (typeof content.contentData === 'string') {
+          return (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+              <pre className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-sm">
+                {content.contentData}
+              </pre>
+            </div>
+          );
+        } else if (content.contentData && typeof content.contentData === 'object') {
+          return (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+              <pre className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-sm">
+                {JSON.stringify(content.contentData, null, 2)}
+              </pre>
+            </div>
+          );
+        } else {
+          // Fallback to description if no contentData
+          return (
+            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
+              <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+                {content.description || 'No content available for preview.'}
+              </p>
+            </div>
+          );
+        }
       default:
-        return <div className="p-4">Content type not supported</div>;
+        // Enhanced default case with better fallback
+        return (
+          <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+            <h4 className="text-yellow-800 dark:text-yellow-200 font-semibold mb-2">
+              Content Type Not Fully Supported: "{contentType}"
+            </h4>
+            {content.contentData ? (
+              <div className="mt-3">
+                <h5 className="text-sm font-medium text-yellow-700 dark:text-yellow-300 mb-2">Raw Content:</h5>
+                <pre className="whitespace-pre-wrap text-yellow-700 dark:text-yellow-300 text-xs bg-yellow-100 dark:bg-yellow-900/30 p-2 rounded max-h-64 overflow-y-auto">
+                  {typeof content.contentData === 'string' 
+                    ? content.contentData 
+                    : JSON.stringify(content.contentData, null, 2)
+                  }
+                </pre>
+              </div>
+            ) : (
+              <p className="text-yellow-700 dark:text-yellow-300">
+                {content.description || 'No content data available for this item.'}
+              </p>
+            )}
+          </div>
+        );
     }
   };
 
@@ -84,7 +147,7 @@ const ContentDetail = ({ content }) => {
           {content.title}
         </h2>
         <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
-          <span className="capitalize">{content.type}</span>
+          <span className="capitalize">{contentType}</span>
           <span>•</span>
           <span>{new Date(content.createdAt).toLocaleDateString()}</span>
           {content.url && (
