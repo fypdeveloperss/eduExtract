@@ -5,6 +5,7 @@ import ThemeToggle from "./ThemeToggle";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
 
@@ -33,6 +34,14 @@ const Header = () => {
     }
   };
 
+  const toggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
+  };
+
+  const closeMobileMenu = () => {
+    setIsMobileMenuOpen(false);
+  };
+
   return (
     <>
       {/* Navigation */}
@@ -42,50 +51,53 @@ const Header = () => {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between h-16 items-center">
+          <div className="flex justify-between h-14 sm:h-16 items-center">
+            {/* Logo */}
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <div className="flex items-center">
-                  <div className="font-bold text-2xl">
-                    <Link className="text-black " to="/">EduExtract</Link>
+                  <div className="font-bold text-xl sm:text-2xl">
+                    <Link className="text-black" to="/">EduExtract</Link>
                   </div>
                 </div>
               </div>
             </div>
-            <div className="hidden md:block">
-              <div className="ml-10 flex items-center space-x-8">
+
+            {/* Desktop Navigation */}
+            <div className="hidden lg:block">
+              <div className="ml-10 flex items-center space-x-6 xl:space-x-8">
                 <a
                   href="#"
-                  className="text-[#171717cc]  hover:text-gray-900 relative group px-3 py-2"
+                  className="text-[#171717cc] hover:text-gray-900 relative group px-3 py-2 text-sm xl:text-base"
                 >
                   Features
                   <span className="inline-block ml-1">▼</span>
                 </a>
                 <a
                   href="#"
-                  className="text-[#171717cc]  hover:text-[#171717]  px-3 py-2"
+                  className="text-[#171717cc] hover:text-[#171717] px-3 py-2 text-sm xl:text-base"
                 >
                   Pricing
                 </a>
                 <a
                   href="#"
-                  className="text-[#171717cc]  hover:text-[#171717]  px-3 py-2"
+                  className="text-[#171717cc] hover:text-[#171717] px-3 py-2 text-sm xl:text-base"
                 >
                   Careers
                 </a>
-                <ul className="flex flex-row gap-10">
-                  <li className="">
+                <ul className="flex flex-row gap-6 xl:gap-10">
+                  <li>
                     <Link
                       to="/about"
-                      className="hover:text-[#171717]  text-[#171717cc] "
+                      className="hover:text-[#171717] text-[#171717cc] text-sm xl:text-base"
                     >
                       About
                     </Link>
                   </li>
-                  <li className="">
+                  <li>
                     <Link
                       to="/contact"
-                      className="hover:text-[#171717]  text-[#171717cc] "
+                      className="hover:text-[#171717] text-[#171717cc] text-sm xl:text-base"
                     >
                       Contact
                     </Link>
@@ -93,34 +105,36 @@ const Header = () => {
                 </ul>
               </div>
             </div>
-            <div className="flex items-center gap-4">
+
+            {/* Desktop Auth Section */}
+            <div className="hidden lg:flex items-center gap-3 xl:gap-4">
               <ThemeToggle />
               
               {user ? (
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-2 xl:gap-3">
                   {isAdmin && (
                     <Link
                       to="/admin"
-                      className="bg-blue-500 hover:bg- text-white px-3 py-2 rounded-md text-sm font-medium"
+                      className="bg-blue-500 hover:bg-blue-600 text-white px-3 py-2 rounded-md text-xs xl:text-sm font-medium transition-colors"
                     >
                       Admin
                     </Link>
                   )}
                   <Link
                     to="/collaborate"
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-sm font-medium"
+                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-xs xl:text-sm font-medium transition-colors"
                   >
                     Collaborate
                   </Link>
                   <Link
                     to="/dashboard"
-                    className="bg-[#171717] dark:bg-[#171717] text-white px-4 py-2 rounded-md font-medium"
+                    className="bg-[#171717] text-white px-3 xl:px-4 py-2 rounded-md font-medium text-xs xl:text-sm transition-colors"
                   >
                     Dashboard
                   </Link>
                   <button
                     onClick={handleLogout}
-                    className="text-white bg-[#171717] rounded-md  dark:text-white hover:text-gray-900 dark:hover:text-white px-4 py-2 text-md"
+                    className="text-white bg-[#171717] rounded-md hover:bg-[#121212] px-3 xl:px-4 py-2 text-xs xl:text-sm transition-colors"
                   >
                     Logout
                   </button>
@@ -128,13 +142,140 @@ const Header = () => {
               ) : (
                 <button
                   onClick={() => navigate("/dashboard")}
-                  className="bg-[#171717] dark:bg-[#171717] text-white px-4 py-2 rounded-md font-medium"
+                  className="bg-[#171717] text-white px-3 xl:px-4 py-2 rounded-md font-medium text-xs xl:text-sm transition-colors"
                 >
                   Get Started
                 </button>
               )}
             </div>
+
+            {/* Mobile Menu Button */}
+            <div className="lg:hidden flex items-center gap-2">
+              <ThemeToggle />
+              <button
+                onClick={toggleMobileMenu}
+                className="p-2 rounded-md text-[#171717cc] hover:text-[#171717] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-gray-500"
+                aria-label="Toggle mobile menu"
+              >
+                <svg
+                  className="h-5 w-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  {isMobileMenuOpen ? (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M6 18L18 6M6 6l12 12"
+                    />
+                  ) : (
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M4 6h16M4 12h16M4 18h16"
+                    />
+                  )}
+                </svg>
+              </button>
+            </div>
           </div>
+
+          {/* Mobile Menu */}
+          {isMobileMenuOpen && (
+            <div className="lg:hidden">
+              <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
+                {/* Mobile Navigation Links */}
+                <a
+                  href="#"
+                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
+                  onClick={closeMobileMenu}
+                >
+                  Features
+                </a>
+                <a
+                  href="#"
+                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
+                  onClick={closeMobileMenu}
+                >
+                  Pricing
+                </a>
+                <a
+                  href="#"
+                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
+                  onClick={closeMobileMenu}
+                >
+                  Careers
+                </a>
+                <Link
+                  to="/about"
+                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
+                  onClick={closeMobileMenu}
+                >
+                  About
+                </Link>
+                <Link
+                  to="/contact"
+                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
+                  onClick={closeMobileMenu}
+                >
+                  Contact
+                </Link>
+
+                {/* Mobile Auth Section */}
+                <div className="pt-4 pb-3 border-t border-gray-200">
+                  {user ? (
+                    <div className="space-y-2">
+                      {isAdmin && (
+                        <Link
+                          to="/admin"
+                          className="block w-full text-center bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                          onClick={closeMobileMenu}
+                        >
+                          Admin
+                        </Link>
+                      )}
+                      <Link
+                        to="/collaborate"
+                        className="block w-full text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        onClick={closeMobileMenu}
+                      >
+                        Collaborate
+                      </Link>
+                      <Link
+                        to="/dashboard"
+                        className="block w-full text-center bg-[#171717] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                        onClick={closeMobileMenu}
+                      >
+                        Dashboard
+                      </Link>
+                      <button
+                        onClick={() => {
+                          handleLogout();
+                          closeMobileMenu();
+                        }}
+                        className="block w-full text-center bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                      >
+                        Logout
+                      </button>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={() => {
+                        navigate("/dashboard");
+                        closeMobileMenu();
+                      }}
+                      className="block w-full text-center bg-[#171717] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    >
+                      Get Started
+                    </button>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       </nav>
     </>

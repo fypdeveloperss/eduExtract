@@ -46,64 +46,54 @@ export default function Home() {
       <Header />
 
       {/* Hero Section */}
-      <div className="pt-32 pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      <div className="pt-20 sm:pt-24 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
         <div className="text-center">
-          <h1 className="text-5xl font-bold text-[#171717] mb-6">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#171717] mb-4 sm:mb-6 leading-tight">
             An AI tutor made for you
           </h1>
-          <p className="text-xl text-[#171717cc] max-w-3xl mx-auto">
+          <p className="text-lg sm:text-xl md:text-2xl text-[#171717cc] max-w-3xl mx-auto px-4">
             Turn your learning materials into concise notes, quizzes,
             interactive chats, and more
           </p>
-          <div className="mt-10 flex flex-wrap justify-center gap-4">
-            {" "}
+          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
             <button
               onClick={() =>
                 featuresRef.current?.scrollIntoView({ behavior: "smooth" })
               }
-              className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA]"
+              className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA] transition-colors w-full sm:w-auto"
             >
-              {" "}
-              See features{" "}
-            </button>{" "}
+              See features
+            </button>
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-[#171717] text-white px-6 py-3 rounded-md font-medium"
+              className="bg-[#171717] text-white px-6 py-3 rounded-md font-medium hover:bg-[#121212] transition-colors w-full sm:w-auto"
             >
-              {" "}
-              Try Now{" "}
-            </button>{" "}
-          </div>{" "}
-          <div className="mt-8 flex items-center justify-center">
-            {" "}
+              Try Now
+            </button>
+          </div>
+          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
             <div className="flex -space-x-2">
-              {" "}
-              <div className="w-8 h-8 rounded-full bg-blue-500 border-2 border-white">
-                {" "}
-                H{" "}
-              </div>{" "}
-              <div className="w-8 h-8 rounded-full bg-orange-500 border-2 border-white">
-                {" "}
-                S{" "}
-              </div>{" "}
-              <div className="w-8 h-8 rounded-full bg-green-500 border-2 border-white">
-                {" "}
-                S{" "}
-              </div>{" "}
-              <div className="w-8 h-8 rounded-full bg-teal-500 border-2 border-white">
-                {" "}
-                E{" "}
-              </div>{" "}
-            </div>{" "}
-            <p className="ml-3 text-sm text-[#171717cc]">
-              {" "}
-              Loved by over 1 million learners{" "}
-            </p>{" "}
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
+                H
+              </div>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
+                S
+              </div>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
+                S
+              </div>
+              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
+                E
+              </div>
+            </div>
+            <p className="text-xs sm:text-sm text-[#171717cc] sm:ml-3">
+              Loved by over 1 million learners
+            </p>
           </div>
         </div>
 
         {/* Tilting Demo Image/Video */}
-        <div className="mt-16 max-w-full mx-auto">
+        <div className="mt-12 sm:mt-16 max-w-full mx-auto px-4">
           <motion.div
             className="relative bg-[#121212] rounded-lg overflow-hidden shadow-xl"
             style={{
@@ -119,25 +109,25 @@ export default function Home() {
               muted
               loop
               playsInline
-              className="w-full"
+              className="w-full h-auto"
             />
 
             <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
 
-            <div className="absolute top-0 left-0 right-0 p-4 flex items-center">
-              <div className="flex space-x-4 text-white text-sm">
-                <div className="px-3 py-1 bg-gray-800/80 rounded">PDF</div>
-                <div className="px-3 py-1 bg-gray-800/80 rounded-md flex items-center">
-                  Chapters <span className="ml-2">▼</span>
+            <div className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex items-center justify-between">
+              <div className="flex space-x-2 sm:space-x-4 text-white text-xs sm:text-sm">
+                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded text-xs sm:text-sm">PDF</div>
+                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded-md flex items-center text-xs sm:text-sm">
+                  Chapters <span className="ml-1 sm:ml-2">▼</span>
                 </div>
               </div>
-              <div className="ml-auto">
-                <div className="px-3 py-1 bg-gray-800/80 rounded">Chat</div>
+              <div>
+                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded text-xs sm:text-sm">Chat</div>
               </div>
             </div>
 
-            <div className="absolute bottom-0 right-0 p-4">
-              <div className="px-4 py-2 bg-gray-800/80 rounded-md text-white">
+            <div className="absolute bottom-0 right-0 p-2 sm:p-4">
+              <div className="px-3 sm:px-4 py-2 bg-gray-800/80 rounded-md text-white text-xs sm:text-sm max-w-[200px] sm:max-w-none">
                 What is the principle regarding...
               </div>
             </div>
@@ -147,22 +137,22 @@ export default function Home() {
 
       {/* Features Section */}
       <div
-        className="mt-16 max-w-6xl mx-auto overflow-hidden"
+        className="mt-12 sm:mt-16 max-w-6xl mx-auto overflow-hidden px-4 sm:px-6 lg:px-8"
         ref={containerRef}
       >
         <div
           ref={featuresRef}
-          className="bg-[#FAFAFA] rounded-xl p-8 shadow-lg"
+          className="bg-[#FAFAFA] rounded-xl p-4 sm:p-6 md:p-8 shadow-lg"
         >
-          <div className="flex flex-col md:flex-row items-start gap-10">
-            <div className="w-full md:w-1/3">
+          <div className="flex flex-col lg:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
+            <div className="w-full lg:w-1/3">
               {/* Text Section */}
-              <div className="flex items-center mb-4">
-                <div className="bg-black text-white p-2 rounded-md mr-2">
+              <div className="flex flex-col sm:flex-row sm:items-center mb-4 gap-3 sm:gap-0">
+                <div className="bg-black text-white p-2 rounded-md mr-0 sm:mr-2 self-start">
                   {/* Icon */}
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
-                    className="h-5 w-5"
+                    className="h-4 w-4 sm:h-5 sm:w-5"
                     fill="currentColor"
                     viewBox="0 0 20 20"
                   >
@@ -173,18 +163,18 @@ export default function Home() {
                     />
                   </svg>
                 </div>
-                <h2 className="text-2xl font-semibold text-[#171717]">
+                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#171717] leading-tight">
                   Summary, flashcards, quizzes, voice mode, and more
                 </h2>
               </div>
-              <p className="text-[#171717cc]">
+              <p className="text-sm sm:text-base text-[#171717cc] leading-relaxed">
                 Understand the key points, test your knowledge, get answers with
                 references, and talk with an AI tutor.
               </p>
             </div>
 
             {/* Image Section with scaling motion */}
-            <div className="w-full md:w-2/3">
+            <div className="w-full lg:w-2/3">
               <motion.div
                 className="relative bg-black rounded-lg overflow-hidden shadow-xl"
                 style={{ scale1 }}
@@ -192,7 +182,7 @@ export default function Home() {
                 <img
                   src={sectionImage}
                   alt="EduExtract platform demo - Philosophy lecture"
-                  className="w-full"
+                  className="w-full h-auto"
                 />
 
                 {/* UI Overlay Elements */}
@@ -203,20 +193,20 @@ export default function Home() {
       </div>
 
       {/* Features Cards Section */}
-      <div className="py-16 bg-[#FFFFFF]">
+      <div className="py-12 sm:py-16 bg-[#FFFFFF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-8 md:grid-cols-3">
+          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {/* Feature 1 */}
-            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
+            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+              <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="black"
-                    className="w-6 h-6"
+                    className="w-4 h-4 sm:w-6 sm:h-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -226,26 +216,26 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
+              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
                 Upload any content
               </h3>
-              <p className="text-[#171717cc] text-center">
+              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
                 From PDFs and YouTube videos to slides and even recorded
                 lectures, learn everything your way.
               </p>
             </div>
 
             {/* Feature 2 */}
-            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
+            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
+              <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-6 h-6"
+                    className="w-4 h-4 sm:w-6 sm:h-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -255,26 +245,26 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
+              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
                 Test your knowledge
               </h3>
-              <p className="text-[#171717cc] text-center">
+              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
                 Create personalized exams, get answer breakdowns, and track your
                 progress.
               </p>
             </div>
 
             {/* Feature 3 */}
-            <div className="bg-[#FAFAFA] p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-4">
-                <div className="w-10 h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
+            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
+              <div className="flex justify-center mb-3 sm:mb-4">
+                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
                   <svg
                     xmlns="http://www.w3.org/2000/svg"
                     fill="black"
                     viewBox="0 0 24 24"
                     strokeWidth={1.5}
                     stroke="currentColor"
-                    className="w-6 h-6"
+                    className="w-4 h-4 sm:w-6 sm:h-6"
                   >
                     <path
                       strokeLinecap="round"
@@ -284,10 +274,10 @@ export default function Home() {
                   </svg>
                 </div>
               </div>
-              <h3 className="text-xl font-semibold text-center mb-4 text-[#171717]">
+              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
                 Talk with an AI Tutor
               </h3>
-              <p className="text-[#171717cc] text-center">
+              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
                 Talk to an AI tutor to simplify ideas and receive guidance on
                 the content.
               </p>
@@ -298,110 +288,51 @@ export default function Home() {
 
       <div className="flex flex-col gap-5 bg-[#FFFFFF]">
         {/* Main Content */}
-        <main className="flex-grow flex items-center justify-center px-4">
-          <div className="w-full max-w-[80%] mx-2 rounded-3xl bg-[#FAFAFA] py-24 px-6 text-center">
-            <h1 className="text-4xl font-bold text-[#171717] mb-4">
+        <main className="flex-grow flex items-center justify-center px-4 py-8 sm:py-12">
+          <div className="w-full max-w-[90%] sm:max-w-[80%] mx-2 rounded-3xl bg-[#FAFAFA] py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 text-center">
+            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#171717] mb-3 sm:mb-4 leading-tight">
               Learn smarter, faster, easier.
             </h1>
-            <p className="text-[#171717cc] mb-8">
+            <p className="text-sm sm:text-base text-[#171717cc] mb-6 sm:mb-8 max-w-2xl mx-auto">
               Upload your content, and start your learning journey.
             </p>
             <button
               onClick={() => navigate("/dashboard")}
-              className="bg-[#171717] hover:bg-[#121212] text-white font-medium py-3 px-8 rounded-full"
+              className="bg-[#171717] hover:bg-[#121212] text-white font-medium py-3 px-6 sm:px-8 rounded-full transition-colors w-full sm:w-auto"
             >
               Get Started
             </button>
           </div>
         </main>
 
-        {/* Marketplace Preview Section */}
-        <section className="py-16 px-4 bg-gradient-to-br from-blue-50 to-indigo-100">
-          <div className="max-w-7xl mx-auto text-center">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">
-              Educational Marketplace
-            </h2>
-            <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">
-              Discover and share educational content with our community. Access high-quality learning materials 
-              created by educators worldwide.
-            </p>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">🔍</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Browse Content</h3>
-                <p className="text-gray-600 text-sm">
-                  Explore thousands of educational resources including documents, presentations, and more.
-                </p>
-              </div>
-              
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">📤</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Share Knowledge</h3>
-                <p className="text-gray-600 text-sm">
-                  Upload your educational content and help others learn while earning from your expertise.
-                </p>
-              </div>
-              
-              <div className="bg-white rounded-lg p-6 shadow-lg">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl">⭐</span>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Quality Content</h3>
-                <p className="text-gray-600 text-sm">
-                  All content is reviewed and approved to ensure high quality and educational value.
-                </p>
-              </div>
-            </div>
-            
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-lg font-medium transition-colors"
-              >
-                Access Marketplace
-              </button>
-              <button
-                onClick={() => navigate("/dashboard")}
-                className="bg-white hover:bg-gray-50 text-blue-600 border border-blue-600 px-8 py-3 rounded-lg font-medium transition-colors"
-              >
-                Get Started
-              </button>
-            </div>
-          </div>
-        </section>
 
         {/* Footer */}
-        <footer className="p-4 border-t border-[#EEEEEE]">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-sm text-[#171717cc]">
+        <footer className="p-4 sm:p-6 border-t border-[#EEEEEE]">
+          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs sm:text-sm text-[#171717cc] gap-4 md:gap-0">
             <div>
               <p>© Copyright 2025 EduExtract Inc.</p>
             </div>
-            <div className="flex items-center space-x-6 mt-4 md:mt-0">
-              <a href="#" className="hover:text-[#171717]">
+            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Blogs
               </a>
-              <a href="#" className="hover:text-[#171717]">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Invite & Earn
               </a>
-              <a href="#" className="hover:text-[#171717]">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Careers
               </a>
-              <a href="#" className="hover:text-[#171717]">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Terms & Conditions
               </a>
-              <a href="#" className="hover:text-[#171717]">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Privacy Policy
               </a>
-              <a href="#" className="hover:text-[#171717]">
+              <a href="#" className="hover:text-[#171717] transition-colors">
                 Contact Us
               </a>
-              <a href="#" className="hover:text-[#171717]">
-                <Github size={20} className="text-[#171717]" />
+              <a href="#" className="hover:text-[#171717] transition-colors">
+                <Github size={16} className="text-[#171717] sm:w-5 sm:h-5" />
               </a>
             </div>
           </div>

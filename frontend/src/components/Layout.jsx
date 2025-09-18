@@ -59,9 +59,9 @@ const Layout = () => {
       )}
       
       {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? 'w-16 p-2' : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'}`}>
+      <aside className={`${sidebarCollapsed ? (isMobile ? 'w-0 p-0' : 'w-16 p-2') : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'}`}>
         {/* Sidebar Header */}
-        <div className="flex items-center justify-between mb-4">
+        <div className={`flex items-center justify-between mb-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
           {!sidebarCollapsed && (
             <h2 className="text-xl font-bold text-[#121212] dark:text-[#fafafa]">EduExtract</h2>
           )}
@@ -82,7 +82,7 @@ const Layout = () => {
         </div>
 
         {/* Navigation */}
-        <nav className="mt-4">
+        <nav className={`mt-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
           <ul className="space-y-2">
             <li>
               <Link
@@ -214,10 +214,10 @@ const Layout = () => {
         </nav>
       </aside>
       {/* Right Content Area */}
-      <div className={`${sidebarCollapsed ? 'ml-16' : 'ml-64'} relative transition-all duration-300 ease-in-out ${isMobile ? 'ml-0' : ''}`}>
+      <div className={`${sidebarCollapsed ? (isMobile ? 'ml-0' : 'ml-16') : (isMobile ? 'ml-0' : 'ml-64')} relative transition-all duration-300 ease-in-out`}>
         {/* Topbar */}
-        <header className={`fixed top-0 ${sidebarCollapsed ? 'left-16' : 'left-64'} right-0 h-16 bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] flex justify-between items-center px-6 z-10 shadow-sm transition-all duration-300 ease-in-out ${isMobile ? 'left-0' : ''}`}>
-          <div className="flex items-center gap-4">
+        <header className={`fixed top-0 ${sidebarCollapsed ? (isMobile ? 'left-0' : 'left-16') : (isMobile ? 'left-0' : 'left-64')} right-0 h-16 bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] flex justify-between items-center px-3 sm:px-6 z-10 shadow-sm transition-all duration-300 ease-in-out overflow-hidden`}>
+          <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
               className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors lg:hidden"
@@ -232,34 +232,39 @@ const Layout = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
               </svg>
             </button>
-            <h1 className="text-lg font-semibold text-[#121212] dark:text-[#fafafa]"></h1>
+            <h1 className="text-sm sm:text-lg font-semibold text-[#121212] dark:text-[#fafafa] hidden sm:block"></h1>
           </div>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
             <ThemeToggle />
             {user ? (
-              <div className="flex items-center gap-4">
-                <span className="text-sm">{user.email}</span>
+              <div className="flex items-center gap-2 sm:gap-4">
+                {/* Show full email on desktop, truncated on mobile */}
+                <span className="text-sm hidden sm:block">{user.email}</span>
+                <span className="text-xs sm:hidden max-w-20 truncate">
+                  {user.email.split('@')[0]}
+                </span>
                 <button
                   onClick={logout}
-                  className="px-4 py-4 rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
+                  className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
                 >
-                  Logout
+                  <span className="hidden sm:inline">Logout</span>
+                  <span className="sm:hidden">Logout</span>
                 </button>
               </div>
             ) : (
               <button
                 onClick={toggleAuthModal}
-                className="px-4 py-4 rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
+                className="px-2 py-2 sm:px-4 sm:py-4 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
               >
-                Sign In
+                <span className="hidden sm:inline">Sign In</span>
+                <span className="sm:hidden">Login</span>
               </button>
             )}
           </div>
         </header>
         {/* Page Content */}
         <main 
-          className="pt-20 p-6 min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
-          style={{ position: 'relative', zIndex: 1, minHeight: '100vh', overflow: 'visible', background: '#' }}
+          className="pt-20 md:px-6 px-0  min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
         >
           <Outlet />
         </main>

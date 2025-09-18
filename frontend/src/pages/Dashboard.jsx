@@ -49,6 +49,7 @@ function Dashboard() {
     quiz: false,
     summary: false
   });
+  const [showContentLayout, setShowContentLayout] = useState(false);
   const videoContainerRef = useRef(null);
   const { user } = useAuth();
 
@@ -171,6 +172,7 @@ function Dashboard() {
       
       setTimeout(() => {
         setShowVideo(true);
+        setShowContentLayout(true);
         setIsLoading(false);
       }, 100);
     } else {
@@ -219,6 +221,7 @@ function Dashboard() {
         // Validate the file and enable tabs
         setIsLoading(false);
         setIsFileValidated(true);  // Enable the tabs
+        setShowContentLayout(true);  // Show the content layout
       } catch (err) {
         setError(err.response?.data?.error || "Failed to process file");
         setIsLoading(false);
@@ -347,6 +350,7 @@ function Dashboard() {
     setActiveTab("");
     setSelectedFile(null);
     setIsFileValidated(false);
+    setShowContentLayout(false);
     setError("");
     setLoadingStates({
       blog: false,
@@ -512,137 +516,232 @@ function Dashboard() {
         )}
       </form>
 
-      {/* Two-column layout start */}
-      <div className="flex flex-col md:flex-row gap-8 max-w-full mx-auto">
-        {/* Left column: Video */}
-        <div className="md:w-1/2 w-full">
-          {videoId && (
-            <div 
-              ref={videoContainerRef}
-              className={`mb-6 overflow-hidden transition-all duration-700 ease-in-out ${
-                showVideo 
-                  ? "opacity-100 max-h-96 transform translate-y-0" 
-                  : "opacity-0 max-h-0 transform -translate-y-10"
-              }`}
-            >
-              <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-white dark:bg-[#171717]">
-                <div className="relative" style={{ paddingBottom: '56.25%' }}>
-                  <iframe
-                    className="absolute top-0 left-0 w-full h-full rounded-xl"
-                    src={`https://www.youtube.com/embed/${videoId}?rel=0`}
-                    frameBorder="0"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                    allowFullScreen
-                  ></iframe>
+      {/* Two-column layout start - only show after generate is clicked */}
+      {showContentLayout && (
+        <div className="flex flex-col md:flex-row gap-8 max-w-full mx-auto">
+          {/* Left column: Video or File Preview */}
+          <div className="md:w-1/2 w-full">
+            {uploadMode === "youtube" && videoId && (
+              <div 
+                ref={videoContainerRef}
+                className={`mb-6 overflow-hidden transition-all duration-700 ease-in-out ${
+                  showVideo 
+                    ? "opacity-100 max-h-96 transform translate-y-0" 
+                    : "opacity-0 max-h-0 transform -translate-y-10"
+                }`}
+              >
+                <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+                  <div className="relative" style={{ paddingBottom: '56.25%' }}>
+                    <iframe
+                      className="absolute top-0 left-0 w-full h-full rounded-xl"
+                      src={`https://www.youtube.com/embed/${videoId}?rel=0`}
+                      frameBorder="0"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                      allowFullScreen
+                    ></iframe>
+                  </div>
+                </div>
+                {/* Pills for Chapters and Transcripts */}
+                <div className="flex gap-2 mt-4">
+                  <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Chapters</button>
+                  <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Transcripts</button>
                 </div>
               </div>
-              {/* Pills for Chapters and Transcripts */}
-              <div className="flex gap-2 mt-4">
-                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Chapters</button>
-                <button className="px-4 py-2 rounded-full bg-[#EEEEEE] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-semibold shadow hover:bg-[#E5E7EB] dark:hover:bg-[#2E2E2E] transition-all">Transcripts</button>
-              </div>
-            </div>
-          )}
-        </div>
+            )}
 
-        {/* Right column: Tabs and content */}
-        <div className="md:w-1/2 w-full">
-          <div className="max-w-4xl mx-auto">
-            {/* Tab bar */}
-            <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#171717] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
-              {[
-                { id: "summary", label: "Summary", icon: <FileText size={20} className="inline mr-2" /> },
-                { id: "blog", label: "Blog", icon: <BookOpen size={20} className="inline mr-2" /> },
-                { id: "slides", label: "Slides", icon: <StickyNote size={20} className="inline mr-2" /> },
-                { id: "flashcards", label: "Flashcards", icon: <MessageCircle size={20} className="inline mr-2" /> },
-                { id: "quiz", label: "Quiz", icon: <ListChecks size={20} className="inline mr-2" /> },
-              ].map((tab) => {
-                const isActive = activeTab === tab.id;
-                const isDisabled = !hasContent;
-                const isLoading = loadingStates[tab.id];
-                const hasError = errors[tab.id];
+            {uploadMode === "file" && selectedFile && (
+              <div className="mb-6 overflow-hidden transition-all duration-700 ease-in-out opacity-100 max-h-96 transform translate-y-0">
+                <div className="relative pt-0 pb-0 w-full overflow-hidden rounded-xl shadow-lg bg-white dark:bg-[#171717]">
+                  <div className="p-6">
+                    {/* File Icon and Info */}
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                        {selectedFile.type === 'application/pdf' && (
+                          <FileText size={24} className="text-blue-600 dark:text-blue-400" />
+                        )}
+                        {selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
+                          <BookOpen size={24} className="text-blue-600 dark:text-blue-400" />
+                        )}
+                        {selectedFile.type === 'text/plain' && (
+                          <FileText size={24} className="text-blue-600 dark:text-blue-400" />
+                        )}
+                        {selectedFile.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' && (
+                          <StickyNote size={24} className="text-blue-600 dark:text-blue-400" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] truncate">
+                          {selectedFile.name}
+                        </h3>
+                        <p className="text-sm text-[#6B7280] dark:text-[#9CA3AF]">
+                          {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
 
-                const baseClasses =
-                  "py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2";
-                const enabledClasses =
-                  "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#2E2E2E] hover:text-[#171717] dark:hover:text-[#fafafa]";
-                const activeClasses =
-                  "bg-blue-500 text-white shadow-md dark:bg-blue-500";
-                const disabledClasses =
-                  "bg-[#EEEEEE] dark:bg-[#171717] text-[#6B7280] dark:text-[#fafafacc] opacity-60 cursor-not-allowed";
+                    {/* File Preview Content */}
+                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
+                      {selectedFile.type === 'application/pdf' && (
+                        <div className="text-center py-8">
+                          <FileText size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            PDF Preview not available. Content will be processed for generation.
+                          </p>
+                        </div>
+                      )}
+                      {selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
+                        <div className="text-center py-8">
+                          <BookOpen size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            DOCX Preview not available. Content will be processed for generation.
+                          </p>
+                        </div>
+                      )}
+                      {selectedFile.type === 'text/plain' && (
+                        <div className="text-center py-8">
+                          <FileText size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            TXT Preview not available. Content will be processed for generation.
+                          </p>
+                        </div>
+                      )}
+                      {selectedFile.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' && (
+                        <div className="text-center py-8">
+                          <StickyNote size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            PPTX Preview not available. Content will be processed for generation.
+                          </p>
+                        </div>
+                      )}
+                    </div>
 
-                let classes = baseClasses;
-                if (isDisabled) {
-                  classes += ` ${disabledClasses}`;
-                } else if (isActive) {
-                  classes += ` ${activeClasses}`;
-                } else {
-                  classes += ` ${enabledClasses}`;
-                }
-
-                return (
-                  <button
-                    key={tab.id}
-                    className={classes}
-                    onClick={() => !isDisabled && handleTabClick(tab.id)}
-                    disabled={isDisabled}
-                  >
-                    {tab.icon}
-                    {tab.label}
-                    {isLoading && " (Loading...)"}
-                    {hasError && " (!)"}
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Tab content */}
-            {hasContent && (
-              <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
-                {activeTab === "blog" && (
-                  <>
-                    {loadingStates.blog && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading blog...</p>}
-                    {errors.blog && <p className="text-red-500">{errors.blog}</p>}
-                    {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
-                  </>
-                )}
-                {activeTab === "slides" && (
-                  <>
-                    {loadingStates.slides && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading slides...</p>}
-                    {errors.slides && <p className="text-red-500">{errors.slides}</p>}
-                    {!loadingStates.slides && !errors.slides && (
-                      <SlidesView pptxBase64={pptxBase64} slides={slides} />
-                    )}
-                  </>
-                )}
-                {activeTab === "flashcards" && (
-                  <>
-                    {loadingStates.flashcards && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading flashcards...</p>}
-                    {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
-                    {!loadingStates.flashcards && !errors.flashcards && (
-                      <FlashCardGallery flashcards={flashcards} />
-                    )}
-                  </>
-                )}
-                {activeTab === "quiz" && (
-                  <>
-                    {loadingStates.quiz && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading quiz...</p>}
-                    {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
-                    {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
-                  </>
-                )}
-                {activeTab === "summary" && (
-                  <>
-                    {loadingStates.summary && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading summary...</p>}
-                    {errors.summary && <p className="text-red-500">{errors.summary}</p>}
-                    {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
-                  </>
-                )}
+                    {/* File Status */}
+                    <div className="mt-4 flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                        <span className="text-sm text-green-600 dark:text-green-400 font-medium">
+                          Ready for processing
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setSelectedFile(null);
+                          setIsFileValidated(false);
+                          setShowContentLayout(false);
+                          if (fileInputRef.current) {
+                            fileInputRef.current.value = "";
+                          }
+                        }}
+                        className="text-sm text-red-500 hover:text-red-700 dark:hover:text-red-400 transition-colors"
+                      >
+                        Remove file
+                      </button>
+                    </div>
+                  </div>
+                </div>
               </div>
             )}
           </div>
+
+          {/* Right column: Tabs and content */}
+          <div className="md:w-1/2 w-full">
+            <div className="max-w-4xl mx-auto">
+              {/* Tab bar */}
+              <div className="flex mb-6 bg-[#EEEEEE] dark:bg-[#171717] p-2 rounded-xl shadow-sm gap-2 items-center overflow-x-auto whitespace-nowrap max-w-full custom-scrollbar">
+                {[
+                  { id: "summary", label: "Summary", icon: <FileText size={20} className="inline mr-2" /> },
+                  { id: "blog", label: "Blog", icon: <BookOpen size={20} className="inline mr-2" /> },
+                  { id: "slides", label: "Slides", icon: <StickyNote size={20} className="inline mr-2" /> },
+                  { id: "flashcards", label: "Flashcards", icon: <MessageCircle size={20} className="inline mr-2" /> },
+                  { id: "quiz", label: "Quiz", icon: <ListChecks size={20} className="inline mr-2" /> },
+                ].map((tab) => {
+                  const isActive = activeTab === tab.id;
+                  const isDisabled = !hasContent;
+                  const isLoading = loadingStates[tab.id];
+                  const hasError = errors[tab.id];
+
+                  const baseClasses =
+                    "py-3 px-4 text-center font-semibold rounded-lg transition-all text-sm flex items-center justify-center gap-2";
+                  const enabledClasses =
+                    "bg-[#FFFFFF] dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] shadow-sm hover:bg-[#FAFAFA] dark:hover:bg-[#2E2E2E] hover:text-[#171717] dark:hover:text-[#fafafa]";
+                  const activeClasses =
+                    "bg-blue-500 text-white shadow-md dark:bg-blue-500";
+                  const disabledClasses =
+                    "bg-[#EEEEEE] dark:bg-[#171717] text-[#6B7280] dark:text-[#fafafacc] opacity-60 cursor-not-allowed";
+
+                  let classes = baseClasses;
+                  if (isDisabled) {
+                    classes += ` ${disabledClasses}`;
+                  } else if (isActive) {
+                    classes += ` ${activeClasses}`;
+                  } else {
+                    classes += ` ${enabledClasses}`;
+                  }
+
+                  return (
+                    <button
+                      key={tab.id}
+                      className={classes}
+                      onClick={() => !isDisabled && handleTabClick(tab.id)}
+                      disabled={isDisabled}
+                    >
+                      {tab.icon}
+                      {tab.label}
+                      {isLoading && " (Loading...)"}
+                      {hasError && " (!)"}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Tab content */}
+              {hasContent && (
+                <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
+                  {activeTab === "blog" && (
+                    <>
+                      {loadingStates.blog && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading blog...</p>}
+                      {errors.blog && <p className="text-red-500">{errors.blog}</p>}
+                      {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
+                    </>
+                  )}
+                  {activeTab === "slides" && (
+                    <>
+                      {loadingStates.slides && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading slides...</p>}
+                      {errors.slides && <p className="text-red-500">{errors.slides}</p>}
+                      {!loadingStates.slides && !errors.slides && (
+                        <SlidesView pptxBase64={pptxBase64} slides={slides} />
+                      )}
+                    </>
+                  )}
+                  {activeTab === "flashcards" && (
+                    <>
+                      {loadingStates.flashcards && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading flashcards...</p>}
+                      {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
+                      {!loadingStates.flashcards && !errors.flashcards && (
+                        <FlashCardGallery flashcards={flashcards} />
+                      )}
+                    </>
+                  )}
+                  {activeTab === "quiz" && (
+                    <>
+                      {loadingStates.quiz && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading quiz...</p>}
+                      {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
+                      {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+                    </>
+                  )}
+                  {activeTab === "summary" && (
+                    <>
+                      {loadingStates.summary && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading summary...</p>}
+                      {errors.summary && <p className="text-red-500">{errors.summary}</p>}
+                      {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
+                    </>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
         </div>
-      </div>
+      )}
       {/* Two-column layout end */}
     </div>
   );
