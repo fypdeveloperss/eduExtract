@@ -59,11 +59,15 @@
 /* Dark mode styles for blog content */
 [data-theme="dark"] .blog-content {
   color: #d1d5db;
+  background-color: #171717;
 }
 
 [data-theme="dark"] .blog-content h1,
 [data-theme="dark"] .blog-content h2,
-[data-theme="dark"] .blog-content h3 {
+[data-theme="dark"] .blog-content h3,
+[data-theme="dark"] .blog-content h4,
+[data-theme="dark"] .blog-content h5,
+[data-theme="dark"] .blog-content h6 {
   color: #f9fafb;
 }
 
@@ -75,6 +79,22 @@
 [data-theme="dark"] .blog-content strong,
 [data-theme="dark"] .blog-content b {
   color: #f9fafb;
+}
+
+[data-theme="dark"] .blog-content em,
+[data-theme="dark"] .blog-content i {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .blog-content ul,
+[data-theme="dark"] .blog-content ol {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .blog-content blockquote {
+  background-color: #374151;
+  border-left-color: #6b7280;
+  color: #d1d5db;
 }
 
 html {

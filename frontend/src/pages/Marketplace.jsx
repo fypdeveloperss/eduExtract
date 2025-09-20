@@ -159,7 +159,7 @@ function Marketplace() {
 
   if (loading && content.length === 0) {
     return (
-      <div className="min-h-screen bg-[#ffffff] dark:bg-[#121212] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading marketplace...</p>
@@ -169,7 +169,7 @@ function Marketplace() {
   }
 
   return (
-    <div className="min-h-screen bg-[#ffffff] dark:bg-[#121212]">
+    <div className="min-h-screen bg-white dark:bg-[#121212]">
       {/* Hero Section */}
       <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
         <div className="max-w-7xl mx-auto px-4 text-center">
@@ -201,7 +201,7 @@ function Marketplace() {
           </form>
 
           {user && (
-            <div className="mt-8 flex flex-wrap gap-4">
+            <div className="mt-8 flex flex-wrap justify-center gap-4">
               <Link
                 to="/marketplace/upload"
                 className="inline-flex items-center bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
@@ -325,8 +325,8 @@ function Marketplace() {
           </div>
           
           {!user && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg px-4 py-2">
-              <p className="text-sm text-blue-800">
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
+              <p className="text-sm text-blue-800 dark:text-blue-200">
                 💡 <Link to="/login" className="font-medium underline">Sign in</Link> to upload content and access premium features
               </p>
             </div>
@@ -346,7 +346,7 @@ function Marketplace() {
           </div>
         ) : content.length === 0 ? (
           <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-12 text-center">
-            <div className="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
               <span className="text-4xl">🔍</span>
             </div>
             <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">No content found</h3>
@@ -369,7 +369,7 @@ function Marketplace() {
                 className="bg-white dark:bg-[#171717] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
               >
                 {/* Content Preview */}
-                <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 flex items-center justify-center relative overflow-hidden">
+                <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 flex items-center justify-center relative overflow-hidden">
                   <div className="text-6xl opacity-60 group-hover:scale-110 transition-transform duration-300">
                     {getCategoryIcon(item.category)}
                   </div>
@@ -378,8 +378,8 @@ function Marketplace() {
                   <div className="absolute top-3 right-3">
                     <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
                       item.price === 0 
-                        ? 'bg-green-100 text-green-800' 
-                        : 'bg-blue-100 text-blue-800'
+                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
                     }`}>
                       {formatPrice(item.price, item.currency)}
                     </span>

@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 import ChatBot from "./ChatBot";
 import AuthModal from "./AuthModal";
+import UserModal from "./UserModal";
 import { useAuth } from "../context/FirebaseAuthContext";
 
 // Add CSS keyframes for fadeIn animation
@@ -30,6 +31,7 @@ const Layout = () => {
   const { user, logout, toggleAuthModal } = useAuth();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [isUserModalOpen, setIsUserModalOpen] = useState(false);
 
   // Auto-collapse sidebar on mobile screens
   useEffect(() => {
@@ -235,26 +237,27 @@ const Layout = () => {
             <h1 className="text-sm sm:text-lg font-semibold text-[#121212] dark:text-[#fafafa] hidden sm:block"></h1>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <ThemeToggle />
             {user ? (
-              <div className="flex items-center gap-2 sm:gap-4">
-                {/* Show full email on desktop, truncated on mobile */}
-                <span className="text-sm hidden sm:block">{user.email}</span>
-                <span className="text-xs sm:hidden max-w-20 truncate">
-                  {user.email.split('@')[0]}
-                </span>
-                <button
-                  onClick={logout}
-                  className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
+              <button
+                onClick={() => setIsUserModalOpen(!isUserModalOpen)}
+                className="relative p-2 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 hover:from-gray-700 hover:to-gray-900 dark:hover:from-gray-300 dark:hover:to-gray-500 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                title="User Menu"
+              >
+                <svg 
+                  className="w-6 h-6 text-white dark:text-gray-900" 
+                  fill="currentColor" 
+                  viewBox="0 0 24 24"
                 >
-                  <span className="hidden sm:inline">Logout</span>
-                  <span className="sm:hidden">Logout</span>
-                </button>
-              </div>
+                  <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                </svg>
+                {isUserModalOpen && (
+                  <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-white dark:border-gray-900"></div>
+                )}
+              </button>
             ) : (
               <button
                 onClick={toggleAuthModal}
-                className="px-2 py-2 sm:px-4 sm:py-4 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
+                className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
               >
                 <span className="hidden sm:inline">Sign In</span>
                 <span className="sm:hidden">Login</span>
@@ -264,12 +267,17 @@ const Layout = () => {
         </header>
         {/* Page Content */}
         <main 
-          className="pt-20 md:px-6 px-0  min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
+          className="pt-16 md:px-0 px-0  min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
         >
           <Outlet />
         </main>
       </div>
       <AuthModal />
+      <UserModal 
+        isOpen={isUserModalOpen} 
+        onClose={() => setIsUserModalOpen(false)} 
+        user={user} 
+      />
     </div>
   );
 };

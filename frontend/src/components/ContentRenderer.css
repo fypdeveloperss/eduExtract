@@ -340,6 +340,7 @@
 @media (prefers-color-scheme: dark) {
   .content-renderer-blog .blog-content {
     color: #e9ecef;
+    background-color: #1f2937;
   }
   
   .content-renderer-blog .blog-content h1,
@@ -389,6 +390,47 @@
     background: #343a40;
     border-color: #495057;
   }
+}
+
+/* Additional dark mode support using data-theme attribute */
+[data-theme="dark"] .content-renderer-blog .blog-content {
+  color: #d1d5db;
+  background-color: #1f2937;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content h1,
+[data-theme="dark"] .content-renderer-blog .blog-content h2,
+[data-theme="dark"] .content-renderer-blog .blog-content h3,
+[data-theme="dark"] .content-renderer-blog .blog-content h4,
+[data-theme="dark"] .content-renderer-blog .blog-content h5,
+[data-theme="dark"] .content-renderer-blog .blog-content h6 {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content p,
+[data-theme="dark"] .content-renderer-blog .blog-content li {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content strong,
+[data-theme="dark"] .content-renderer-blog .blog-content b {
+  color: #f9fafb;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content em,
+[data-theme="dark"] .content-renderer-blog .blog-content i {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content ul,
+[data-theme="dark"] .content-renderer-blog .blog-content ol {
+  color: #d1d5db;
+}
+
+[data-theme="dark"] .content-renderer-blog .blog-content blockquote {
+  background-color: #374151;
+  border-left-color: #6b7280;
+  color: #d1d5db;
 }
 
 /* Responsive Design */

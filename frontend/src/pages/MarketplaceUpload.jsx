@@ -213,7 +213,7 @@ function MarketplaceUpload() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
@@ -249,7 +249,6 @@ function MarketplaceUpload() {
                     value={formData.title}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
-                    style={{ color: '#171717cc' }}
                     placeholder="Enter a descriptive title"
                     required
                   />
@@ -286,7 +285,6 @@ function MarketplaceUpload() {
                     value={formData.subject}
                     onChange={handleInputChange}
                     className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
-                    style={{ color: '#171717cc' }}
                     placeholder="e.g., Algebra, Physics, World War II"
                     required
                   />
@@ -307,7 +305,7 @@ function MarketplaceUpload() {
                           onChange={handleInputChange}
                           className="mr-2"
                         />
-                        <span className={`text-sm font-medium ${diff.color}`}>
+                        <span className={`text-sm font-medium ${diff.color} dark:text-[#fafafacc]`}>
                           {diff.label}
                         </span>
                       </label>
@@ -326,7 +324,6 @@ function MarketplaceUpload() {
                   onChange={handleInputChange}
                   rows={4}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
-                  style={{ color: '#171717cc' }}
                   placeholder="Describe your content, what learners will gain, and any prerequisites..."
                   required
                 />
@@ -342,7 +339,6 @@ function MarketplaceUpload() {
                   value={formData.tags}
                   onChange={handleInputChange}
                   className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
-                  style={{ color: '#171717cc' }}
                   placeholder="Enter tags separated by commas (e.g., calculus, derivatives, math)"
                 />
                 <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
@@ -376,7 +372,7 @@ function MarketplaceUpload() {
                           onChange={handleInputChange}
                           className="mr-3"
                         />
-                        <span className="text-sm">
+                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                           {type.icon} {type.label}
                         </span>
                       </label>
@@ -489,7 +485,6 @@ function MarketplaceUpload() {
                       min="0"
                       step="0.01"
                       className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
-                      style={{ color: '#171717cc' }}
                       placeholder="0.00"
                     />
                   </div>

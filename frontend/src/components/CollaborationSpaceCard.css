@@ -12,10 +12,21 @@
   flex-direction: column;
 }
 
+[data-theme="dark"] .collaboration-space-card {
+  background: #171717;
+  border-color: #2E2E2E;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .collaboration-space-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
-  border-color: #1976d2;
+  border-color: #171717cc;
+}
+
+[data-theme="dark"] .collaboration-space-card:hover {
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  border-color: #fafafacc;
 }
 
 /* Card Header */
@@ -34,7 +45,7 @@
 .space-title {
   font-size: 1.25rem;
   font-weight: 600;
-  color: #333;
+  color: #171717cc;
   margin: 0 0 8px 0;
   line-height: 1.3;
   display: -webkit-box;
@@ -42,6 +53,10 @@
   line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
+}
+
+[data-theme="dark"] .space-title {
+  color: #fafafacc;
 }
 
 .space-meta {
@@ -53,10 +68,14 @@
 
 .privacy-indicator {
   font-size: 0.8rem;
-  color: #666;
+  color: #171717cc;
   display: flex;
   align-items: center;
   gap: 4px;
+}
+
+[data-theme="dark"] .privacy-indicator {
+  color: #fafafacc;
 }
 
 .category-badge {
@@ -92,10 +111,14 @@
 }
 
 .space-description {
-  color: #666;
+  color: #171717cc;
   line-height: 1.5;
   margin: 0;
   font-size: 0.9rem;
+}
+
+[data-theme="dark"] .space-description {
+  color: #fafafacc;
 }
 
 .tags-container {
@@ -106,16 +129,26 @@
 
 .tag {
   background: #f0f0f0;
-  color: #666;
+  color: #171717cc;
   padding: 4px 8px;
   border-radius: 12px;
   font-size: 0.75rem;
   font-weight: 500;
 }
 
+[data-theme="dark"] .tag {
+  background: #2E2E2E;
+  color: #fafafacc;
+}
+
 .tag.more-tags {
   background: #e3f2fd;
-  color: #1976d2;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .tag.more-tags {
+  background: #3E3E3E;
+  color: #fafafacc;
   font-weight: 600;
 }
 
@@ -124,6 +157,10 @@
   padding: 15px 20px 20px 20px;
   border-top: 1px solid #f0f0f0;
   margin-top: auto;
+}
+
+[data-theme="dark"] .card-footer {
+  border-top-color: #2E2E2E;
 }
 
 .stats-row {
@@ -146,14 +183,22 @@
 .stat-value {
   font-size: 1rem;
   font-weight: 600;
-  color: #333;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .stat-value {
+  color: #fafafacc;
 }
 
 .stat-label {
   font-size: 0.7rem;
-  color: #999;
+  color: #171717cc;
   text-transform: uppercase;
   letter-spacing: 0.5px;
+}
+
+[data-theme="dark"] .stat-label {
+  color: #fafafacc;
 }
 
 .footer-meta {
@@ -161,13 +206,21 @@
   justify-content: space-between;
   align-items: center;
   font-size: 0.8rem;
-  color: #999;
+  color: #171717cc;
   margin-top: 8px;
+}
+
+[data-theme="dark"] .footer-meta {
+  color: #fafafacc;
 }
 
 .owner-name {
   font-weight: 500;
-  color: #666;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .owner-name {
+  color: #fafafacc;
 }
 
 .last-activity {
@@ -186,6 +239,11 @@
   min-height: 52px;
   position: relative;
   z-index: 2;
+}
+
+[data-theme="dark"] .card-actions {
+  border-top-color: #2E2E2E;
+  background: #2E2E2E;
 }
 
 .action-btn {
@@ -250,10 +308,14 @@
 }
 
 .view-hint {
-  color: #6b7280;
+  color: #171717cc;
   font-size: 13px;
   font-weight: 500;
   font-style: italic;
+}
+
+[data-theme="dark"] .view-hint {
+  color: #fafafacc;
 }
 
 /* Simplified overlay for card click only */

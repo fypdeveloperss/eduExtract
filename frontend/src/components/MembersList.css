@@ -6,6 +6,12 @@
   overflow: hidden;
 }
 
+[data-theme="dark"] .members-list {
+  background: #171717;
+  border-color: #2E2E2E;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .members-header {
   display: flex;
   justify-content: space-between;
@@ -15,15 +21,24 @@
   background: #f8f9fa;
 }
 
+[data-theme="dark"] .members-header {
+  background: #2E2E2E;
+  border-bottom-color: #2E2E2E;
+}
+
 .members-header h2 {
   margin: 0;
-  color: #333;
+  color: #171717cc;
   font-size: 1.5rem;
   font-weight: 600;
 }
 
+[data-theme="dark"] .members-header h2 {
+  color: #fafafacc;
+}
+
 .invite-btn {
-  background: linear-gradient(135deg, #1976d2, #2196f3);
+  background: linear-gradient(135deg, #171717cc, #2E2E2E);
   color: white;
   border: none;
   padding: 10px 20px;
@@ -33,9 +48,18 @@
   transition: all 0.3s ease;
 }
 
+[data-theme="dark"] .invite-btn {
+  background: linear-gradient(135deg, #fafafacc, #171717);
+  color: #121212;
+}
+
 .invite-btn:hover {
-  background: linear-gradient(135deg, #1565c0, #1976d2);
+  background: linear-gradient(135deg, #2E2E2E, #171717cc);
   transform: translateY(-1px);
+}
+
+[data-theme="dark"] .invite-btn:hover {
+  background: linear-gradient(135deg, #171717, #fafafacc);
 }
 
 .members-content {
@@ -57,6 +81,11 @@
   display: flex;
   flex-direction: column;
   gap: 15px;
+}
+
+[data-theme="dark"] .member-card {
+  background: #171717;
+  border-color: #2E2E2E;
 }
 
 .member-card:hover {
@@ -91,14 +120,22 @@
 .member-name {
   font-size: 1.1rem;
   font-weight: 600;
-  color: #333;
+  color: #171717cc;
   margin: 0 0 4px 0;
 }
 
+[data-theme="dark"] .member-name {
+  color: #fafafacc;
+}
+
 .member-email {
-  color: #666;
+  color: #171717cc;
   font-size: 0.9rem;
   margin: 0 0 8px 0;
+}
+
+[data-theme="dark"] .member-email {
+  color: #fafafacc;
 }
 
 .member-meta {
@@ -110,7 +147,12 @@
 .join-date,
 .invited-by {
   font-size: 0.8rem;
-  color: #999;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .join-date,
+[data-theme="dark"] .invited-by {
+  color: #fafafacc;
 }
 
 .member-role {
@@ -171,12 +213,22 @@
 
 .action-btn.edit-role {
   background: #f5f5f5;
-  color: #666;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .action-btn.edit-role {
+  background: #2E2E2E;
+  color: #fafafacc;
 }
 
 .action-btn.edit-role:hover {
   background: #e0e0e0;
-  color: #333;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .action-btn.edit-role:hover {
+  background: #fafafacc;
+  color: #121212;
 }
 
 .action-btn.remove-member {
@@ -184,7 +236,17 @@
   color: #d32f2f;
 }
 
+[data-theme="dark"] .action-btn.remove-member {
+  background: #2E2E2E;
+  color: #f44336;
+}
+
 .action-btn.remove-member:hover {
+  background: #f44336;
+  color: white;
+}
+
+[data-theme="dark"] .action-btn.remove-member:hover {
   background: #f44336;
   color: white;
 }
@@ -192,13 +254,21 @@
 .empty-state {
   text-align: center;
   padding: 60px 30px;
-  color: #666;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .empty-state {
+  color: #fafafacc;
 }
 
 .empty-state h3 {
-  color: #333;
+  color: #171717cc;
   margin-bottom: 10px;
   font-size: 1.3rem;
+}
+
+[data-theme="dark"] .empty-state h3 {
+  color: #fafafacc;
 }
 
 .empty-state p {

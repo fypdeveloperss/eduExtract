@@ -168,7 +168,7 @@ function MarketplaceDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading content...</p>
@@ -179,9 +179,9 @@ function MarketplaceDetail() {
 
   if (error || !content) {
     return (
-      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-8 max-w-md w-full mx-4 text-center">
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
             <span className="text-2xl">❌</span>
           </div>
           <h2 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-2">Content Not Found</h2>
@@ -200,7 +200,7 @@ function MarketplaceDetail() {
   const canAccessContent = accessInfo?.hasAccess || content.price === 0;
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-8">
       <div className="max-w-6xl mx-auto px-4">
         {/* Breadcrumb */}
         <nav className="mb-6">
@@ -343,17 +343,17 @@ function MarketplaceDetail() {
                   {canAccessContent ? (
                     <div>
                       {content.filePath ? (
-                        <div className="bg-white rounded-lg p-4 border">
+                        <div className="bg-white dark:bg-[#171717] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
                           <div className="flex items-center space-x-3 mb-3">
                             <span className="text-2xl">📎</span>
                             <div>
-                              <div className="font-medium text-[#171717cc] dark:text-[#171717cc]">{content.contentData?.originalName || 'Document'}</div>
-                              <div className="text-sm text-gray-500">
+                              <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{content.contentData?.originalName || 'Document'}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
                                 {content.contentData?.size ? `${(content.contentData.size / 1024 / 1024).toFixed(2)} MB` : ''}
                               </div>
                             </div>
                           </div>
-                          <p className="text-gray-600 text-sm">
+                          <p className="text-gray-600 dark:text-gray-300 text-sm">
                             This is a document file. Click the download button above to access the full content.
                           </p>
                         </div>
@@ -366,12 +366,12 @@ function MarketplaceDetail() {
                       )}
                     </div>
                   ) : (
-                    <div className="bg-white rounded-lg p-6 border text-center">
-                      <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="bg-white dark:bg-[#171717] rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
                         <span className="text-2xl">🔒</span>
                       </div>
-                      <h4 className="text-lg font-semibold text-gray-900 mb-2">Content Locked</h4>
-                      <p className="text-gray-600 mb-4">
+                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Content Locked</h4>
+                      <p className="text-gray-600 dark:text-gray-300 mb-4">
                         Purchase this content to unlock full access and download capabilities.
                       </p>
                       <button
@@ -454,7 +454,7 @@ function MarketplaceDetail() {
                       Creator
                     </h3>
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-2xl">👤</span>
                       </div>
                       <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creator.name || 'Anonymous'}</div>

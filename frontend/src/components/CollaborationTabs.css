@@ -3,6 +3,10 @@
   margin-bottom: 30px;
 }
 
+[data-theme="dark"] .collaboration-tabs {
+  border-bottom-color: #2E2E2E;
+}
+
 .tabs-container {
   display: flex;
   gap: 4px;
@@ -17,7 +21,7 @@
   padding: 12px 20px;
   border: none;
   background: transparent;
-  color: #666;
+  color: #171717cc;
   font-size: 1rem;
   font-weight: 500;
   cursor: pointer;
@@ -28,15 +32,30 @@
   min-height: 50px;
 }
 
+[data-theme="dark"] .tab-button {
+  color: #fafafacc;
+}
+
 .tab-button:hover {
   background: #f8f9fa;
-  color: #333;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .tab-button:hover {
+  background: #2E2E2E;
+  color: #fafafacc;
 }
 
 .tab-button.active {
-  background: #1976d2;
+  background: #171717cc;
   color: white;
-  box-shadow: 0 2px 4px rgba(25, 118, 210, 0.3);
+  box-shadow: 0 2px 4px rgba(23, 23, 23, 0.3);
+}
+
+[data-theme="dark"] .tab-button.active {
+  background: #fafafacc;
+  color: #121212;
+  box-shadow: 0 2px 4px rgba(250, 250, 250, 0.3);
 }
 
 .tab-icon {
@@ -61,7 +80,12 @@
 
 .tab-button.active .notification-badge {
   background: rgba(255, 255, 255, 0.9);
-  color: #1976d2;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .tab-button.active .notification-badge {
+  background: rgba(18, 18, 18, 0.9);
+  color: #fafafacc;
 }
 
 /* Responsive Design */

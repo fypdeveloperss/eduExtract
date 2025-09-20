@@ -9,12 +9,25 @@ const ThemeToggle = () => {
     <button
       onClick={toggleTheme}
       className="
-        p-2 rounded-xl border transition-all duration-300
-        bg-[#FFFFFF] text-[#171717] hover:bg-[#EEEEEE]
-        dark:bg-[#171717] dark:text-[#fafafa] dark:hover:bg-[#2E2E2E]
+        relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ease-in-out
+        focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
+        bg-gray-200 dark:bg-gray-700
+        hover:bg-gray-300 dark:hover:bg-gray-600
       "
+      role="switch"
+      aria-checked={theme === "dark"}
+      aria-label="Toggle theme"
     >
-      {theme === "light" ? <Moon /> : <Sun />}
+      <span
+        className={`
+          inline-block h-5 w-5 transform rounded-full bg-white shadow-lg transition duration-200 ease-in-out
+          ${theme === "dark" ? "translate-x-6" : "translate-x-1"}
+        `}
+      />
+      <div className="absolute inset-0 flex items-center justify-between px-1.5">
+        <Sun className="h-4 w-4 text-gray-500" />
+        <Moon className="h-4 w-4 text-gray-500" />
+      </div>
     </button>
   );
 };

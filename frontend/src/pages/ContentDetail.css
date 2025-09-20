@@ -7,10 +7,19 @@
   box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
 }
 
+[data-theme="dark"] .content-detail {
+  background-color: #171717;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.3);
+}
+
 .content-header {
   margin-bottom: 2rem;
   border-bottom: 1px solid #eaeaea;
   padding-bottom: 1.5rem;
+}
+
+[data-theme="dark"] .content-header {
+  border-bottom-color: #2E2E2E;
 }
 
 .back-btn {
@@ -22,18 +31,35 @@
   cursor: pointer;
   font-weight: 500;
   transition: all 0.2s;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .back-btn {
+  border-color: #2E2E2E;
+  color: #fafafacc;
 }
 
 .back-btn:hover {
   background-color: #f5f5f5;
   border-color: #ccc;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .back-btn:hover {
+  background-color: #2E2E2E;
+  border-color: #fafafacc;
+  color: #fafafacc;
 }
 
 .content-title {
   font-size: 2rem;
   font-weight: 700;
-  color: #333;
+  color: #171717cc;
   margin: 0.5rem 0;
+}
+
+[data-theme="dark"] .content-title {
+  color: #fafafacc;
 }
 
 .content-meta {
@@ -41,19 +67,33 @@
   flex-wrap: wrap;
   gap: 1rem;
   margin-top: 0.5rem;
-  color: #666;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .content-meta {
+  color: #fafafacc;
 }
 
 .content-type {
   font-weight: 500;
   background-color: #f0f7ff;
-  color: #0066cc;
+  color: #171717cc;
   padding: 0.25rem 0.75rem;
   border-radius: 20px;
 }
 
+[data-theme="dark"] .content-type {
+  background-color: #2E2E2E;
+  color: #fafafacc;
+}
+
 .content-author, .content-date {
-  color: #777;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .content-author,
+[data-theme="dark"] .content-date {
+  color: #fafafacc;
 }
 
 .content-body {
@@ -63,6 +103,11 @@
 .notes-content p {
   margin-bottom: 1rem;
   line-height: 1.6;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .notes-content p {
+  color: #fafafacc;
 }
 
 .flashcards-preview, .quiz-preview {
@@ -72,13 +117,24 @@
   margin-top: 1rem;
 }
 
+[data-theme="dark"] .flashcards-preview,
+[data-theme="dark"] .quiz-preview {
+  background-color: #2E2E2E;
+}
+
 .flashcards-preview h3, .quiz-preview h3 {
   margin-top: 0;
   margin-bottom: 1.5rem;
   font-size: 1.25rem;
-  color: #333;
+  color: #171717cc;
   border-bottom: 1px solid #eee;
   padding-bottom: 0.75rem;
+}
+
+[data-theme="dark"] .flashcards-preview h3,
+[data-theme="dark"] .quiz-preview h3 {
+  color: #fafafacc;
+  border-bottom-color: #2E2E2E;
 }
 
 .flashcard-list {
@@ -95,15 +151,31 @@
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
+[data-theme="dark"] .flashcard-preview {
+  border-color: #2E2E2E;
+  background-color: #171717;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
 .card-front {
   font-weight: 600;
   margin-bottom: 0.5rem;
   padding-bottom: 0.5rem;
   border-bottom: 1px dashed #eee;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .card-front {
+  color: #fafafacc;
+  border-bottom-color: #2E2E2E;
 }
 
 .card-back {
-  color: #555;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .card-back {
+  color: #fafafacc;
 }
 
 .question-list {
@@ -119,9 +191,19 @@
   padding: 1rem;
 }
 
+[data-theme="dark"] .question-preview {
+  background-color: #171717;
+  border-color: #2E2E2E;
+}
+
 .question-text {
   font-weight: 600;
   margin-bottom: 0.75rem;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .question-text {
+  color: #fafafacc;
 }
 
 .options-list {
@@ -134,6 +216,12 @@
   margin-bottom: 0.5rem;
   border-radius: 4px;
   background-color: #f5f5f5;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .options-list li {
+  background-color: #2E2E2E;
+  color: #fafafacc;
 }
 
 .correct-option {
@@ -147,7 +235,11 @@
 
 .content-description {
   line-height: 1.6;
-  color: #444;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .content-description {
+  color: #fafafacc;
 }
 
 .file-download {
@@ -173,6 +265,14 @@
 .auth-required, .loading-container, .error-container, .not-found {
   text-align: center;
   padding: 3rem 2rem;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .auth-required,
+[data-theme="dark"] .loading-container,
+[data-theme="dark"] .error-container,
+[data-theme="dark"] .not-found {
+  color: #fafafacc;
 }
 
 .loading-container .spinner {
@@ -222,15 +322,30 @@
   line-height: 1.6;
 }
 
+[data-theme="dark"] .blog-content {
+  background-color: #2E2E2E;
+}
+
 .blog-content h1,
 .blog-content h2,
 .blog-content h3 {
-  color: #333;
+  color: #171717cc;
   margin-bottom: 10px;
+}
+
+[data-theme="dark"] .blog-content h1,
+[data-theme="dark"] .blog-content h2,
+[data-theme="dark"] .blog-content h3 {
+  color: #fafafacc;
 }
 
 .blog-content p {
   margin-bottom: 15px;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .blog-content p {
+  color: #fafafacc;
 }
 
 .blog-content img {

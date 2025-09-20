@@ -4,7 +4,7 @@ const ContentRenderer = ({ content }) => {
   if (!content) {
     return (
       <div className="flex justify-center items-center h-full">
-        <p className="text-lg text-gray-700 dark:text-gray-300">No content available</p>
+        <p className="text-lg text-[#171717cc] dark:text-[#fafafacc]">No content available</p>
       </div>
     );
   }
@@ -72,20 +72,20 @@ const ContentRenderer = ({ content }) => {
         );
       case 'summary':
         return (
-          <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg">{contentData}</p>
+          <p className="text-[#171717cc] dark:text-[#fafafacc] leading-relaxed text-lg">{contentData}</p>
         );
       default:
-        return <p className="text-gray-700 dark:text-gray-300">Unsupported content type.</p>;
+        return <p className="text-[#171717cc] dark:text-[#fafafacc]">Unsupported content type.</p>;
     }
   };
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-bold mb-6 text-center text-[#121212] dark:text-[#fafafa]">{content.title}</h1>
+      <h1 className="text-3xl font-bold mb-6 text-center text-[#171717cc] dark:text-[#fafafacc]">{content.title}</h1>
       <div className="bg-white dark:bg-[#171717] rounded-lg shadow-xl p-6 sm:p-8">
         {renderContentData()}
       </div>
-      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+      <div className="mt-8 text-center text-sm text-[#171717cc] dark:text-[#fafafacc]">
         Generated on: {new Date(content.createdAt).toLocaleDateString()}
         {(content.url || content.originalText) && <p>Source: <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">{content.url || 'Original Text'}</a></p>}
         {content.filePath && <p>Original File: {content.filePath.split('/').pop()}</p>}

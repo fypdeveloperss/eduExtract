@@ -2,6 +2,12 @@
   max-width: 1200px;
   margin: 0 auto;
   padding: 2rem;
+  background: white;
+  min-height: 100vh;
+}
+
+[data-theme="dark"] .collaboration-invites {
+  background: #121212;
 }
 
 .invites-header {
@@ -11,19 +17,27 @@
 
 .invites-header h1 {
   font-size: 2.5rem;
-  color: #1a365d;
+  color: #171717cc;
   margin-bottom: 0.5rem;
   font-weight: 600;
 }
 
+[data-theme="dark"] .invites-header h1 {
+  color: #fafafacc;
+}
+
 .invites-header p {
-  color: #64748b;
+  color: #171717cc;
   font-size: 1.1rem;
   margin-bottom: 1.5rem;
 }
 
+[data-theme="dark"] .invites-header p {
+  color: #fafafacc;
+}
+
 .back-btn {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  background: linear-gradient(135deg, #171717cc, #2E2E2E);
   color: white;
   border: none;
   padding: 0.75rem 1.5rem;
@@ -37,9 +51,18 @@
   gap: 0.5rem;
 }
 
+[data-theme="dark"] .back-btn {
+  background: linear-gradient(135deg, #fafafacc, #171717);
+  color: #121212;
+}
+
 .back-btn:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+  box-shadow: 0 4px 12px rgba(23, 23, 23, 0.3);
+}
+
+[data-theme="dark"] .back-btn:hover {
+  box-shadow: 0 4px 12px rgba(250, 250, 250, 0.3);
 }
 
 .error-message {
@@ -62,7 +85,11 @@
 .no-invites {
   text-align: center;
   padding: 4rem 2rem;
-  color: #64748b;
+  color: #171717cc;
+}
+
+[data-theme="dark"] .no-invites {
+  color: #fafafacc;
 }
 
 .no-invites-icon {
@@ -72,8 +99,12 @@
 
 .no-invites h3 {
   font-size: 1.5rem;
-  color: #1a365d;
+  color: #171717cc;
   margin-bottom: 0.5rem;
+}
+
+[data-theme="dark"] .no-invites h3 {
+  color: #fafafacc;
 }
 
 .no-invites p {
@@ -111,9 +142,19 @@
   transition: all 0.3s ease;
 }
 
+[data-theme="dark"] .invite-card {
+  background: #171717;
+  border-color: #2E2E2E;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
 .invite-card:hover {
   transform: translateY(-2px);
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+}
+
+[data-theme="dark"] .invite-card:hover {
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
 }
 
 .invite-header {
@@ -129,9 +170,13 @@
 
 .space-name {
   font-size: 1.3rem;
-  color: #1a365d;
+  color: #171717cc;
   margin: 0 0 0.5rem 0;
   font-weight: 600;
+}
+
+[data-theme="dark"] .space-name {
+  color: #fafafacc;
 }
 
 .invite-meta {
@@ -141,13 +186,21 @@
 }
 
 .inviter {
-  color: #4a5568;
+  color: #171717cc;
   font-size: 0.95rem;
 }
 
+[data-theme="dark"] .inviter {
+  color: #fafafacc;
+}
+
 .invite-date {
-  color: #718096;
+  color: #171717cc;
   font-size: 0.85rem;
+}
+
+[data-theme="dark"] .invite-date {
+  color: #fafafacc;
 }
 
 .permission-badge {
@@ -160,18 +213,35 @@
   min-width: 80px;
 }
 
+.permission-badge.admin {
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+}
+
+.permission-badge.member {
+  background: linear-gradient(135deg, #6b7280, #4b5563);
+}
+
 .invite-message {
   background: #f7fafc;
-  border-left: 4px solid #4299e1;
+  border-left: 4px solid #171717cc;
   padding: 1rem;
   margin-bottom: 1rem;
   border-radius: 0 8px 8px 0;
 }
 
+[data-theme="dark"] .invite-message {
+  background: #2E2E2E;
+  border-left-color: #fafafacc;
+}
+
 .invite-message p {
   margin: 0;
-  color: #2d3748;
+  color: #171717cc;
   font-style: italic;
+}
+
+[data-theme="dark"] .invite-message p {
+  color: #fafafacc;
 }
 
 .space-details {
@@ -186,13 +256,18 @@
 
 .space-stats span {
   background: #edf2f7;
-  color: #4a5568;
+  color: #171717cc;
   padding: 0.5rem 0.75rem;
   border-radius: 6px;
   font-size: 0.85rem;
   display: flex;
   align-items: center;
   gap: 0.25rem;
+}
+
+[data-theme="dark"] .space-stats span {
+  background: #2E2E2E;
+  color: #fafafacc;
 }
 
 .invite-actions {
@@ -232,9 +307,19 @@
   border: 1px solid #fed7d7;
 }
 
+[data-theme="dark"] .decline-btn {
+  background: #2E2E2E;
+  color: #e53e3e;
+  border-color: #2E2E2E;
+}
+
 .decline-btn:hover:not(:disabled) {
   background: #fed7d7;
   transform: translateY(-1px);
+}
+
+[data-theme="dark"] .decline-btn:hover:not(:disabled) {
+  background: #3E3E3E;
 }
 
 .accept-btn:disabled, .decline-btn:disabled {
@@ -265,9 +350,17 @@
   text-align: center;
 }
 
+[data-theme="dark"] .expires-info {
+  border-top-color: #2E2E2E;
+}
+
 .expires-info small {
-  color: #a0aec0;
+  color: #171717cc;
   font-size: 0.8rem;
+}
+
+[data-theme="dark"] .expires-info small {
+  color: #fafafacc;
 }
 
 /* Responsive Design */

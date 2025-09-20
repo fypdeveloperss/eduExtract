@@ -23,7 +23,7 @@ const ContentDetail = ({ content }) => {
         // For HTML content, use dangerouslySetInnerHTML
         return (
           <div 
-            className="blog-content max-w-none" 
+            className="blog-content max-w-none bg-white dark:bg-gray-800 p-6 rounded-lg" 
             dangerouslySetInnerHTML={{ __html: content.contentData }} 
           />
         );
