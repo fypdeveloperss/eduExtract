@@ -12,7 +12,7 @@ const ContentRenderer = ({ content }) => {
   // Helper function to render content based on its type
   const renderContentData = () => {
     const contentType = content.contentType || content.type;
-    const contentData = content.contentData || content.content;
+    const contentData = content.content || content.contentData;
     
     switch (contentType) {
       case 'blog':

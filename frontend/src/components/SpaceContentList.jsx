@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
 import './SpaceContentList.css'; // Use dedicated CSS for modern styling
 
-const SpaceContentList = ({ spaceId }) => {
+const SpaceContentList = ({ spaceId, onEditContent }) => {
   const [contentList, setContentList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -157,10 +157,26 @@ const SpaceContentList = ({ spaceId }) => {
                   <span className="stat-value">{item.stats?.comments || 0}</span>
                 </div>
               </div>
-              <button className="view-btn-modern">
-                <span className="btn-text">View</span>
-                <span className="btn-arrow">→</span>
-              </button>
+              <div className="content-actions">
+                <button 
+                  className="view-btn-modern"
+                  onClick={() => handleViewContent(item._id)}
+                >
+                  <span className="btn-text">View</span>
+                  <span className="btn-arrow">→</span>
+                </button>
+                {onEditContent && (
+                  <button 
+                    className="edit-btn-modern"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onEditContent(item);
+                    }}
+                  >
+                    <span className="btn-text">✏️ Edit</span>
+                  </button>
+                )}
+              </div>
             </div>
             
             <div className="card-hover-overlay">

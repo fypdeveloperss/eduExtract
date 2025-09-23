@@ -642,6 +642,71 @@ router.patch('/content/:contentId/status', verifyToken, async (req, res) => {
   }
 });
 
+// AI Content Assistant endpoint
+router.post('/content/ai-assist', verifyToken, async (req, res) => {
+  try {
+    const { content, prompt, contentType = 'text' } = req.body;
+
+    if (!content || !prompt) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content and prompt are required'
+      });
+    }
+
+    // Simple AI assistance simulation - in production, integrate with actual AI service
+    let enhancedContent = content;
+    
+    // Basic content enhancement based on common prompts
+    const promptLower = prompt.toLowerCase();
+    
+    if (promptLower.includes('concise') || promptLower.includes('shorter')) {
+      // Make content more concise
+      enhancedContent = content.split('\n').map(line => {
+        if (line.trim().length > 100) {
+          return line.substring(0, 80) + '...';
+        }
+        return line;
+      }).join('\n');
+    } else if (promptLower.includes('bullet') || promptLower.includes('list')) {
+      // Convert to bullet points
+      const sentences = content.split(/[.!?]+/).filter(s => s.trim());
+      enhancedContent = sentences.map(sentence => `• ${sentence.trim()}`).join('\n');
+    } else if (promptLower.includes('grammar') || promptLower.includes('improve')) {
+      // Basic grammar improvements
+      enhancedContent = content
+        .replace(/\bi\b/g, 'I')
+        .replace(/\s+/g, ' ')
+        .replace(/([.!?])\s*([a-z])/g, (match, punct, letter) => punct + ' ' + letter.toUpperCase())
+        .trim();
+    } else if (promptLower.includes('expand') || promptLower.includes('detail')) {
+      // Add more detail
+      enhancedContent = content + '\n\n[Enhanced with additional context and details based on AI analysis]';
+    } else {
+      // Default enhancement
+      enhancedContent = content + '\n\n[Content enhanced based on: ' + prompt + ']';
+    }
+
+    // Simulate processing delay
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    res.json({
+      success: true,
+      enhancedContent,
+      originalContent: content,
+      appliedPrompt: prompt,
+      contentType
+    });
+
+  } catch (error) {
+    console.error('Error in AI content assistance:', error);
+    res.status(500).json({
+      success: false,
+      error: 'AI assistance service temporarily unavailable'
+    });
+  }
+});
+
 // ===== CHANGE REQUEST ROUTES =====
 
 // Create change request
@@ -746,7 +811,7 @@ router.put('/change-requests/:requestId', verifyToken, async (req, res) => {
 });
 
 // Review change request
-router.post('/change-requests/:requestId/review', verifyToken, async (req, res) => {
+router.put('/change-requests/:requestId/review', verifyToken, async (req, res) => {
   try {
     const { uid: userId, name: userName } = req.user;
     const { requestId } = req.params;

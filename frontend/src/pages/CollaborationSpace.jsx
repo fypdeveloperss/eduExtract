@@ -10,6 +10,7 @@ import MembersList from '../components/MembersList';
 import ChangeRequestsList from '../components/ChangeRequestsList';
 import SpaceSettings from '../components/SpaceSettings';
 import NotificationPanel from '../components/NotificationPanel';
+import ContentEditor from '../components/ContentEditor';
 import Spinner from '../components/Spinner';
 import './CollaborationSpace.css';
 
@@ -34,6 +35,9 @@ const CollaborationSpace = () => {
   const [redirectCountdown, setRedirectCountdown] = useState(null);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const [leaving, setLeaving] = useState(false);
+  const [editingContent, setEditingContent] = useState(null);
+  const [showContentEditor, setShowContentEditor] = useState(false);
+  const [contentRefreshKey, setContentRefreshKey] = useState(0);
   
   // Refs for managing intervals and preventing race conditions
   const fetchTimeoutRef = useRef(null);
@@ -252,6 +256,7 @@ const CollaborationSpace = () => {
   }, [spaceId]);
 
   const handleContentUpdate = useCallback(() => {
+    setContentRefreshKey(prev => prev + 1);
     window.dispatchEvent(new CustomEvent('spaceContentChanged', {
       detail: { spaceId, timestamp: Date.now() }
     }));
@@ -452,6 +457,7 @@ const CollaborationSpace = () => {
             onTabChange={handleTabChange}
             userPermission={userPermission}
             space={space}
+            currentUser={user}
           />
           
           <div className="toolbar-actions">
@@ -498,10 +504,14 @@ const CollaborationSpace = () => {
         <div className="tab-content">
           {activeTab === 'content' && (
             <SpaceContentList 
-              key={`content-${spaceId}`}
+              key={`content-${spaceId}-${contentRefreshKey}`}
               spaceId={spaceId} 
               space={space}
               onContentUpdate={handleContentUpdate}
+              onEditContent={(content) => {
+                setEditingContent(content);
+                setShowContentEditor(true);
+              }}
               userPermission={userPermission}
             />
           )}
@@ -517,12 +527,12 @@ const CollaborationSpace = () => {
             />
           )}
 
-          {activeTab === 'requests' && canUserPerformAction('view_content') && (
+          {activeTab === 'requests' && (canUserPerformAction('approve_changes') || space?.ownerId === user?.uid) && (
             <ChangeRequestsList
               key={`requests-${spaceId}`}
               spaceId={spaceId}
               space={space}
-              onUpdate={handleSpaceUpdate}
+              onUpdate={handleContentUpdate}
               userPermission={userPermission}
             />
           )}
@@ -584,6 +594,22 @@ const CollaborationSpace = () => {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Content Editor Modal */}
+      {showContentEditor && editingContent && (
+        <ContentEditor
+          content={editingContent}
+          spaceId={spaceId}
+          onClose={() => {
+            setShowContentEditor(false);
+            setEditingContent(null);
+          }}
+          onSubmitRequest={() => {
+            // Refresh the content list after submitting change request
+            handleContentUpdate();
+          }}
+        />
       )}
     </div>
   );

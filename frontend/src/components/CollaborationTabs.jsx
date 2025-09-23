@@ -1,12 +1,17 @@
 import React from 'react';
 import './CollaborationTabs.css';
 
-const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space }) => {
+const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, currentUser }) => {
   const tabs = [
     { id: 'content', label: 'Content', icon: '📄', description: 'Shared educational content' },
     { id: 'members', label: 'Members', icon: '👥', description: 'Collaboration members' },
-    { id: 'requests', label: 'Change Requests', icon: '📝', description: 'Content change requests' },
   ];
+
+  // Add requests tab only for admins and owners
+  const isOwner = space?.ownerId === currentUser?.uid;
+  if (userPermission === 'admin' || isOwner) {
+    tabs.push({ id: 'requests', label: 'Change Requests', icon: '📝', description: 'Content change requests' });
+  }
 
   // Add settings tab only for admins
   if (userPermission === 'admin') {

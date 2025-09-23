@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
-import axios from '../utils/axios';
+import api from '../utils/axios';
 import Spinner from './Spinner';
 import './ChangeRequestsList.css';
 
-const ChangeRequestsList = ({ spaceId, selectedContent }) => {
+const ChangeRequestsList = ({ spaceId, selectedContent, onUpdate }) => {
   const { user } = useAuth();
   const [changeRequests, setChangeRequests] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -20,9 +20,8 @@ const ChangeRequestsList = ({ spaceId, selectedContent }) => {
   const fetchChangeRequests = async () => {
     try {
       setLoading(true);
-      const token = await user.getIdToken();
       
-      let url = `/collaborate/spaces/${spaceId}/change-requests`;
+      let url = `/api/collaborate/spaces/${spaceId}/change-requests`;
       const params = new URLSearchParams();
       
       if (selectedContent) {
@@ -36,11 +35,10 @@ const ChangeRequestsList = ({ spaceId, selectedContent }) => {
         url += `?${params.toString()}`;
       }
 
-      const response = await axios.get(url, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-
-      setChangeRequests(response.data.changeRequests || []);
+      const response = await api.get(url);
+      
+      console.log('Change requests API response:', response.data);
+      setChangeRequests(response.data.requests || []);
     } catch (error) {
       console.error('Error fetching change requests:', error);
     } finally {
@@ -51,16 +49,13 @@ const ChangeRequestsList = ({ spaceId, selectedContent }) => {
   const handleReviewRequest = async (requestId, status) => {
     try {
       setSubmittingReview(true);
-      const token = await user.getIdToken();
 
-      await axios.put(
-        `/collaborate/spaces/${spaceId}/change-requests/${requestId}/review`,
+      await api.put(
+        `/api/collaborate/change-requests/${requestId}/review`,
         {
           status,
-          reviewComment: reviewComment.trim() || undefined
-        },
-        {
-          headers: { Authorization: `Bearer ${token}` }
+          reviewComment: reviewComment.trim() || undefined,
+          applyChanges: status === 'approved'
         }
       );
 
@@ -68,6 +63,11 @@ const ChangeRequestsList = ({ spaceId, selectedContent }) => {
       fetchChangeRequests();
       setSelectedRequest(null);
       setReviewComment('');
+      
+      // If approved, trigger content refresh in parent component
+      if (status === 'approved' && onUpdate) {
+        onUpdate();
+      }
     } catch (error) {
       console.error('Error reviewing change request:', error);
       alert('Failed to review change request. Please try again.');

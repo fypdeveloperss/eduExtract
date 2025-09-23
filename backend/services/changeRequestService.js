@@ -1,10 +1,62 @@
 const ChangeRequest = require('../models/ChangeRequest');
 const SharedContent = require('../models/SharedContent');
 const CollaborationSpace = require('../models/CollaborationSpace');
-const CollaborationService = require('./collaborationService');
 const SharedContentService = require('./sharedContentService');
 
 class ChangeRequestService {
+  // ===== HELPER METHODS =====
+
+  async verifySpaceAccess(collaborationSpaceId, userId) {
+    const space = await CollaborationSpace.findById(collaborationSpaceId);
+    if (!space) {
+      throw new Error('Collaboration space not found');
+    }
+
+    // Check if user is a collaborator in the space
+    const isCollaborator = space.collaborators.some(
+      collaborator => collaborator.userId === userId && collaborator.status === 'active'
+    );
+
+    if (!isCollaborator) {
+      throw new Error('Access denied: You are not a collaborator in this space');
+    }
+
+    return space;
+  }
+
+  getUserPermission(space, userId) {
+    const collaborator = space.collaborators.find(
+      collaborator => collaborator.userId === userId && collaborator.status === 'active'
+    );
+    return collaborator ? collaborator.permission : null;
+  }
+
+  canUserPerformAction(space, userId, action) {
+    const userPermission = this.getUserPermission(space, userId);
+    
+    // Admin can do everything
+    if (userPermission === 'admin') {
+      return true;
+    }
+    
+    // Owner-specific actions
+    if (space.ownerId === userId) {
+      return true;
+    }
+    
+    // Editor permissions
+    if (userPermission === 'editor') {
+      return ['edit_content', 'comment', 'create_changes'].includes(action);
+    }
+    
+    // Viewer permissions
+    if (userPermission === 'viewer') {
+      return ['comment'].includes(action);
+    }
+    
+    return false;
+  }
+
   // ===== CHANGE REQUEST MANAGEMENT =====
 
   async createChangeRequest(requestData, userId, userName) {
@@ -18,12 +70,7 @@ class ChangeRequestService {
       }
 
       // Verify user has access to the collaboration space
-      const space = await CollaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
-
-      // Check if user can create change requests
-      if (!CollaborationService.canUserPerformAction(space, userId, 'edit_content')) {
-        throw new Error('Permission denied: You cannot create change requests in this space');
-      }
+      await this.verifySpaceAccess(collaborationSpaceId, userId);
 
       // Check for existing pending change request for this content by this user
       const existingRequest = await ChangeRequest.findOne({
@@ -65,7 +112,7 @@ class ChangeRequestService {
   async getChangeRequests(collaborationSpaceId, userId, page = 1, limit = 20, filters = {}) {
     try {
       // Verify user has access to the collaboration space
-      await CollaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
+      await this.verifySpaceAccess(collaborationSpaceId, userId);
 
       const skip = (page - 1) * limit;
       let query = { collaborationSpaceId };
@@ -87,18 +134,18 @@ class ChangeRequestService {
         query.requestedBy = filters.requestedBy;
       }
 
-      // If user is not admin, only show their requests and requests they can review
-      const userPermission = CollaborationService.getUserPermission(
-        await CollaborationSpace.findById(collaborationSpaceId), 
-        userId
-      );
+      // Only admins, owners, and request creators can view change requests
+      const space = await CollaborationSpace.findById(collaborationSpaceId);
+      const userPermission = this.getUserPermission(space, userId);
 
-      if (userPermission !== 'admin') {
-        query.$or = [
-          { requestedBy: userId },
-          { reviewedBy: userId }
-        ];
+      // Check if user has permission to view change requests
+      const canViewRequests = userPermission === 'admin' || space.ownerId === userId;
+      
+      if (!canViewRequests) {
+        // Non-admins/non-owners can only see their own requests
+        query.requestedBy = userId;
       }
+      // Admins and owners can see all requests in the space
 
       const requests = await ChangeRequest.find(query)
         .sort({ priority: 1, createdAt: -1 }) // urgent first, then by date
@@ -135,10 +182,10 @@ class ChangeRequestService {
       }
 
       // Verify user has access to the collaboration space
-      const space = await CollaborationService.getCollaborationSpaceById(request.collaborationSpaceId._id, userId);
+      const space = await this.verifySpaceAccess(request.collaborationSpaceId._id || request.collaborationSpaceId, userId);
 
       // Check if user can view this request
-      const userPermission = CollaborationService.getUserPermission(space, userId);
+      const userPermission = this.getUserPermission(space, userId);
       const canView = userPermission === 'admin' || 
                      request.requestedBy === userId || 
                      request.reviewedBy === userId;
@@ -204,15 +251,18 @@ class ChangeRequestService {
       }
 
       // Verify user has permission to review
-      const space = await CollaborationService.getCollaborationSpaceById(request.collaborationSpaceId, reviewerId);
+      const space = await this.verifySpaceAccess(request.collaborationSpaceId, reviewerId);
       
-      if (!CollaborationService.canUserPerformAction(space, reviewerId, 'approve_changes')) {
+      if (!this.canUserPerformAction(space, reviewerId, 'approve_changes')) {
         throw new Error('Permission denied: You cannot review change requests');
       }
 
-      // Cannot review own request
-      if (request.requestedBy === reviewerId) {
-        throw new Error('You cannot review your own change request');
+      // Cannot review own request unless you are the space owner or admin
+      if (request.requestedBy === reviewerId && space.ownerId !== reviewerId) {
+        const userPermission = this.getUserPermission(space, reviewerId);
+        if (userPermission !== 'admin') {
+          throw new Error('You cannot review your own change request');
+        }
       }
 
       // Update request
@@ -243,77 +293,84 @@ class ChangeRequestService {
 
   async applyChangeRequest(requestId, applierId) {
     try {
+      console.log('applyChangeRequest called with:', { requestId, applierId });
+      
       const request = await ChangeRequest.findById(requestId);
       
       if (!request) {
         throw new Error('Change request not found');
       }
 
+      console.log('Found request:', {
+        id: request._id,
+        status: request.status,
+        sharedContentId: request.sharedContentId,
+        proposedContent: request.proposedContent
+      });
+
       if (request.status !== 'approved') {
         throw new Error('Only approved change requests can be applied');
       }
 
-      // Verify user has permission to apply changes
-      const space = await CollaborationService.getCollaborationSpaceById(request.collaborationSpaceId, applierId);
-      
-      if (!CollaborationService.canUserPerformAction(space, applierId, 'approve_changes')) {
-        throw new Error('Permission denied: You cannot apply changes');
-      }
-
+      // Get the content to update
       const content = await SharedContent.findById(request.sharedContentId);
       
       if (!content) {
         throw new Error('Content not found');
       }
 
-      // Apply changes based on request type
-      switch (request.requestType) {
-        case 'content_edit':
-          // Update content with proposed changes
-          if (request.proposedContent.title) {
-            content.title = request.proposedContent.title;
-          }
-          if (request.proposedContent.content) {
-            content.content = request.proposedContent.content;
-          }
-          if (request.proposedContent.tags) {
-            content.tags = request.proposedContent.tags;
-          }
-          
-          content.lastModifiedBy = applierId;
-          content.lastModifiedByName = request.reviewedByName || 'Admin';
-          content.version = content.version + 1;
-          break;
+      console.log('Found content before update:', {
+        id: content._id,
+        title: content.title,
+        currentContent: typeof content.content === 'string' 
+          ? content.content.substring(0, 100) + '...'
+          : JSON.stringify(content.content).substring(0, 100) + '...'
+      });
 
-        case 'permission_change':
-          // Apply permission changes
-          if (request.proposedContent.permissions) {
-            Object.assign(content.permissions, request.proposedContent.permissions);
-          }
-          break;
-
-        case 'structure_change':
-          // Apply structural changes
-          if (request.proposedContent.contentType) {
-            content.contentType = request.proposedContent.contentType;
-          }
-          break;
-
-        default:
-          throw new Error(`Unsupported change request type: ${request.requestType}`);
+      // Simple, direct update - handle both string and JSON string content
+      let newContent = request.proposedContent;
+      
+      // If proposedContent is a JSON string, try to parse it
+      if (typeof newContent === 'string' && (newContent.startsWith('[') || newContent.startsWith('{'))) {
+        try {
+          newContent = JSON.parse(newContent);
+        } catch (e) {
+          // If parsing fails, keep it as a string
+          console.log('Could not parse proposedContent as JSON, keeping as string');
+        }
       }
+      
+      content.content = newContent;
+      content.lastModifiedBy = applierId;
+      content.lastModifiedByName = request.reviewedByName || 'Admin';
+      content.version = (content.version || 0) + 1;
+      content.updatedAt = new Date();
 
-      await content.save();
+      // Save the updated content
+      const savedContent = await content.save();
+      
+      console.log('Content updated successfully:', {
+        id: savedContent._id,
+        newContent: typeof savedContent.content === 'string'
+          ? savedContent.content.substring(0, 100) + '...'
+          : JSON.stringify(savedContent.content).substring(0, 100) + '...',
+        version: savedContent.version
+      });
 
       // Mark request as applied
       request.status = 'applied';
+      request.appliedAt = new Date();
+      request.appliedBy = applierId;
       await request.save();
+
+      console.log('Request marked as applied');
 
       return {
         message: 'Change request applied successfully',
-        updatedContent: content
+        updatedContent: savedContent
       };
     } catch (error) {
+      console.error('Error in applyChangeRequest:', error);
       throw new Error(`Failed to apply change request: ${error.message}`);
     }
   }
@@ -327,12 +384,12 @@ class ChangeRequestService {
       }
 
       // Verify user has access to view the request
-      const space = await CollaborationService.getCollaborationSpaceById(request.collaborationSpaceId, userId);
-      const userPermission = CollaborationService.getUserPermission(space, userId);
+      const space = await this.verifySpaceAccess(request.collaborationSpaceId, userId);
+      const userPermission = this.getUserPermission(space, userId);
       const canComment = userPermission === 'admin' || 
                         request.requestedBy === userId || 
                         request.reviewedBy === userId ||
-                        CollaborationService.canUserPerformAction(space, userId, 'comment');
+                        this.canUserPerformAction(space, userId, 'comment');
 
       if (!canComment) {
         throw new Error('Permission denied: You cannot comment on this change request');
@@ -363,8 +420,8 @@ class ChangeRequestService {
       }
 
       // Only the requester or admin can delete
-      const space = await CollaborationService.getCollaborationSpaceById(request.collaborationSpaceId, userId);
-      const userPermission = CollaborationService.getUserPermission(space, userId);
+      const space = await this.verifySpaceAccess(request.collaborationSpaceId, userId);
+      const userPermission = this.getUserPermission(space, userId);
       const canDelete = request.requestedBy === userId || userPermission === 'admin';
 
       if (!canDelete) {
@@ -389,7 +446,7 @@ class ChangeRequestService {
   async getChangeRequestStats(collaborationSpaceId, userId) {
     try {
       // Verify user has access to the collaboration space
-      await CollaborationService.getCollaborationSpaceById(collaborationSpaceId, userId);
+      await this.verifySpaceAccess(collaborationSpaceId, userId);
 
       const stats = await ChangeRequest.aggregate([
         { $match: { collaborationSpaceId: collaborationSpaceId } },
@@ -484,8 +541,16 @@ class ChangeRequestService {
   async getPendingReviewRequests(userId, page = 1, limit = 20) {
     try {
       // Get collaboration spaces where user can approve changes
-      const userSpaces = await CollaborationService.getUserCollaborationSpaces(userId, 1, 1000);
-      const adminSpaceIds = userSpaces.spaces
+      const userSpaces = await CollaborationSpace.find({
+        'collaborators': {
+          $elemMatch: {
+            userId: userId,
+            status: 'active'
+          }
+        }
+      });
+      
+      const adminSpaceIds = userSpaces
         .filter(space => 
           space.ownerId === userId || 
           space.collaborators.some(c => c.userId === userId && c.permission === 'admin')

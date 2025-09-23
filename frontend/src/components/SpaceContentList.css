@@ -269,6 +269,13 @@
   color: #fafafacc;
 }
 
+/* Content Actions Container */
+.content-actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
 .view-btn-modern {
   background: linear-gradient(135deg, #171717cc, #2E2E2E);
   color: white;
@@ -284,9 +291,38 @@
   transition: all 0.3s ease;
 }
 
+.edit-btn-modern {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: all 0.3s ease;
+}
+
+.edit-btn-modern:hover {
+  background: linear-gradient(135deg, #1d4ed8, #2563eb);
+  transform: translateY(-1px);
+}
+
 [data-theme="dark"] .view-btn-modern {
   background: linear-gradient(135deg, #fafafacc, #171717);
   color: #121212;
+}
+
+[data-theme="dark"] .edit-btn-modern {
+  background: linear-gradient(135deg, #3b82f6, #60a5fa);
+  color: white;
+}
+
+[data-theme="dark"] .edit-btn-modern:hover {
+  background: linear-gradient(135deg, #2563eb, #3b82f6);
 }
 
 .view-btn-modern:hover {
