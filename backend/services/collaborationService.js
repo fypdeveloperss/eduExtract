@@ -470,18 +470,37 @@ class CollaborationService {
         throw new Error('Permission denied: Only space owner can delete');
       }
 
-      // Soft delete
-      space.isActive = false;
-      await space.save();
+      console.log(`Starting hard delete of collaboration space: ${spaceId}`);
 
-      // Also soft delete related content
-      await SharedContent.updateMany(
-        { collaborationSpaceId: spaceId },
-        { status: 'deleted' }
-      );
+      // Hard delete - First delete related data
+      
+      // Delete all shared content in this space
+      const sharedContentCount = await SharedContent.countDocuments({ collaborationSpaceId: spaceId });
+      await SharedContent.deleteMany({ collaborationSpaceId: spaceId });
+      console.log(`Deleted ${sharedContentCount} shared content items`);
+      
+      // Delete all collaboration invites for this space
+      const inviteCount = await CollaborationInvite.countDocuments({ collaborationSpaceId: spaceId });
+      await CollaborationInvite.deleteMany({ collaborationSpaceId: spaceId });
+      console.log(`Deleted ${inviteCount} collaboration invites`);
+      
+      // Delete all change requests for this space
+      const changeRequestCount = await ChangeRequest.countDocuments({ collaborationSpaceId: spaceId });
+      await ChangeRequest.deleteMany({ collaborationSpaceId: spaceId });
+      console.log(`Deleted ${changeRequestCount} change requests`);
+      
+      // Delete all join requests for this space
+      const joinRequestCount = await JoinRequest.countDocuments({ spaceId: spaceId });
+      await JoinRequest.deleteMany({ spaceId: spaceId });
+      console.log(`Deleted ${joinRequestCount} join requests`);
+      
+      // Finally, delete the collaboration space itself
+      await CollaborationSpace.findByIdAndDelete(spaceId);
+      console.log(`Successfully deleted collaboration space: ${spaceId}`);
 
-      return { message: 'Collaboration space deleted successfully' };
+      return { message: 'Collaboration space and all related data deleted successfully' };
     } catch (error) {
+      console.error(`Error in deleteCollaborationSpace: ${error.message}`);
       throw new Error(`Failed to delete collaboration space: ${error.message}`);
     }
   }
