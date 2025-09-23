@@ -1,31 +1,63 @@
 import { useState, useEffect, useRef } from "react";
-import { motion, useScroll, useTransform } from "framer-motion";
+import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
-import { Github } from "lucide-react";
+import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import ChatBot from "../components/ChatBot";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [hoveredFeature, setHoveredFeature] = useState(null);
+  const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const featuresRef = useRef(null);
   const [chatOpen, setChatOpen] = useState(false);
 
   // Interpolate scroll to transform values
-  const rotateX = useTransform(scrollY, [0, 300], [5, 0]); // rotateX from 5° to 0°
-  const scale = useTransform(scrollY, [0, 300], [0.795, 1]); // scale from ~0.895 to 1
+  const rotateX = useTransform(scrollY, [0, 300], [5, 0]);
+  const scale = useTransform(scrollY, [0, 300], [0.795, 1]);
+  const opacity = useTransform(scrollY, [0, 200], [1, 0.8]);
 
   const containerRef = useRef(null);
+  const heroRef = useRef(null);
 
   const { scrollYProgress } = useScroll({
     target: containerRef,
-    offset: ["start end", "start center"], // Triggers animation as section enters viewport
+    offset: ["start end", "start center"],
+  });
+
+  const { scrollYProgress: heroProgress } = useScroll({
+    target: heroRef,
+    offset: ["start start", "end start"],
   });
 
   const scale1 = useTransform(scrollYProgress, [0, 1], [0.5, 1]);
+  const heroY = useTransform(heroProgress, [0, 1], [0, -50]);
+
+  // Testimonials data
+  const testimonials = [
+    {
+      name: "Sarah Chen",
+      role: "Computer Science Student",
+      content: "EduExtract transformed my study routine. I can now understand complex algorithms in minutes instead of hours!",
+      avatar: "SC"
+    },
+    {
+      name: "Michael Rodriguez",
+      role: "Business Analyst",
+      content: "The AI tutor feature is incredible. It's like having a personal tutor available 24/7.",
+      avatar: "MR"
+    },
+    {
+      name: "Emily Johnson",
+      role: "Medical Student",
+      content: "Creating flashcards from my textbooks has never been easier. My exam scores improved by 30%!",
+      avatar: "EJ"
+    }
+  ];
 
   useEffect(() => {
     const handleScroll = () => {
@@ -40,68 +72,184 @@ export default function Home() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentTestimonial((prev) => (prev + 1) % testimonials.length);
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [testimonials.length]);
+
   return (
-    <div className="bg-[#FFFFFF] min-h-screen">
+    <div className="bg-white min-h-screen overflow-x-hidden">
       {/* Navigation */}
       <Header />
 
       {/* Hero Section */}
-      <div className="pt-20 sm:pt-24 md:pt-32 pb-12 sm:pb-16 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-        <div className="text-center">
-          <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-[#171717] mb-4 sm:mb-6 leading-tight">
-            An AI tutor made for you
-          </h1>
-          <p className="text-lg sm:text-xl md:text-2xl text-[#171717cc] max-w-3xl mx-auto px-4">
-            Turn your learning materials into concise notes, quizzes,
-            interactive chats, and more
-          </p>
-          <div className="mt-8 sm:mt-10 flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 px-4">
-            <button
-              onClick={() =>
-                featuresRef.current?.scrollIntoView({ behavior: "smooth" })
-              }
-              className="bg-[#FFFFFF] border border-[#EEEEEE] text-[#171717cc] px-6 py-3 rounded-md font-medium hover:bg-[#FAFAFA] transition-colors w-full sm:w-auto"
-            >
-              See features
-            </button>
-            <button
-              onClick={() => navigate("/dashboard")}
-              className="bg-[#171717] text-white px-6 py-3 rounded-md font-medium hover:bg-[#121212] transition-colors w-full sm:w-auto"
-            >
-              Try Now
-            </button>
-          </div>
-          <div className="mt-6 sm:mt-8 flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-0">
-            <div className="flex -space-x-2">
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-blue-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
-                H
-              </div>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-orange-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
-                S
-              </div>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-green-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
-                S
-              </div>
-              <div className="w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-teal-500 border-2 border-white flex items-center justify-center text-xs sm:text-sm font-semibold text-white">
-                E
-              </div>
-            </div>
-            <p className="text-xs sm:text-sm text-[#171717cc] sm:ml-3">
-              Loved by over 1 million learners
-            </p>
-          </div>
+      <motion.section 
+        ref={heroRef}
+        className="relative pt-20 sm:pt-24 md:pt-32 pb-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto"
+        style={{ y: heroY }}
+      >
+        {/* Background Elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-gray-200/30 to-gray-300/30 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              rotate: [0, 180, 360],
+            }}
+            transition={{
+              duration: 20,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+          <motion.div
+            className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-gray-100/30 to-gray-200/30 rounded-full blur-3xl"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              rotate: [360, 180, 0],
+            }}
+            transition={{
+              duration: 25,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
         </div>
 
-        {/* Tilting Demo Image/Video */}
-        <div className="mt-12 sm:mt-16 max-w-full mx-auto px-4">
+        <div className="relative text-center">
+          {/* Badge */}
           <motion.div
-            className="relative bg-[#121212] rounded-lg overflow-hidden shadow-xl"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6 }}
+            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 mb-8"
+          >
+            <Sparkles className="w-4 h-4 text-yellow-500" />
+            <span className="text-sm font-medium text-gray-700">AI-Powered Learning Platform</span>
+          </motion.div>
+
+          {/* Main Heading */}
+          <motion.h1
+            initial={{ opacity: 0, y: 30 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#171717] mb-6 leading-tight"
+          >
+            Transform Learning with
+            <br />
+            <span className="text-[#171717cc]">
+              AI Intelligence
+            </span>
+          </motion.h1>
+
+          <motion.p
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            className="text-lg sm:text-xl md:text-2xl text-[#171717cc] max-w-4xl mx-auto mb-10 leading-relaxed"
+          >
+            Turn any content into interactive learning experiences. Generate summaries, 
+            create quizzes, build flashcards, and chat with your personal AI tutor.
+          </motion.p>
+
+          {/* CTA Buttons */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.6 }}
+            className="flex flex-col sm:flex-row justify-center gap-4 mb-12"
+          >
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => navigate("/dashboard")}
+              className="group bg-[#171717] hover:bg-[#121212] text-white px-8 py-4 rounded-full font-semibold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Rocket className="w-5 h-5" />
+              Start Learning Now
+              <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+            </motion.button>
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })}
+              className="group bg-white border border-[#EEEEEE] text-[#171717cc] px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#FAFAFA] transition-all duration-300 flex items-center justify-center gap-2"
+            >
+              <Play className="w-5 h-5" />
+              Watch Demo
+            </motion.button>
+          </motion.div>
+
+          {/* Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.8 }}
+            className="flex flex-col sm:flex-row items-center justify-center gap-8 mb-16"
+          >
+            <div className="flex items-center gap-3">
+              <div className="flex -space-x-2">
+                {["SC", "MR", "EJ", "AL"].map((initials, index) => (
+                  <motion.div
+                    key={initials}
+                    initial={{ opacity: 0, scale: 0 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: 1 + index * 0.1 }}
+                    className="w-10 h-10 rounded-full bg-[#171717] border-2 border-white flex items-center justify-center text-sm font-semibold text-white shadow-lg"
+                  >
+                    {initials}
+                  </motion.div>
+                ))}
+              </div>
+              <div className="text-left">
+                <p className="text-sm font-semibold text-[#171717]">1M+ Active Learners</p>
+                <div className="flex items-center gap-1">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
+                  ))}
+                  <span className="text-sm text-[#171717cc] ml-1">4.9/5 rating</span>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Scroll Indicator */}
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1.2 }}
+            className="flex flex-col items-center gap-2"
+          >
+            <span className="text-sm text-[#171717cc]">Scroll to explore</span>
+            <motion.div
+              animate={{ y: [0, 8, 0] }}
+              transition={{ duration: 2, repeat: Infinity }}
+            >
+              <ChevronDown className="w-6 h-6 text-[#171717cc]" />
+            </motion.div>
+          </motion.div>
+        </div>
+
+        {/* Hero Video/Demo */}
+        <motion.div
+          initial={{ opacity: 0, y: 50 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 1, delay: 1 }}
+          className="mt-16 max-w-5xl mx-auto"
+        >
+          <motion.div
+            className="relative bg-gradient-to-br from-gray-900 to-gray-800 rounded-2xl overflow-hidden shadow-2xl"
             style={{
               perspective: "1200px",
               scale: scale,
               rotateX: rotateX,
               transformStyle: "preserve-3d",
             }}
+            whileHover={{ scale: 1.02 }}
+            transition={{ duration: 0.3 }}
           >
             <video
               src={demoVideo}
@@ -111,233 +259,307 @@ export default function Home() {
               playsInline
               className="w-full h-auto"
             />
-
-            <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent"></div>
-
-            <div className="absolute top-0 left-0 right-0 p-2 sm:p-4 flex items-center justify-between">
-              <div className="flex space-x-2 sm:space-x-4 text-white text-xs sm:text-sm">
-                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded text-xs sm:text-sm">PDF</div>
-                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded-md flex items-center text-xs sm:text-sm">
-                  Chapters <span className="ml-1 sm:ml-2">▼</span>
+            
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 to-transparent"></div>
+            
+            {/* UI Overlay */}
+            <div className="absolute top-4 left-4 right-4 flex items-center justify-between">
+              <div className="flex space-x-3 text-white text-sm">
+                <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full">PDF</div>
+                <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full flex items-center gap-1">
+                  Chapters <ChevronDown className="w-3 h-3" />
                 </div>
               </div>
-              <div>
-                <div className="px-2 sm:px-3 py-1 bg-gray-800/80 rounded text-xs sm:text-sm">Chat</div>
+              <div className="px-3 py-1 bg-white/20 backdrop-blur-sm rounded-full text-white text-sm">
+                AI Chat
               </div>
             </div>
-
-            <div className="absolute bottom-0 right-0 p-2 sm:p-4">
-              <div className="px-3 sm:px-4 py-2 bg-gray-800/80 rounded-md text-white text-xs sm:text-sm max-w-[200px] sm:max-w-none">
-                What is the principle regarding...
+            
+            <div className="absolute bottom-4 right-4">
+              <div className="px-4 py-3 bg-white/20 backdrop-blur-sm rounded-xl text-white text-sm max-w-xs">
+                "What is the principle regarding machine learning algorithms?"
               </div>
             </div>
           </motion.div>
-        </div>
-      </div>
+        </motion.div>
+      </motion.section>
 
       {/* Features Section */}
-      <div
-        className="mt-12 sm:mt-16 max-w-6xl mx-auto overflow-hidden px-4 sm:px-6 lg:px-8"
+      <motion.section
         ref={containerRef}
+        className="py-20 bg-[#FAFAFA]"
       >
-        <div
-          ref={featuresRef}
-          className="bg-[#FAFAFA] rounded-xl p-4 sm:p-6 md:p-8 shadow-lg"
-        >
-          <div className="flex flex-col lg:flex-row items-start gap-6 sm:gap-8 lg:gap-10">
-            <div className="w-full lg:w-1/3">
-              {/* Text Section */}
-              <div className="flex flex-col sm:flex-row sm:items-center mb-4 gap-3 sm:gap-0">
-                <div className="bg-black text-white p-2 rounded-md mr-0 sm:mr-2 self-start">
-                  {/* Icon */}
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    className="h-4 w-4 sm:h-5 sm:w-5"
-                    fill="currentColor"
-                    viewBox="0 0 20 20"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      d="M18 10c0 3.866-3.582 7-8 7a8.841 8.841 0 01-4.083-0.98L2 17l1.338-3.123C2.493 12.767 2 11.434 2 10c0-3.866 3.582-7 8-7s8 3.134 8 7zM7 9H5v2h2V9zm8 0h-2v2h2V9zM9 9h2v2H9V9z"
-                      clipRule="evenodd"
-                    />
-                  </svg>
-                </div>
-                <h2 className="text-lg sm:text-xl md:text-2xl font-semibold text-[#171717] leading-tight">
-                  Summary, flashcards, quizzes, voice mode, and more
-                </h2>
-              </div>
-              <p className="text-sm sm:text-base text-[#171717cc] leading-relaxed">
-                Understand the key points, test your knowledge, get answers with
-                references, and talk with an AI tutor.
-              </p>
-            </div>
-
-            {/* Image Section with scaling motion */}
-            <div className="w-full lg:w-2/3">
-              <motion.div
-                className="relative bg-black rounded-lg overflow-hidden shadow-xl"
-                style={{ scale1 }}
-              >
-                <img
-                  src={sectionImage}
-                  alt="EduExtract platform demo - Philosophy lecture"
-                  className="w-full h-auto"
-                />
-
-                {/* UI Overlay Elements */}
-              </motion.div>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      {/* Features Cards Section */}
-      <div className="py-12 sm:py-16 bg-[#FFFFFF]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid gap-6 sm:gap-8 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-            {/* Feature 1 */}
-            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="black"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="black"
-                    className="w-4 h-4 sm:w-6 sm:h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M3 16.5v2.25A2.25 2.25 0 0 0 5.25 21h13.5A2.25 2.25 0 0 0 21 18.75V16.5m-13.5-9L12 3m0 0 4.5 4.5M12 3v13.5"
-                    />
-                  </svg>
-                </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
-                Upload any content
-              </h3>
-              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
-                From PDFs and YouTube videos to slides and even recorded
-                lectures, learn everything your way.
-              </p>
-            </div>
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+              className="inline-flex items-center gap-2 bg-[#EEEEEE] rounded-full px-4 py-2 mb-6"
+            >
+              <Zap className="w-4 h-4 text-[#171717]" />
+              <span className="text-sm font-semibold text-[#171717]">Powerful Features</span>
+            </motion.div>
+            
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] mb-6">
+              Everything you need to
+              <br />
+              <span className="text-[#171717cc]">
+                master any subject
+              </span>
+            </h2>
+            
+            <p className="text-lg text-[#171717cc] max-w-3xl mx-auto">
+              Our AI-powered platform transforms any learning material into interactive, 
+              personalized experiences that adapt to your learning style.
+            </p>
+          </motion.div>
 
-            {/* Feature 2 */}
-            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow">
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="black"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-4 h-4 sm:w-6 sm:h-6"
+          {/* Feature Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: BookOpen,
+                title: "Smart Summaries",
+                description: "Generate concise, comprehensive summaries from any content in seconds.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              },
+              {
+                icon: Target,
+                title: "Interactive Quizzes",
+                description: "Create personalized quizzes with instant feedback and progress tracking.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              },
+              {
+                icon: Brain,
+                title: "AI Tutor Chat",
+                description: "Get instant answers and explanations from your personal AI tutor.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              },
+              {
+                icon: Zap,
+                title: "Flashcard Generator",
+                description: "Automatically create flashcards for efficient memorization.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              },
+              {
+                icon: Users,
+                title: "Collaboration Hub",
+                description: "Share and collaborate on learning materials with peers.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              },
+              {
+                icon: Lightbulb,
+                title: "Smart Insights",
+                description: "Get personalized learning recommendations and insights.",
+                color: "bg-[#171717]",
+                bgColor: "bg-white"
+              }
+            ].map((feature, index) => (
+              <motion.div
+                key={feature.title}
+                initial={{ opacity: 0, y: 50 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.6, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                whileHover={{ y: -10, scale: 1.02 }}
+                className="group relative"
+              >
+                <div className={`${feature.bgColor} p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-[#EEEEEE]`}>
+                  <div className={`w-16 h-16 ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
+                    <feature.icon className="w-8 h-8 text-white" />
+                  </div>
+                  
+                  <h3 className="text-xl font-bold text-[#171717] mb-4">
+                    {feature.title}
+                  </h3>
+                  
+                  <p className="text-[#171717cc] leading-relaxed">
+                    {feature.description}
+                  </p>
+                  
+                  <motion.div
+                    className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    initial={{ scale: 0 }}
+                    whileHover={{ scale: 1 }}
                   >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M9 12h3.75M9 15h3.75M9 18h3.75m3 .75H18a2.25 2.25 0 0 0 2.25-2.25V6.108c0-1.135-.845-2.098-1.976-2.192a48.424 48.424 0 0 0-1.123-.08m-5.801 0c-.065.21-.1.433-.1.664 0 .414.336.75.75.75h4.5a.75.75 0 0 0 .75-.75 2.25 2.25 0 0 0-.1-.664m-5.8 0A2.251 2.251 0 0 1 13.5 2.25H15c1.012 0 1.867.668 2.15 1.586m-5.8 0c-.376.023-.75.05-1.124.08C9.095 4.01 8.25 4.973 8.25 6.108V8.25m0 0H4.875c-.621 0-1.125.504-1.125 1.125v11.25c0 .621.504 1.125 1.125 1.125h9.75c.621 0 1.125-.504 1.125-1.125V9.375c0-.621-.504-1.125-1.125-1.125H8.25zM6.75 12h.008v.008H6.75V12zm0 3h.008v.008H6.75V15zm0 3h.008v.008H6.75V18z"
-                    />
-                  </svg>
+                    <ArrowRight className="w-5 h-5 text-[#171717cc]" />
+                  </motion.div>
                 </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
-                Test your knowledge
-              </h3>
-              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
-                Create personalized exams, get answer breakdowns, and track your
-                progress.
-              </p>
-            </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </motion.section>
 
-            {/* Feature 3 */}
-            <div className="bg-[#FAFAFA] p-4 sm:p-6 rounded-lg shadow hover:shadow-lg transition-shadow sm:col-span-2 lg:col-span-1">
-              <div className="flex justify-center mb-3 sm:mb-4">
-                <div className="w-8 h-8 sm:w-10 sm:h-10 bg-[#EEEEEE] rounded-full flex items-center justify-center">
-                  <svg
-                    xmlns="http://www.w3.org/2000/svg"
-                    fill="black"
-                    viewBox="0 0 24 24"
-                    strokeWidth={1.5}
-                    stroke="currentColor"
-                    className="w-4 h-4 sm:w-6 sm:h-6"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      d="M8.625 12a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H8.25m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0H12m4.125 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm0 0h-.375M21 12c0 4.556-4.03 8.25-9 8.25a9.764 9.764 0 0 1-2.555-.337A5.972 5.972 0 0 1 5.41 20.97a5.969 5.969 0 0 1-.474-.065 4.48 4.48 0 0 0 .978-2.025c.09-.457-.133-.901-.467-1.226C3.93 16.178 3 14.189 3 12c0-4.556 4.03-8.25 9-8.25s9 3.694 9 8.25Z"
-                    />
-                  </svg>
+      {/* Testimonials Section */}
+      <motion.section
+        className="py-20 bg-white"
+      >
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] mb-6">
+              Loved by learners worldwide
+            </h2>
+            <p className="text-lg text-[#171717cc] max-w-3xl mx-auto">
+              Join millions of students who have transformed their learning experience with EduExtract.
+            </p>
+          </motion.div>
+
+          <div className="relative">
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={currentTestimonial}
+                initial={{ opacity: 0, x: 50 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -50 }}
+                transition={{ duration: 0.5 }}
+                className="bg-white rounded-2xl p-8 shadow-xl max-w-4xl mx-auto"
+              >
+                <div className="flex items-center gap-4 mb-6">
+                  <div className="w-16 h-16 bg-[#171717] rounded-full flex items-center justify-center text-white font-bold text-lg">
+                    {testimonials[currentTestimonial].avatar}
+                  </div>
+                  <div>
+                    <h4 className="font-semibold text-[#171717]">{testimonials[currentTestimonial].name}</h4>
+                    <p className="text-[#171717cc]">{testimonials[currentTestimonial].role}</p>
+                  </div>
                 </div>
-              </div>
-              <h3 className="text-lg sm:text-xl font-semibold text-center mb-3 sm:mb-4 text-[#171717]">
-                Talk with an AI Tutor
-              </h3>
-              <p className="text-sm sm:text-base text-[#171717cc] text-center leading-relaxed">
-                Talk to an AI tutor to simplify ideas and receive guidance on
-                the content.
-              </p>
+                
+                <blockquote className="text-lg text-[#171717cc] leading-relaxed">
+                  "{testimonials[currentTestimonial].content}"
+                </blockquote>
+                
+                <div className="flex items-center justify-center gap-1 mt-6">
+                  {[...Array(5)].map((_, i) => (
+                    <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
+                  ))}
+                </div>
+              </motion.div>
+            </AnimatePresence>
+
+            {/* Testimonial Indicators */}
+            <div className="flex justify-center gap-2 mt-8">
+              {testimonials.map((_, index) => (
+                <button
+                  key={index}
+                  onClick={() => setCurrentTestimonial(index)}
+                  className={`w-3 h-3 rounded-full transition-all duration-300 ${
+                    index === currentTestimonial 
+                      ? 'bg-[#171717] scale-125' 
+                      : 'bg-gray-300 hover:bg-gray-400'
+                  }`}
+                />
+              ))}
             </div>
           </div>
         </div>
-      </div>
+      </motion.section>
 
-      <div className="flex flex-col gap-5 bg-[#FFFFFF]">
-        {/* Main Content */}
-        <main className="flex-grow flex items-center justify-center px-4 py-8 sm:py-12">
-          <div className="w-full max-w-[90%] sm:max-w-[80%] mx-2 rounded-3xl bg-[#FAFAFA] py-12 sm:py-16 md:py-20 lg:py-24 px-4 sm:px-6 text-center">
-            <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-[#171717] mb-3 sm:mb-4 leading-tight">
-              Learn smarter, faster, easier.
-            </h1>
-            <p className="text-sm sm:text-base text-[#171717cc] mb-6 sm:mb-8 max-w-2xl mx-auto">
-              Upload your content, and start your learning journey.
+      {/* CTA Section */}
+      <motion.section
+        className="py-20 bg-[#171717]"
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-6">
+              Ready to transform your learning?
+            </h2>
+            
+            <p className="text-xl text-white mb-10 max-w-2xl mx-auto">
+              Join millions of learners who are already using AI to master new subjects faster and more effectively.
             </p>
-            <button
+            
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/dashboard")}
-              className="bg-[#171717] hover:bg-[#121212] text-white font-medium py-3 px-6 sm:px-8 rounded-full transition-colors w-full sm:w-auto"
+              className="bg-white text-[#171717] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
             >
-              Get Started
-            </button>
-          </div>
-        </main>
+              <Rocket className="w-6 h-6" />
+              Get Started Free
+              <ArrowRight className="w-5 h-5" />
+            </motion.button>
+            
+            <p className="text-white text-sm mt-4">
+              No credit card required • Start learning in seconds
+            </p>
+          </motion.div>
+        </div>
+      </motion.section>
 
-
-        {/* Footer */}
-        <footer className="p-4 sm:p-6 border-t border-[#EEEEEE]">
-          <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center text-xs sm:text-sm text-[#171717cc] gap-4 md:gap-0">
+      {/* Footer */}
+      <footer className="bg-[#121212] text-white py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+            <div className="col-span-1 md:col-span-2">
+              <h3 className="text-2xl font-bold mb-4">EduExtract</h3>
+              <p className="text-gray-400 mb-6 max-w-md">
+                Transform any content into interactive learning experiences with the power of AI.
+              </p>
+              <div className="flex gap-4">
+                <a href="#" className="text-gray-400 hover:text-white transition-colors">
+                  <Github className="w-6 h-6" />
+                </a>
+              </div>
+            </div>
+            
             <div>
-              <p>© Copyright 2025 EduExtract Inc.</p>
+              <h4 className="font-semibold mb-4">Product</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">API</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Integrations</a></li>
+              </ul>
             </div>
-            <div className="flex flex-wrap items-center justify-center gap-3 sm:gap-4 md:gap-6">
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Blogs
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Invite & Earn
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Careers
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Terms & Conditions
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Privacy Policy
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                Contact Us
-              </a>
-              <a href="#" className="hover:text-[#171717] transition-colors">
-                <Github size={16} className="text-[#171717] sm:w-5 sm:h-5" />
-              </a>
+            
+            <div>
+              <h4 className="font-semibold mb-4">Company</h4>
+              <ul className="space-y-2 text-gray-400">
+                <li><a href="#" className="hover:text-white transition-colors">About</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Blog</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Contact</a></li>
+              </ul>
             </div>
           </div>
-        </footer>
-      </div>
+          
+          <div className="border-t border-gray-800 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-gray-400 text-sm">
+              © 2025 EduExtract Inc. All rights reserved.
+            </p>
+            <div className="flex gap-6 mt-4 md:mt-0">
+              <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Privacy Policy</a>
+              <a href="#" className="text-gray-400 hover:text-white text-sm transition-colors">Terms of Service</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+
       <ChatBot isOpen={chatOpen} setIsOpen={setChatOpen} />
     </div>
   );

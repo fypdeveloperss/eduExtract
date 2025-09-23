@@ -156,20 +156,20 @@ const AdminManagement = () => {
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-4 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+        <h1 className="text-3xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-2">
           Admin Management
         </h1>
-        <p className="text-gray-600 dark:text-gray-400">
+        <p className="text-[#171717cc] dark:text-[#fafafacc]">
           Manage admin users and their permissions
         </p>
         {/* Debug info */}
-        <div className="mt-2 text-xs text-gray-500 flex items-center gap-4">
+        <div className="mt-2 text-xs text-[#171717cc] dark:text-[#fafafacc] flex items-center gap-4">
           <span>Debug: User UID: {user?.uid || 'Not logged in'}</span>
           <button 
             onClick={debugAdminStatus}
-            className="px-2 py-1 bg-gray-200 dark:bg-gray-600 rounded text-xs hover:bg-gray-300 dark:hover:bg-gray-500"
+            className="px-2 py-1 bg-gray-200 dark:bg-[#2E2E2E] rounded text-xs hover:bg-gray-300 dark:hover:bg-[#3E3E3E] text-[#171717cc] dark:text-[#fafafacc]"
           >
             Debug Admin Status
           </button>
@@ -178,20 +178,20 @@ const AdminManagement = () => {
 
       {/* Success/Error Messages */}
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
 
       {success && (
-        <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded mb-6">
+        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded mb-6">
           {success}
         </div>
       )}
 
       {/* Add Admin Form */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-8">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4 flex items-center">
+      <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6 mb-8">
+        <h2 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
           <Plus className="w-5 h-5 mr-2" />
           Add New Admin
         </h2>
@@ -199,33 +199,33 @@ const AdminManagement = () => {
         <form onSubmit={addAdmin} className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                 Email Address
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-[#171717cc] dark:text-[#fafafacc]" />
                 <input
                   type="email"
                   value={newAdminEmail}
                   onChange={(e) => setNewAdminEmail(e.target.value)}
                   placeholder="Enter user's email address"
-                  className="pl-10 w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                  className="pl-10 w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#2E2E2E] dark:text-[#fafafacc] text-[#171717cc]"
                   required
                 />
               </div>
-              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+              <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] mt-1">
                 User must be registered in the system first
               </p>
             </div>
             
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+              <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                 Role
               </label>
               <select
                 value={newAdminRole}
                 onChange={(e) => setNewAdminRole(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-gray-700 dark:text-white"
+                className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500 dark:bg-[#2E2E2E] dark:text-[#fafafacc] text-[#171717cc]"
               >
                 <option value="admin">Admin</option>
                 <option value="moderator">Moderator</option>
@@ -249,9 +249,9 @@ const AdminManagement = () => {
       </div>
 
       {/* Admins List */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white flex items-center">
+      <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E]">
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-[#2E2E2E]">
+          <h2 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] flex items-center">
             <Shield className="w-5 h-5 mr-2" />
             Current Admins ({admins.length})
           </h2>
@@ -260,14 +260,14 @@ const AdminManagement = () => {
         {loading ? (
           <div className="p-8 text-center">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-            <p className="mt-4 text-gray-600 dark:text-gray-400">Loading admins...</p>
+            <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Loading admins...</p>
           </div>
         ) : admins.length === 0 ? (
-          <div className="p-8 text-center text-gray-500 dark:text-gray-400">
+          <div className="p-8 text-center text-[#171717cc] dark:text-[#fafafacc]">
             No admins found
           </div>
         ) : (
-          <div className="divide-y divide-gray-200 dark:divide-gray-700">
+          <div className="divide-y divide-gray-200 dark:divide-[#2E2E2E]">
             {admins.map((admin) => (
               <div key={admin.uid} className="p-6">
                 <div className="flex items-center justify-between">
@@ -278,7 +278,7 @@ const AdminManagement = () => {
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-2">
-                        <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                        <p className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] truncate">
                           {admin.name}
                         </p>
                         <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor(admin.role)}`}>
@@ -291,7 +291,7 @@ const AdminManagement = () => {
                         )}
                       </div>
                       
-                      <div className="mt-1 flex items-center text-sm text-gray-500 dark:text-gray-400 space-x-4">
+                      <div className="mt-1 flex items-center text-sm text-[#171717cc] dark:text-[#fafafacc] space-x-4">
                         <span className="flex items-center">
                           <Mail className="w-3 h-3 mr-1" />
                           {admin.email}
@@ -310,7 +310,7 @@ const AdminManagement = () => {
                       <select
                         value={admin.role}
                         onChange={(e) => updateRole(admin.uid, e.target.value, admin.email)}
-                        className="text-sm px-2 py-1 border border-gray-300 dark:border-gray-600 rounded dark:bg-gray-700 dark:text-white"
+                        className="text-sm px-2 py-1 border border-gray-300 dark:border-[#2E2E2E] rounded dark:bg-[#2E2E2E] dark:text-[#fafafacc] text-[#171717cc]"
                       >
                         <option value="admin">Admin</option>
                         <option value="moderator">Moderator</option>
@@ -338,11 +338,11 @@ const AdminManagement = () => {
       {/* Confirmation Dialog */}
       {showConfirmDialog && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+          <div className="bg-white dark:bg-[#171717] rounded-lg p-6 max-w-md w-full mx-4 border border-gray-200 dark:border-[#2E2E2E]">
+            <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">
               Confirm Admin Removal
             </h3>
-            <p className="text-gray-600 dark:text-gray-400 mb-6">
+            <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">
               Are you sure you want to remove <strong>{showConfirmDialog.email}</strong> from admin access?
               This action cannot be undone.
             </p>

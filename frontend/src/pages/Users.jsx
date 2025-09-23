@@ -98,12 +98,17 @@ const Users = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-8">
-      <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-8">
-        User Management
-      </h1>
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-2">
+          User Management
+        </h1>
+        <p className="text-[#171717cc] dark:text-[#fafafacc]">
+          View and manage all users and their generated content
+        </p>
+      </div>
 
       {error && (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
+        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded mb-6">
           {error}
         </div>
       )}
@@ -111,18 +116,18 @@ const Users = () => {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         {/* Users List */}
         <div className="lg:col-span-1">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+          <h2 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">
             All Users ({users.length})
           </h2>
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+          <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E]">
             {users.map((user) => (
               <div
                 key={user.uid}
                 onClick={() => handleUserClick(user)}
-                className={`p-4 border-b border-gray-200 dark:border-gray-700 cursor-pointer transition-colors ${
+                className={`p-4 border-b border-gray-200 dark:border-[#2E2E2E] cursor-pointer transition-colors ${
                   selectedUser?.uid === user.uid
                     ? "bg-blue-50 dark:bg-blue-900/20 border-l-4 border-blue-500"
-                    : "hover:bg-gray-50 dark:hover:bg-gray-700"
+                    : "hover:bg-gray-50 dark:hover:bg-[#2E2E2E]"
                 }`}
               >
                 <div className="flex items-center justify-between">
@@ -131,10 +136,10 @@ const Users = () => {
                       <User size={20} className="text-blue-600 dark:text-blue-400" />
                     </div>
                     <div>
-                      <h3 className="font-medium text-gray-900 dark:text-white">
+                      <h3 className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
                         {user.name}
                       </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] flex items-center">
                         <Mail size={14} className="mr-1" />
                         {user.email}
                       </p>
@@ -142,7 +147,7 @@ const Users = () => {
                   </div>
                   <Eye size={16} className="text-gray-400" />
                 </div>
-                <div className="mt-2 text-xs text-gray-500 dark:text-gray-400 flex items-center space-x-4">
+                <div className="mt-2 text-xs text-[#171717cc] dark:text-[#fafafacc] flex items-center space-x-4">
                   <span className="flex items-center">
                     <Calendar size={12} className="mr-1" />
                     {formatDate(user.createdAt)}
@@ -161,26 +166,26 @@ const Users = () => {
         <div className="lg:col-span-2">
           {selectedUser ? (
             <div>
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6 mb-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6 mb-6">
+                <h2 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">
                   {selectedUser.name}'s Content
                 </h2>
                 <div className="grid grid-cols-2 gap-4 text-sm">
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Email:</span>
-                    <p className="font-medium">{selectedUser.email}</p>
+                    <span className="text-[#171717cc] dark:text-[#fafafacc]">Email:</span>
+                    <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{selectedUser.email}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Member since:</span>
-                    <p className="font-medium">{formatDate(selectedUser.createdAt)}</p>
+                    <span className="text-[#171717cc] dark:text-[#fafafacc]">Member since:</span>
+                    <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{formatDate(selectedUser.createdAt)}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Last login:</span>
-                    <p className="font-medium">{formatDate(selectedUser.lastLogin)}</p>
+                    <span className="text-[#171717cc] dark:text-[#fafafacc]">Last login:</span>
+                    <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{formatDate(selectedUser.lastLogin)}</p>
                   </div>
                   <div>
-                    <span className="text-gray-500 dark:text-gray-400">Total content:</span>
-                    <p className="font-medium">{userContent.length} items</p>
+                    <span className="text-[#171717cc] dark:text-[#fafafacc]">Total content:</span>
+                    <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{userContent.length} items</p>
                   </div>
                 </div>
               </div>
@@ -188,35 +193,35 @@ const Users = () => {
               {contentLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                  <p className="mt-4 text-gray-600 dark:text-gray-400">Loading content...</p>
+                  <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Loading content...</p>
                 </div>
               ) : (
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow">
+                <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E]">
                   {userContent.length === 0 ? (
-                    <div className="p-6 text-center text-gray-500 dark:text-gray-400">
+                    <div className="p-6 text-center text-[#171717cc] dark:text-[#fafafacc]">
                       No content generated yet
                     </div>
                   ) : (
-                    <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                    <div className="divide-y divide-gray-200 dark:divide-[#2E2E2E]">
                       {userContent.map((content) => (
                         <div 
                           key={content._id} 
-                          className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+                          className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
                           onClick={() => handleContentClick(content)}
                         >
                           <div className="flex items-center justify-between">
                             <div className="flex items-center space-x-3">
                               {getContentTypeIcon(content.type)}
                               <div>
-                                <h3 className="font-medium text-gray-900 dark:text-white">
+                                <h3 className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
                                   {content.title}
                                 </h3>
-                                <p className="text-sm text-gray-500 dark:text-gray-400 capitalize">
+                                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] capitalize">
                                   {content.type} • {formatDate(content.createdAt)}
                                 </p>
                               </div>
                             </div>
-                            <div className="text-xs text-gray-400">
+                            <div className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
                               {content.url && (
                                 <a
                                   href={content.url}
@@ -238,12 +243,12 @@ const Users = () => {
               )}
             </div>
           ) : (
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-8 text-center">
-              <User size={48} className="text-gray-400 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+            <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-8 text-center">
+              <User size={48} className="text-[#171717cc] dark:text-[#fafafacc] mx-auto mb-4" />
+              <h3 className="text-lg font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                 Select a User
               </h3>
-              <p className="text-gray-500 dark:text-gray-400">
+              <p className="text-[#171717cc] dark:text-[#fafafacc]">
                 Click on a user from the list to view their generated content
               </p>
             </div>
@@ -254,14 +259,14 @@ const Users = () => {
       {/* Content Detail Modal */}
       {selectedContent && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+          <div className="bg-white dark:bg-[#171717] rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-y-auto border border-gray-200 dark:border-[#2E2E2E]">
+            <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-[#2E2E2E]">
+              <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc]">
                 Content Details
               </h3>
               <button
                 onClick={() => setSelectedContent(null)}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="text-[#171717cc] dark:text-[#fafafacc] hover:text-gray-600 dark:hover:text-gray-300"
               >
                 <X size={24} />
               </button>
