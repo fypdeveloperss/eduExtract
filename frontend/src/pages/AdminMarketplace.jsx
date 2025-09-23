@@ -109,10 +109,10 @@ function AdminMarketplace() {
 
   if (adminLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Checking admin status...</p>
+          <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Checking admin status...</p>
         </div>
       </div>
     );
@@ -120,10 +120,10 @@ function AdminMarketplace() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Access Denied</h1>
-          <p className="text-gray-600 dark:text-gray-400 mb-6">You don't have admin privileges.</p>
+          <h1 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">Access Denied</h1>
+          <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">You don't have admin privileges.</p>
           <button
             onClick={() => navigate('/')}
             className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
@@ -137,24 +137,24 @@ function AdminMarketplace() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">Loading pending content...</p>
+          <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Loading pending content...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-8">
       <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 mb-6">
+        <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6 mb-6">
           <div className="flex items-center justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Marketplace Content Management</h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-2">
+              <h1 className="text-3xl font-bold text-[#171717cc] dark:text-[#fafafacc]">Marketplace Content Management</h1>
+              <p className="text-[#171717cc] dark:text-[#fafafacc] mt-2">
                 Review and approve pending marketplace content
               </p>
             </div>
@@ -169,7 +169,7 @@ function AdminMarketplace() {
 
         {/* Stats */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+          <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6">
             <div className="flex items-center">
               <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
                 <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -177,8 +177,8 @@ function AdminMarketplace() {
                 </svg>
               </div>
               <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Pending Review</p>
-                <p className="text-2xl font-bold text-gray-900 dark:text-white">{pendingContent.length}</p>
+                <p className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Pending Review</p>
+                <p className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc]">{pendingContent.length}</p>
               </div>
             </div>
           </div>
@@ -186,32 +186,32 @@ function AdminMarketplace() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 rounded-lg p-4 mb-6">
+            <p className="text-red-700 dark:text-red-300">{error}</p>
           </div>
         )}
 
         {/* Pending Content List */}
         {pendingContent.length === 0 ? (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-12 text-center">
+          <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-12 text-center">
             <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
               <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">All Caught Up!</h3>
-            <p className="text-gray-600 dark:text-gray-400">No pending content to review.</p>
+            <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">All Caught Up!</h3>
+            <p className="text-[#171717cc] dark:text-[#fafafacc]">No pending content to review.</p>
           </div>
         ) : (
           <div className="space-y-6">
             {pendingContent.map((content) => (
-              <div key={content._id} className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
+              <div key={content._id} className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6">
                 <div className="flex items-start justify-between">
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-4">
                       <span className="text-3xl">{getCategoryIcon(content.category)}</span>
                       <div>
-                        <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
+                        <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc]">
                           {content.title}
                         </h3>
                         <div className="flex items-center space-x-2 mt-1">
@@ -221,28 +221,28 @@ function AdminMarketplace() {
                           <span className={`px-2 py-1 rounded-full text-sm ${getDifficultyColor(content.difficulty)}`}>
                             {content.difficulty}
                           </span>
-                          <span className="bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-gray-300 px-2 py-1 rounded-full text-sm">
+                          <span className="bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] px-2 py-1 rounded-full text-sm">
                             {content.contentType}
                           </span>
                         </div>
                       </div>
                     </div>
 
-                    <p className="text-gray-600 dark:text-gray-400 mb-4">{content.description}</p>
+                    <p className="text-[#171717cc] dark:text-[#fafafacc] mb-4">{content.description}</p>
 
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Subject:</span>
-                        <p className="font-medium text-gray-900 dark:text-white">{content.subject}</p>
+                        <span className="text-[#171717cc] dark:text-[#fafafacc]">Subject:</span>
+                        <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{content.subject}</p>
                       </div>
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Price:</span>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-[#171717cc] dark:text-[#fafafacc]">Price:</span>
+                        <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
                           {formatPrice(content.price, content.currency)}
                         </p>
                       </div>
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Plagiarism Score:</span>
+                        <span className="text-[#171717cc] dark:text-[#fafafacc]">Plagiarism Score:</span>
                         <p className={`font-medium ${
                           content.plagiarismScore < 30 ? 'text-green-600' :
                           content.plagiarismScore < 70 ? 'text-yellow-600' : 'text-red-600'
@@ -251,8 +251,8 @@ function AdminMarketplace() {
                         </p>
                       </div>
                       <div>
-                        <span className="text-gray-500 dark:text-gray-400">Uploaded:</span>
-                        <p className="font-medium text-gray-900 dark:text-white">
+                        <span className="text-[#171717cc] dark:text-[#fafafacc]">Uploaded:</span>
+                        <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
                           {new Date(content.createdAt).toLocaleDateString()}
                         </p>
                       </div>
@@ -260,12 +260,12 @@ function AdminMarketplace() {
 
                     {content.tags && content.tags.length > 0 && (
                       <div className="mt-4">
-                        <span className="text-gray-500 dark:text-gray-400 text-sm">Tags:</span>
+                        <span className="text-[#171717cc] dark:text-[#fafafacc] text-sm">Tags:</span>
                         <div className="flex flex-wrap gap-1 mt-1">
                           {content.tags.map((tag, index) => (
                             <span
                               key={index}
-                              className="bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-2 py-1 rounded text-xs"
+                              className="bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] px-2 py-1 rounded text-xs"
                             >
                               #{tag}
                             </span>

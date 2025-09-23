@@ -2,12 +2,15 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/FirebaseAuthContext";
 import ThemeToggle from "./ThemeToggle";
+import { ChevronDown, BookOpen, Target, Brain, Zap, Users, MessageCircle, FileText, StickyNote, ListChecks, ShoppingCart, MessageSquare } from "lucide-react";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
+  const featuresRef = useRef(null);
 
   // Interpolate scroll to transform values
   const containerRef = useRef(null);
@@ -21,8 +24,19 @@ const Header = () => {
       }
     };
 
+    const handleClickOutside = (event) => {
+      if (featuresRef.current && !featuresRef.current.contains(event.target)) {
+        setIsFeaturesOpen(false);
+      }
+    };
+
     window.addEventListener("scroll", handleScroll);
-    return () => window.removeEventListener("scroll", handleScroll);
+    document.addEventListener("mousedown", handleClickOutside);
+    
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
   }, []);
 
   const handleLogout = async () => {
@@ -66,13 +80,110 @@ const Header = () => {
             {/* Desktop Navigation */}
             <div className="hidden lg:block">
               <div className="ml-10 flex items-center space-x-6 xl:space-x-8">
-                <a
-                  href="#"
-                  className="text-[#171717cc] hover:text-gray-900 relative group px-3 py-2 text-sm xl:text-base"
-                >
-                  Features
-                  <span className="inline-block ml-1">▼</span>
-                </a>
+                <div className="relative" ref={featuresRef}>
+                  <button
+                    onClick={() => setIsFeaturesOpen(!isFeaturesOpen)}
+                    className="text-[#171717cc] hover:text-gray-900 relative group px-3 py-2 text-sm xl:text-base flex items-center"
+                  >
+                    Features
+                    <ChevronDown className={`w-4 h-4 ml-1 transition-transform ${isFeaturesOpen ? 'rotate-180' : ''}`} />
+                  </button>
+                  
+                  {/* Features Dropdown */}
+                  {isFeaturesOpen && (
+                    <div className="absolute top-full left-0 mt-2 w-80 bg-white rounded-lg shadow-xl border border-gray-200 z-50">
+                      <div className="p-4">
+                        <div className="grid grid-cols-1 gap-2">
+                          {/* Content Generation */}
+                          <div className="mb-3">
+                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Content Generation</h3>
+                            <div className="space-y-1">
+                              <Link
+                                to="/dashboard"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <FileText className="w-4 h-4 mr-3 text-blue-500" />
+                                Smart Summaries
+                              </Link>
+                              <Link
+                                to="/dashboard"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <BookOpen className="w-4 h-4 mr-3 text-green-500" />
+                                Blog Posts
+                              </Link>
+                              <Link
+                                to="/dashboard"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <StickyNote className="w-4 h-4 mr-3 text-purple-500" />
+                                Presentation Slides
+                              </Link>
+                              <Link
+                                to="/dashboard"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <MessageCircle className="w-4 h-4 mr-3 text-orange-500" />
+                                Flashcards
+                              </Link>
+                              <Link
+                                to="/dashboard"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <ListChecks className="w-4 h-4 mr-3 text-red-500" />
+                                Interactive Quizzes
+                              </Link>
+                            </div>
+                          </div>
+                          
+                          {/* Learning Tools */}
+                          <div className="mb-3">
+                            <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Learning Tools</h3>
+                            <div className="space-y-1">
+                              <Link
+                                to="/collaborate"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <Users className="w-4 h-4 mr-3 text-indigo-500" />
+                                Collaboration Hub
+                              </Link>
+                              <Link
+                                to="/marketplace"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <ShoppingCart className="w-4 h-4 mr-3 text-teal-500" />
+                                Marketplace
+                              </Link>
+                              <Link
+                                to="/forum"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <MessageSquare className="w-4 h-4 mr-3 text-pink-500" />
+                                Community Forum
+                              </Link>
+                              <Link
+                                to="/content"
+                                onClick={() => setIsFeaturesOpen(false)}
+                                className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:bg-gray-50 rounded-md transition-colors"
+                              >
+                                <Brain className="w-4 h-4 mr-3 text-yellow-500" />
+                                My Content Library
+                              </Link>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
                 <a
                   href="#"
                   className="text-[#171717cc] hover:text-[#171717] px-3 py-2 text-sm xl:text-base"
@@ -120,12 +231,6 @@ const Header = () => {
                       Admin
                     </Link>
                   )}
-                  <Link
-                    to="/collaborate"
-                    className="bg-green-500 hover:bg-green-600 text-white px-3 py-2 rounded-md text-xs xl:text-sm font-medium transition-colors"
-                  >
-                    Collaborate
-                  </Link>
                   <Link
                     to="/dashboard"
                     className="bg-[#171717] text-white px-3 xl:px-4 py-2 rounded-md font-medium text-xs xl:text-sm transition-colors"
@@ -188,13 +293,85 @@ const Header = () => {
             <div className="lg:hidden">
               <div className="px-2 pt-2 pb-3 space-y-1 bg-white border-t border-gray-200">
                 {/* Mobile Navigation Links */}
-                <a
-                  href="#"
-                  className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
-                  onClick={closeMobileMenu}
-                >
-                  Features
-                </a>
+                <div className="border-b border-gray-200 pb-3 mb-3">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-3">Content Generation</h3>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <FileText className="w-4 h-4 mr-3 text-blue-500" />
+                    Smart Summaries
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <BookOpen className="w-4 h-4 mr-3 text-green-500" />
+                    Blog Posts
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <StickyNote className="w-4 h-4 mr-3 text-purple-500" />
+                    Presentation Slides
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <MessageCircle className="w-4 h-4 mr-3 text-orange-500" />
+                    Flashcards
+                  </Link>
+                  <Link
+                    to="/dashboard"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <ListChecks className="w-4 h-4 mr-3 text-red-500" />
+                    Interactive Quizzes
+                  </Link>
+                </div>
+                
+                <div className="border-b border-gray-200 pb-3 mb-3">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2 px-3">Learning Tools</h3>
+                  <Link
+                    to="/collaborate"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <Users className="w-4 h-4 mr-3 text-indigo-500" />
+                    Collaboration Hub
+                  </Link>
+                  <Link
+                    to="/marketplace"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <ShoppingCart className="w-4 h-4 mr-3 text-teal-500" />
+                    Marketplace
+                  </Link>
+                  <Link
+                    to="/forum"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <MessageSquare className="w-4 h-4 mr-3 text-pink-500" />
+                    Community Forum
+                  </Link>
+                  <Link
+                    to="/content"
+                    className="flex items-center px-3 py-2 text-sm text-[#171717cc] hover:text-[#171717]"
+                    onClick={closeMobileMenu}
+                  >
+                    <Brain className="w-4 h-4 mr-3 text-yellow-500" />
+                    My Content Library
+                  </Link>
+                </div>
                 <a
                   href="#"
                   className="block px-3 py-2 text-base font-medium text-[#171717cc] hover:text-[#171717]"
@@ -237,13 +414,6 @@ const Header = () => {
                           Admin
                         </Link>
                       )}
-                      <Link
-                        to="/collaborate"
-                        className="block w-full text-center bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-                        onClick={closeMobileMenu}
-                      >
-                        Collaborate
-                      </Link>
                       <Link
                         to="/dashboard"
                         className="block w-full text-center bg-[#171717] text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
