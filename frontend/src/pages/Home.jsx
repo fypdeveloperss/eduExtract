@@ -80,7 +80,7 @@ export default function Home() {
   }, [testimonials.length]);
 
   return (
-    <div className="bg-white min-h-screen overflow-x-hidden">
+    <div className="bg-white dark:bg-[#121212] min-h-screen overflow-x-hidden transition-colors duration-300">
       {/* Navigation */}
       <Header />
 
@@ -91,9 +91,9 @@ export default function Home() {
         style={{ y: heroY }}
       >
         {/* Background Elements */}
-        <div className="absolute inset-0 overflow-hidden">
+        <div className="absolute inset-0 ">
           <motion.div
-            className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-gray-200/30 to-gray-300/30 rounded-full blur-3xl"
+            className="absolute -top-40 -right-40 w-80 h-80 bg-gradient-to-br from-gray-200/30 to-gray-300/30 dark:from-gray-700/30 dark:to-gray-600/30 rounded-full blur-3xl"
             animate={{
               scale: [1, 1.2, 1],
               rotate: [0, 180, 360],
@@ -105,7 +105,7 @@ export default function Home() {
             }}
           />
           <motion.div
-            className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-gray-100/30 to-gray-200/30 rounded-full blur-3xl"
+            className="absolute -bottom-40 -left-40 w-80 h-80 bg-gradient-to-br from-gray-100/30 to-gray-200/30 dark:from-gray-800/30 dark:to-gray-700/30 rounded-full blur-3xl"
             animate={{
               scale: [1.2, 1, 1.2],
               rotate: [360, 180, 0],
@@ -124,10 +124,10 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6 }}
-            className="inline-flex items-center gap-2 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-full px-4 py-2 mb-8"
+            className="inline-flex items-center gap-2 bg-white/80 dark:bg-[#171717]/80 backdrop-blur-sm border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 mb-8"
           >
             <Sparkles className="w-4 h-4 text-yellow-500" />
-            <span className="text-sm font-medium text-gray-700">AI-Powered Learning Platform</span>
+            <span className="text-sm font-medium text-gray-700 dark:text-[#fafafacc]">AI-Powered Learning Platform</span>
           </motion.div>
 
           {/* Main Heading */}
@@ -135,11 +135,11 @@ export default function Home() {
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#171717] mb-6 leading-tight"
+            className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6 leading-tight"
           >
             Transform Learning with
             <br />
-            <span className="text-[#171717cc]">
+            <span className="text-[#171717cc] dark:text-[#fafafacc]">
               AI Intelligence
             </span>
           </motion.h1>
@@ -148,7 +148,7 @@ export default function Home() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8, delay: 0.4 }}
-            className="text-lg sm:text-xl md:text-2xl text-[#171717cc] max-w-4xl mx-auto mb-10 leading-relaxed"
+            className="text-lg sm:text-xl md:text-2xl text-[#171717cc] dark:text-[#fafafacc] max-w-4xl mx-auto mb-10 leading-relaxed"
           >
             Turn any content into interactive learning experiences. Generate summaries, 
             create quizzes, build flashcards, and chat with your personal AI tutor.
@@ -176,7 +176,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })}
-              className="group bg-white border border-[#EEEEEE] text-[#171717cc] px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#FAFAFA] transition-all duration-300 flex items-center justify-center gap-2"
+              className="group bg-white dark:bg-[#171717] border border-[#EEEEEE] dark:border-gray-700 text-[#171717cc] dark:text-[#fafafacc] px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#FAFAFA] dark:hover:bg-[#2E2E2E] transition-all duration-300 flex items-center justify-center gap-2"
             >
               <Play className="w-5 h-5" />
               Watch Demo
@@ -205,12 +205,12 @@ export default function Home() {
                 ))}
               </div>
               <div className="text-left">
-                <p className="text-sm font-semibold text-[#171717]">1M+ Active Learners</p>
+                <p className="text-sm font-semibold text-[#171717] dark:text-[#fafafacc]">1M+ Active Learners</p>
                 <div className="flex items-center gap-1">
                   {[...Array(5)].map((_, i) => (
                     <Star key={i} className="w-4 h-4 text-yellow-400 fill-current" />
                   ))}
-                  <span className="text-sm text-[#171717cc] ml-1">4.9/5 rating</span>
+                  <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] ml-1">4.9/5 rating</span>
                 </div>
               </div>
             </div>
@@ -223,12 +223,12 @@ export default function Home() {
             transition={{ delay: 1.2 }}
             className="flex flex-col items-center gap-2"
           >
-            <span className="text-sm text-[#171717cc]">Scroll to explore</span>
+            <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Scroll to explore</span>
             <motion.div
               animate={{ y: [0, 8, 0] }}
               transition={{ duration: 2, repeat: Infinity }}
             >
-              <ChevronDown className="w-6 h-6 text-[#171717cc]" />
+              <ChevronDown className="w-6 h-6 text-[#171717cc] dark:text-[#fafafacc]" />
             </motion.div>
           </motion.div>
         </div>
@@ -287,7 +287,7 @@ export default function Home() {
       {/* Features Section */}
       <motion.section
         ref={containerRef}
-        className="py-20 bg-[#FAFAFA]"
+        className="py-20 bg-[#FAFAFA] dark:bg-[#121212]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -302,21 +302,21 @@ export default function Home() {
               whileInView={{ opacity: 1, scale: 1 }}
               transition={{ duration: 0.6 }}
               viewport={{ once: true }}
-              className="inline-flex items-center gap-2 bg-[#EEEEEE] rounded-full px-4 py-2 mb-6"
+              className="inline-flex items-center gap-2 bg-[#EEEEEE] dark:bg-[#171717] rounded-full px-4 py-2 mb-6"
             >
-              <Zap className="w-4 h-4 text-[#171717]" />
-              <span className="text-sm font-semibold text-[#171717]">Powerful Features</span>
+              <Zap className="w-4 h-4 text-[#171717] dark:text-[#fafafacc]" />
+              <span className="text-sm font-semibold text-[#171717] dark:text-[#fafafacc]">Powerful Features</span>
             </motion.div>
             
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6">
               Everything you need to
               <br />
-              <span className="text-[#171717cc]">
+              <span className="text-[#171717cc] dark:text-[#fafafacc]">
                 master any subject
               </span>
             </h2>
             
-            <p className="text-lg text-[#171717cc] max-w-3xl mx-auto">
+            <p className="text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-3xl mx-auto">
               Our AI-powered platform transforms any learning material into interactive, 
               personalized experiences that adapt to your learning style.
             </p>
@@ -377,16 +377,16 @@ export default function Home() {
                 whileHover={{ y: -10, scale: 1.02 }}
                 className="group relative"
               >
-                <div className={`${feature.bgColor} p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-[#EEEEEE]`}>
+                <div className={`${feature.bgColor} dark:bg-[#171717] p-8 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 border border-[#EEEEEE] dark:border-gray-700`}>
                   <div className={`w-16 h-16 ${feature.color} rounded-2xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300`}>
                     <feature.icon className="w-8 h-8 text-white" />
                   </div>
                   
-                  <h3 className="text-xl font-bold text-[#171717] mb-4">
+                  <h3 className="text-xl font-bold text-[#171717] dark:text-[#fafafacc] mb-4">
                     {feature.title}
                   </h3>
                   
-                  <p className="text-[#171717cc] leading-relaxed">
+                  <p className="text-[#171717cc] dark:text-[#fafafacc] leading-relaxed">
                     {feature.description}
                   </p>
                   
@@ -395,7 +395,7 @@ export default function Home() {
                     initial={{ scale: 0 }}
                     whileHover={{ scale: 1 }}
                   >
-                    <ArrowRight className="w-5 h-5 text-[#171717cc]" />
+                    <ArrowRight className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
                   </motion.div>
                 </div>
               </motion.div>
@@ -406,7 +406,7 @@ export default function Home() {
 
       {/* Testimonials Section */}
       <motion.section
-        className="py-20 bg-white"
+        className="py-20 bg-white dark:bg-[#121212]"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -416,10 +416,10 @@ export default function Home() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] mb-6">
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6">
               Loved by learners worldwide
             </h2>
-            <p className="text-lg text-[#171717cc] max-w-3xl mx-auto">
+            <p className="text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-3xl mx-auto">
               Join millions of students who have transformed their learning experience with EduExtract.
             </p>
           </motion.div>
@@ -432,19 +432,19 @@ export default function Home() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white rounded-2xl p-8 shadow-xl max-w-4xl mx-auto"
+                className="bg-white dark:bg-[#171717] rounded-2xl p-8 shadow-xl max-w-4xl mx-auto"
               >
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 bg-[#171717] rounded-full flex items-center justify-center text-white font-bold text-lg">
                     {testimonials[currentTestimonial].avatar}
                   </div>
                   <div>
-                    <h4 className="font-semibold text-[#171717]">{testimonials[currentTestimonial].name}</h4>
-                    <p className="text-[#171717cc]">{testimonials[currentTestimonial].role}</p>
+                    <h4 className="font-semibold text-[#171717] dark:text-[#fafafacc]">{testimonials[currentTestimonial].name}</h4>
+                    <p className="text-[#171717cc] dark:text-[#fafafacc]">{testimonials[currentTestimonial].role}</p>
                   </div>
                 </div>
                 
-                <blockquote className="text-lg text-[#171717cc] leading-relaxed">
+                <blockquote className="text-lg text-[#171717cc] dark:text-[#fafafacc] leading-relaxed">
                   "{testimonials[currentTestimonial].content}"
                 </blockquote>
                 
@@ -464,8 +464,8 @@ export default function Home() {
                   onClick={() => setCurrentTestimonial(index)}
                   className={`w-3 h-3 rounded-full transition-all duration-300 ${
                     index === currentTestimonial 
-                      ? 'bg-[#171717] scale-125' 
-                      : 'bg-gray-300 hover:bg-gray-400'
+                      ? 'bg-[#171717] dark:bg-[#fafafacc] scale-125' 
+                      : 'bg-gray-300 dark:bg-gray-600 hover:bg-gray-400 dark:hover:bg-gray-500'
                   }`}
                 />
               ))}
@@ -497,7 +497,7 @@ export default function Home() {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => navigate("/dashboard")}
-              className="bg-white text-[#171717] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
+              className="bg-white dark:bg-gray-100 text-[#171717] dark:text-gray-900 px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
             >
               <Rocket className="w-6 h-6" />
               Get Started Free
