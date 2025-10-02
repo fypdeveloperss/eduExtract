@@ -6,6 +6,7 @@ import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
 import Spinner from "../components/Spinner";
+import PDFViewer from "../components/PDFViewer";
 import "./Dashboard.css";
 import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
@@ -25,6 +26,8 @@ function Dashboard() {
   const [showVideo, setShowVideo] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
   const [isFileValidated, setIsFileValidated] = useState(false);
+  const [fileContent, setFileContent] = useState("");
+  const [isExtractingContent, setIsExtractingContent] = useState(false);
   const [uploadMode, setUploadMode] = useState("youtube");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
@@ -97,7 +100,7 @@ function Dashboard() {
     }
   };
 
-  const handleFileSelect = (file) => {
+  const handleFileSelect = async (file) => {
     if (!file) {
       setError("No file selected");
       return;
@@ -122,6 +125,37 @@ function Dashboard() {
 
     setSelectedFile(file);
     setError("");
+    setFileContent(""); // Clear previous content
+    
+    // Extract content for preview
+    await extractFileContent(file);
+  };
+
+  const extractFileContent = async (file) => {
+    try {
+      setIsExtractingContent(true);
+      setError("");
+      
+      const formData = new FormData();
+      formData.append('file', file);
+      
+      const response = await api.post('/extract-file-content', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+      
+      if (response.data.success) {
+        setFileContent(response.data.content);
+      } else {
+        setError("Failed to extract content from file");
+      }
+    } catch (error) {
+      console.error('Error extracting file content:', error);
+      setError(error.response?.data?.error || "Failed to extract content from file");
+    } finally {
+      setIsExtractingContent(false);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -580,36 +614,62 @@ function Dashboard() {
                     </div>
 
                     {/* File Preview Content */}
-                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4 min-h-[200px] max-h-[300px] overflow-y-auto">
-                      {selectedFile.type === 'application/pdf' && (
+                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4 min-h-[200px] max-h-[400px] overflow-y-auto">
+                      {selectedFile.type === 'application/pdf' ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc]">
+                              PDF Preview
+                            </h4>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              Interactive PDF Viewer
+                            </span>
+                          </div>
+                          <PDFViewer 
+                            file={selectedFile} 
+                            onError={(error) => setError(error)}
+                          />
+                        </div>
+                      ) : isExtractingContent ? (
                         <div className="text-center py-8">
-                          <FileText size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
                           <p className="text-gray-600 dark:text-gray-400">
-                            PDF Preview not available. Content will be processed for generation.
+                            Extracting content from file...
                           </p>
                         </div>
-                      )}
-                      {selectedFile.type === 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' && (
-                        <div className="text-center py-8">
-                          <BookOpen size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                          <p className="text-gray-600 dark:text-gray-400">
-                            DOCX Preview not available. Content will be processed for generation.
-                          </p>
+                      ) : fileContent ? (
+                        <div className="space-y-4">
+                          <div className="flex items-center justify-between mb-3">
+                            <h4 className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc]">
+                              File Content Preview
+                            </h4>
+                            <span className="text-xs text-gray-500 dark:text-gray-400">
+                              {fileContent.length} characters
+                            </span>
+                          </div>
+                          <div className="bg-white dark:bg-[#171717] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                            <pre className="whitespace-pre-wrap text-sm text-gray-800 dark:text-[#fafafacc] leading-relaxed max-h-48 overflow-y-auto">
+                              {fileContent.length > 2000 ? fileContent.substring(0, 2000) + '...' : fileContent}
+                            </pre>
+                          </div>
+                          {fileContent.length > 2000 && (
+                            <p className="text-xs text-gray-500 dark:text-gray-400 text-center">
+                              Showing first 2000 characters. Full content will be processed for generation.
+                            </p>
+                          )}
                         </div>
-                      )}
-                      {selectedFile.type === 'text/plain' && (
-                        <div className="text-center py-8">
-                          <FileText size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
-                          <p className="text-gray-600 dark:text-gray-400">
-                            TXT Preview not available. Content will be processed for generation.
-                          </p>
-                        </div>
-                      )}
-                      {selectedFile.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' && (
+                      ) : selectedFile.type === 'application/vnd.openxmlformats-officedocument.presentationml.presentation' ? (
                         <div className="text-center py-8">
                           <StickyNote size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
                           <p className="text-gray-600 dark:text-gray-400">
                             PPTX Preview not available. Content will be processed for generation.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="text-center py-8">
+                          <FileText size={48} className="text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">
+                            Click "Generate" to process the file content.
                           </p>
                         </div>
                       )}
