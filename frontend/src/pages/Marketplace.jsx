@@ -12,6 +12,9 @@ function Marketplace() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   
+  // Tab state
+  const [activeTab, setActiveTab] = useState('browse');
+  
   // Filters and search
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -28,10 +31,18 @@ function Marketplace() {
   // Modal state
   const [showPublishModal, setShowPublishModal] = useState(false);
 
+  // Purchased content state
+  const [purchasedContent, setPurchasedContent] = useState([]);
+  const [purchasedLoading, setPurchasedLoading] = useState(false);
+
   useEffect(() => {
     fetchCategories();
-    fetchContent();
-  }, [currentPage, selectedCategory, selectedDifficulty, selectedContentType, priceRange, sortBy]);
+    if (activeTab === 'browse') {
+      fetchContent();
+    } else if (activeTab === 'purchased' && user) {
+      fetchPurchasedContent();
+    }
+  }, [activeTab, currentPage, selectedCategory, selectedDifficulty, selectedContentType, priceRange, sortBy, user]);
 
   const fetchCategories = async () => {
     try {
@@ -65,6 +76,20 @@ function Marketplace() {
       setError('Failed to load marketplace content');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchPurchasedContent = async () => {
+    try {
+      setPurchasedLoading(true);
+      const response = await api.get('/api/marketplace/purchases');
+      console.log('Purchased content response:', response.data);
+      setPurchasedContent(response.data || []);
+    } catch (error) {
+      console.error('Failed to fetch purchased content:', error);
+      setError('Failed to load purchased content');
+    } finally {
+      setPurchasedLoading(false);
     }
   };
 
@@ -157,12 +182,14 @@ function Marketplace() {
     return icons[category] || '📁';
   };
 
-  if (loading && content.length === 0) {
+  if ((activeTab === 'browse' && loading && content.length === 0) || (activeTab === 'purchased' && purchasedLoading && purchasedContent.length === 0)) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading marketplace...</p>
+          <p className="text-[#171717cc] dark:text-[#fafafacc]">
+            {activeTab === 'browse' ? 'Loading marketplace...' : 'Loading purchases...'}
+          </p>
         </div>
       </div>
     );
@@ -223,8 +250,39 @@ function Marketplace() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 py-8">
-        {/* Filters and Controls */}
+        {/* Tab Navigation */}
         <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 mb-8">
+          <div className="flex space-x-1 mb-6">
+            <button
+              onClick={() => setActiveTab('browse')}
+              className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+                activeTab === 'browse'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E]'
+              }`}
+            >
+              <span className="mr-2">🔍</span>
+              Browse Content
+            </button>
+            {user && (
+              <button
+                onClick={() => setActiveTab('purchased')}
+                className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+                  activeTab === 'purchased'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E]'
+                }`}
+              >
+                <span className="mr-2">🛒</span>
+                My Purchases
+              </button>
+            )}
+          </div>
+        </div>
+
+        {/* Filters and Controls - Only show for browse tab */}
+        {activeTab === 'browse' && (
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 mb-8">
           <div className="flex flex-wrap items-center justify-between gap-4">
             {/* Category Filter */}
             <div className="flex items-center space-x-4">
@@ -316,15 +374,24 @@ function Marketplace() {
             </button>
           </div>
         </div>
+        )}
 
         {/* Results Summary */}
         <div className="flex items-center justify-between mb-6">
           <div className="text-[#171717cc] dark:text-[#fafafacc]">
-            Showing {content.length} of {totalItems} results
-            {selectedCategory && ` in ${categories.find(c => c.value === selectedCategory)?.label}`}
+            {activeTab === 'browse' ? (
+              <>
+                Showing {content.length} of {totalItems} results
+                {selectedCategory && ` in ${categories.find(c => c.value === selectedCategory)?.label}`}
+              </>
+            ) : (
+              <>
+                {purchasedContent.length} purchased items
+              </>
+            )}
           </div>
           
-          {!user && (
+          {!user && activeTab === 'browse' && (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
               <p className="text-sm text-blue-800 dark:text-blue-200">
                 💡 <Link to="/login" className="font-medium underline">Sign in</Link> to upload content and access premium features
@@ -338,58 +405,90 @@ function Marketplace() {
           <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
             <p className="text-red-700">{error}</p>
             <button
-              onClick={fetchContent}
+              onClick={activeTab === 'browse' ? fetchContent : fetchPurchasedContent}
               className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
             >
               Try Again
             </button>
           </div>
-        ) : content.length === 0 ? (
+        ) : (activeTab === 'browse' ? content.length === 0 : purchasedContent.length === 0) ? (
           <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-12 text-center">
             <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">🔍</span>
+              <span className="text-4xl">{activeTab === 'browse' ? '🔍' : '🛒'}</span>
             </div>
-            <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">No content found</h3>
+            <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
+              {activeTab === 'browse' ? 'No content found' : 'No purchases yet'}
+            </h3>
             <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">
-              Try adjusting your filters or search terms to find what you're looking for.
+              {activeTab === 'browse' 
+                ? 'Try adjusting your filters or search terms to find what you\'re looking for.'
+                : 'Start exploring the marketplace to find amazing educational content to purchase.'
+              }
             </p>
-            <button
-              onClick={clearFilters}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              Clear Filters
-            </button>
+            {activeTab === 'browse' ? (
+              <button
+                onClick={clearFilters}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Clear Filters
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab('browse')}
+                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Browse Content
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-            {content.map((item) => (
+            {(activeTab === 'browse' ? content : purchasedContent).map((item) => {
+              const contentItem = activeTab === 'browse' ? item : item.contentId;
+              const purchaseInfo = activeTab === 'purchased' ? item : null;
+              
+              // Debug logging for purchased content
+              if (activeTab === 'purchased') {
+                console.log('Purchase item:', item);
+                console.log('Content item:', contentItem);
+              }
+              
+              return (
               <Link
-                key={item._id}
-                to={`/marketplace/content/${item._id}`}
+                key={contentItem._id}
+                to={`/marketplace/content/${contentItem._id}`}
                 className="bg-white dark:bg-[#171717] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
               >
                 {/* Content Preview */}
                 <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 flex items-center justify-center relative overflow-hidden">
                   <div className="text-6xl opacity-60 group-hover:scale-110 transition-transform duration-300">
-                    {getCategoryIcon(item.category)}
+                    {getCategoryIcon(contentItem.category)}
                   </div>
                   
                   {/* Price Badge */}
                   <div className="absolute top-3 right-3">
-                    <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
-                      item.price === 0 
-                        ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
-                        : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
-                    }`}>
-                      {formatPrice(item.price, item.currency)}
-                    </span>
+                    {activeTab === 'purchased' ? (
+                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                        ✅ Purchased
+                      </span>
+                    ) : (
+                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                        contentItem.price === 0 
+                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
+                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                      }`}>
+                        {formatPrice(contentItem.price, contentItem.currency)}
+                      </span>
+                    )}
                   </div>
 
                   {/* Content Type Badge */}
                   <div className="absolute bottom-3 left-3">
-                    <span className="bg-white dark:bg-[#171717] bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">
-                      {item.contentType}
-                    </span>
+                    {contentItem?.contentType && (
+                      <span className="bg-white dark:bg-[#171717] bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">
+                        {contentItem.contentType}
+                      </span>
+                    )}
                   </div>
                 </div>
 
@@ -397,47 +496,65 @@ function Marketplace() {
                 <div className="p-4">
                   <div className="flex items-start justify-between mb-2">
                     <h3 className="font-semibold text-[#171717cc] dark:text-[#fafafacc] text-lg leading-tight group-hover:text-blue-600 transition-colors">
-                      {item.title}
+                      {contentItem.title}
                     </h3>
                   </div>
                   
                   <p className="text-[#171717cc] dark:text-[#fafafacc] text-sm mb-3 line-clamp-2">
-                    {item.description}
+                    {contentItem.description}
                   </p>
                   
                   <div className="flex items-center justify-between text-sm text-[#171717cc] dark:text-[#fafafacc]">
                     <span className="flex items-center">
                       <span className="mr-1">📚</span>
-                      {item.subject}
+                      {contentItem?.subject || 'N/A'}
                     </span>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(item.difficulty)}`}>
-                      {item.difficulty}
-                    </span>
+                    {contentItem?.difficulty && (
+                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(contentItem.difficulty)}`}>
+                        {contentItem.difficulty}
+                      </span>
+                    )}
                   </div>
                   
                   {/* Stats */}
                   <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-[#2E2E2E] text-xs text-[#171717cc] dark:text-[#fafafacc]">
-                    <span className="flex items-center">
-                      <span className="mr-1">👁️</span>
-                      {item.views || 0} views
-                    </span>
-                    <span className="flex items-center">
-                      <span className="mr-1">❤️</span>
-                      {item.likes || 0} likes
-                    </span>
-                    <span className="flex items-center">
-                      <span className="mr-1">⭐</span>
-                      {item.averageRating ? `${item.averageRating}/5` : 'No ratings'}
-                    </span>
+                    {activeTab === 'purchased' ? (
+                      <>
+                        <span className="flex items-center">
+                          <span className="mr-1">💰</span>
+                          Paid {formatPrice(purchaseInfo.amount, purchaseInfo.currency)}
+                        </span>
+                        <span className="flex items-center">
+                          <span className="mr-1">📅</span>
+                          {new Date(purchaseInfo.purchasedAt).toLocaleDateString()}
+                        </span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="flex items-center">
+                          <span className="mr-1">👁️</span>
+                          {contentItem.views || 0} views
+                        </span>
+                        <span className="flex items-center">
+                          <span className="mr-1">❤️</span>
+                          {contentItem.likes || 0} likes
+                        </span>
+                        <span className="flex items-center">
+                          <span className="mr-1">⭐</span>
+                          {contentItem.averageRating ? `${contentItem.averageRating}/5` : 'No ratings'}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
               </Link>
-            ))}
+            );
+            })}
           </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && (
+        {/* Pagination - Only for browse tab */}
+        {activeTab === 'browse' && totalPages > 1 && (
           <div className="flex items-center justify-center mt-12">
             <nav className="flex items-center space-x-2">
               <button

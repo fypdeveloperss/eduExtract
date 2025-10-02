@@ -28,9 +28,9 @@ const ContentRenderer = ({ content }) => {
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {flashcards.map((card, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-semibold text-lg mb-2">{card.question || card.front}</h3>
-                <p className="text-gray-700 dark:text-gray-300">{card.answer || card.back}</p>
+              <div key={index} className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-[#fafafacc]">{card.question || card.front}</h3>
+                <p className="text-gray-700 dark:text-[#fafafacc]">{card.answer || card.back}</p>
               </div>
             ))}
           </div>
@@ -40,9 +40,9 @@ const ContentRenderer = ({ content }) => {
         return (
           <div className="space-y-6">
             {slides.map((slide, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-bold text-xl mb-3">{slide.title}</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafacc]">{slide.title}</h3>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
                   {(slide.points || []).map((point, i) => (
                     <li key={i}>{point}</li>
                   ))}
@@ -56,9 +56,9 @@ const ContentRenderer = ({ content }) => {
         return (
           <div className="space-y-6">
             {questions.map((q, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-bold text-lg mb-3">{q.question || q.text}</h3>
-                <ul className="space-y-1 text-gray-700 dark:text-gray-300">
+              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafacc]">{q.question || q.text}</h3>
+                <ul className="space-y-1 text-gray-700 dark:text-[#fafafacc]">
                   {(q.options || []).map((option, i) => (
                     <li key={i} className={`${option === q.answer ? 'font-semibold text-green-600 dark:text-green-400' : ''}`}>
                       {option}

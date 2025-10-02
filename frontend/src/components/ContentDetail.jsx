@@ -23,7 +23,7 @@ const ContentDetail = ({ content }) => {
         // For HTML content, use dangerouslySetInnerHTML
         return (
           <div 
-            className="blog-content max-w-none bg-white dark:bg-gray-800 p-6 rounded-lg" 
+            className="blog-content max-w-none bg-white dark:bg-[#171717] p-6 rounded-lg" 
             dangerouslySetInnerHTML={{ __html: content.contentData }} 
           />
         );
@@ -31,9 +31,9 @@ const ContentDetail = ({ content }) => {
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {content.contentData.map((card, index) => (
-              <div key={index} className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-white">{card.question}</h3>
-                <p className="text-gray-700 dark:text-gray-300">{card.answer}</p>
+              <div key={index} className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-[#fafafacc]">{card.question}</h3>
+                <p className="text-gray-700 dark:text-[#fafafacc]">{card.answer}</p>
               </div>
             ))}
           </div>
@@ -42,9 +42,9 @@ const ContentDetail = ({ content }) => {
         return (
           <div className="space-y-6">
             {content.contentData.map((slide, index) => (
-              <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-white">{slide.title}</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafacc]">{slide.title}</h3>
+                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
                   {slide.points.map((point, i) => (
                     <li key={i}>{point}</li>
                   ))}
@@ -57,11 +57,11 @@ const ContentDetail = ({ content }) => {
         return (
           <div className="space-y-6">
             {content.contentData.map((q, index) => (
-              <div key={index} className="bg-white dark:bg-gray-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-white">
+              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafacc]">
                   Question {index + 1}: {q.question}
                 </h3>
-                <ul className="space-y-2 text-gray-700 dark:text-gray-300">
+                <ul className="space-y-2 text-gray-700 dark:text-[#fafafacc]">
                   {q.options.map((option, i) => (
                     <li 
                       key={i} 
@@ -82,23 +82,23 @@ const ContentDetail = ({ content }) => {
         );
       case 'summary':
         return (
-          <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg">{content.contentData}</p>
+          <p className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg">{content.contentData}</p>
         );
       case 'document':
       case 'personal':
         // Handle marketplace document/personal content types
         if (typeof content.contentData === 'string') {
           return (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-              <pre className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-sm">
+            <div className="bg-white dark:bg-[#171717] p-4 rounded-lg border">
+              <pre className="whitespace-pre-wrap text-gray-800 dark:text-[#fafafacc] text-sm">
                 {content.contentData}
               </pre>
             </div>
           );
         } else if (content.contentData && typeof content.contentData === 'object') {
           return (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-              <pre className="whitespace-pre-wrap text-gray-800 dark:text-gray-200 text-sm">
+            <div className="bg-white dark:bg-[#171717] p-4 rounded-lg border">
+              <pre className="whitespace-pre-wrap text-gray-800 dark:text-[#fafafacc] text-sm">
                 {JSON.stringify(content.contentData, null, 2)}
               </pre>
             </div>
@@ -106,8 +106,8 @@ const ContentDetail = ({ content }) => {
         } else {
           // Fallback to description if no contentData
           return (
-            <div className="bg-white dark:bg-gray-800 p-4 rounded-lg border">
-              <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
+            <div className="bg-white dark:bg-[#171717] p-4 rounded-lg border">
+              <p className="text-gray-800 dark:text-[#fafafacc] leading-relaxed">
                 {content.description || 'No content available for preview.'}
               </p>
             </div>
@@ -141,12 +141,12 @@ const ContentDetail = ({ content }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-6">
+    <div className="bg-white dark:bg-[#171717] rounded-lg shadow p-6">
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-[#fafafacc] mb-2">
           {content.title}
         </h2>
-        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-gray-400">
+        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-[#fafafacc]">
           <span className="capitalize">{contentType}</span>
           <span>•</span>
           <span>{new Date(content.createdAt).toLocaleDateString()}</span>

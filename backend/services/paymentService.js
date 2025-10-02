@@ -162,7 +162,7 @@ class PaymentService {
   async getUserPurchases(userId) {
     try {
       const purchases = await Purchase.find({ buyerId: userId })
-        .populate('contentId', 'title description category subject')
+        .populate('contentId', 'title description category subject contentType difficulty price currency views likes')
         .sort({ purchasedAt: -1 });
 
       return purchases;
