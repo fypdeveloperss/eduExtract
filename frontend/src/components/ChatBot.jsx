@@ -51,22 +51,22 @@ const ChatBot = ({ isOpen, setIsOpen }) => {
   };
 
   return (
-    <div className="fixed bottom-4 right-4 z-[9999]">
+    <div className="fixed bottom-6 right-6 z-[9999]">
       {!isOpen ? (
         <button
           onClick={() => setIsOpen(true)}
-          className="bg-blue-600 text-white p-4 rounded-full shadow-lg hover:bg-blue-700 transition-colors flex items-center justify-center"
-          style={{ width: '60px', height: '60px' }}
+          className="bg-gray-800 dark:bg-gray-700 text-white p-4 rounded-full shadow-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition-all duration-300 flex items-center justify-center hover:scale-105"
+          style={{ width: '64px', height: '64px' }}
         >
-          <MessageCircle size={24} />
+          <MessageCircle size={28} />
         </button>
       ) : (
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl w-96 h-[500px] flex flex-col border border-gray-200 dark:border-gray-700">
-          <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-blue-600 text-white rounded-t-lg">
+        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-2xl w-96 h-[500px] flex flex-col border border-gray-200 dark:border-gray-700 overflow-hidden">
+          <div className="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-800 dark:bg-gray-700 text-white">
             <h3 className="font-semibold text-lg">EduExtract Assistant</h3>
             <button
               onClick={() => setIsOpen(false)}
-              className="text-white hover:text-gray-200 transition-colors"
+              className="text-white hover:text-gray-200 transition-colors p-1 rounded-full hover:bg-gray-700 dark:hover:bg-gray-600"
             >
               <X size={20} />
             </button>
@@ -106,19 +106,19 @@ const ChatBot = ({ isOpen, setIsOpen }) => {
             <div ref={messagesEndRef} />
           </div>
 
-          <form onSubmit={handleSubmit} className="p-4 border-t dark:border-gray-700">
-            <div className="flex space-x-2">
+          <form onSubmit={handleSubmit} className="p-4 border-t dark:border-gray-700 bg-gray-50 dark:bg-gray-900">
+            <div className="flex space-x-3">
               <input
                 type="text"
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Type your message..."
-                className="flex-1 p-2 border rounded-lg dark:bg-gray-700 dark:border-gray-600 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="flex-1 p-3 border border-gray-300 dark:border-gray-600 rounded-xl dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-2 focus:ring-gray-500 focus:border-transparent transition-all"
               />
               <button
                 type="submit"
                 disabled={isLoading}
-                className="bg-blue-600 text-white p-2 rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
+                className="bg-gray-800 dark:bg-gray-700 text-white p-3 rounded-xl hover:bg-gray-900 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 flex items-center justify-center"
               >
                 <Send size={20} />
               </button>

@@ -1,7 +1,6 @@
 import { Outlet, Link } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
-import ChatBot from "./ChatBot";
 import AuthModal from "./AuthModal";
 import UserModal from "./UserModal";
 import { useAuth } from "../context/FirebaseAuthContext";
