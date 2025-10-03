@@ -1,4 +1,6 @@
 import { useState, useEffect } from "react";
+import { Download } from "lucide-react";
+import api from "../utils/axios";
 
 function QuizView({ quiz }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -6,6 +8,7 @@ function QuizView({ quiz }) {
   const [showResults, setShowResults] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   // Start timer and stop when results are shown
   useEffect(() => {
@@ -65,6 +68,35 @@ function QuizView({ quiz }) {
       0
     );
 
+  const handleDownload = async () => {
+    if (!quiz) return;
+    
+    setIsDownloading(true);
+    try {
+      const response = await api.post('/download-quiz', {
+        quiz: quiz,
+        title: 'Quiz'
+      }, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'Quiz.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert('Failed to download quiz. Please try again.');
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
   if (!quiz || quiz.length === 0) {
     return <p className="text-black">No quiz available for this video.</p>;
   }
@@ -107,12 +139,22 @@ function QuizView({ quiz }) {
           })}
         </ul>
 
-        <button
-          onClick={handleRestart}
-          className="mt-6 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
-        >
-          Restart Quiz
-        </button>
+        <div className="flex gap-4 mt-6">
+          <button
+            onClick={handleRestart}
+            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+          >
+            Restart Quiz
+          </button>
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+          >
+            <Download size={16} />
+            {isDownloading ? 'Downloading...' : 'Download PDF'}
+          </button>
+        </div>
       </div>
     );
   }

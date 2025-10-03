@@ -844,9 +844,27 @@ IMPORTANT:
 
         console.log(`Generated ${validSlides.length} valid slides`);
         
+        // Generate PowerPoint
+        const pptx = new PptxGenJS();
+        validSlides.forEach((slide) => {
+          const s = pptx.addSlide();
+          s.addText(slide.title, { x: 0.5, y: 0.3, fontSize: 24, bold: true });
+          s.addText(slide.points.join("\n"), {
+            x: 0.5,
+            y: 1.2,
+            fontSize: 18,
+            color: "363636",
+          });
+        });
+
+        const b64 = await pptx.write("base64");
+        
         generatedContentData = validSlides;
         contentTitle = `Slides from ${req.file.originalname}`;
-        result = { slides: validSlides };
+        result = { 
+          slides: validSlides,
+          pptxBase64: b64
+        };
         break;
 
       case 'quiz':
@@ -954,6 +972,86 @@ IMPORTANT:
   } finally {
     // Clean up the uploaded file
     cleanupFile(filePath);
+  }
+});
+
+// Import download service
+const downloadService = require('../services/downloadService');
+
+// Download endpoints for all content types
+router.post("/download-blog", verifyToken, async (req, res) => {
+  try {
+    const { blogContent, title } = req.body;
+    
+    if (!blogContent) {
+      return res.status(400).json({ error: "Blog content is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadBlog(blogContent, title || "Generated Blog");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Generated_Blog').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Blog download error:", error);
+    res.status(500).json({ error: "Failed to generate blog PDF" });
+  }
+});
+
+router.post("/download-summary", verifyToken, async (req, res) => {
+  try {
+    const { summary, title } = req.body;
+    
+    if (!summary) {
+      return res.status(400).json({ error: "Summary content is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadSummary(summary, title || "Content Summary");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Content_Summary').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Summary download error:", error);
+    res.status(500).json({ error: "Failed to generate summary PDF" });
+  }
+});
+
+router.post("/download-quiz", verifyToken, async (req, res) => {
+  try {
+    const { quiz, title } = req.body;
+    
+    if (!quiz || !Array.isArray(quiz)) {
+      return res.status(400).json({ error: "Quiz data is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadQuiz(quiz, title || "Quiz");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Quiz download error:", error);
+    res.status(500).json({ error: "Failed to generate quiz PDF" });
+  }
+});
+
+router.post("/download-flashcards", verifyToken, async (req, res) => {
+  try {
+    const { flashcards, title } = req.body;
+    
+    if (!flashcards || !Array.isArray(flashcards)) {
+      return res.status(400).json({ error: "Flashcards data is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadFlashcards(flashcards, title || "Flashcards");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Flashcards').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Flashcards download error:", error);
+    res.status(500).json({ error: "Failed to generate flashcards PDF" });
   }
 });
 

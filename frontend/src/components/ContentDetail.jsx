@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useState } from "react";
+import { Download } from "lucide-react";
+import api from "../utils/axios";
 
 const ContentDetail = ({ content }) => {
+  const [isDownloading, setIsDownloading] = useState(false);
+
   if (!content) {
     return <div className="p-4 text-center text-gray-500">No content selected</div>;
   }
@@ -16,6 +20,88 @@ const ContentDetail = ({ content }) => {
       </div>
     );
   }
+
+  const handleDownload = async () => {
+    setIsDownloading(true);
+    
+    try {
+      let endpoint = '';
+      let payload = {};
+      let filename = '';
+
+      switch (contentType) {
+        case 'blog':
+          endpoint = '/download-blog';
+          payload = { blogContent: content.contentData, title: content.title };
+          filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+          break;
+        case 'summary':
+          endpoint = '/download-summary';
+          payload = { summary: content.contentData, title: content.title };
+          filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+          break;
+        case 'quiz':
+          endpoint = '/download-quiz';
+          payload = { quiz: content.contentData, title: content.title };
+          filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+          break;
+        case 'flashcards':
+          endpoint = '/download-flashcards';
+          payload = { flashcards: content.contentData, title: content.title };
+          filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+          break;
+        case 'slides':
+          // For slides, create a simple text-based download
+          if (content.contentData && Array.isArray(content.contentData)) {
+            let slidesText = `${content.title}\n\n`;
+            content.contentData.forEach((slide, index) => {
+              slidesText += `Slide ${index + 1}: ${slide.title}\n`;
+              slide.points.forEach((point, pointIndex) => {
+                slidesText += `  ${pointIndex + 1}. ${point}\n`;
+              });
+              slidesText += '\n';
+            });
+            
+            const blob = new Blob([slidesText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            return;
+          } else {
+            alert('No slides data available for download');
+            return;
+          }
+        default:
+          alert(`Download not supported for content type: ${contentType}`);
+          return;
+      }
+
+      const response = await api.post(endpoint, payload, {
+        responseType: 'blob'
+      });
+
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', filename);
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(url);
+
+    } catch (error) {
+      console.error('Download failed:', error);
+      alert(`Failed to download ${contentType}: ${error.message || 'Please try again.'}`);
+    } finally {
+      setIsDownloading(false);
+    }
+  };
 
   const renderContent = () => {
     switch (contentType) {
@@ -143,9 +229,19 @@ const ContentDetail = ({ content }) => {
   return (
     <div className="bg-white dark:bg-[#171717] rounded-lg shadow p-6">
       <div className="mb-4">
-        <h2 className="text-xl font-semibold text-gray-900 dark:text-[#fafafacc] mb-2">
-          {content.title}
-        </h2>
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-[#fafafacc]">
+            {content.title}
+          </h2>
+          <button
+            onClick={handleDownload}
+            disabled={isDownloading}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            <Download size={16} />
+            {isDownloading ? 'Downloading...' : 'Download PDF'}
+          </button>
+        </div>
         <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-[#fafafacc]">
           <span className="capitalize">{contentType}</span>
           <span>•</span>
