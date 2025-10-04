@@ -112,31 +112,9 @@ const MyContent = () => {
           filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
           break;
         case 'slides':
-          // For slides, we'll create a simple text-based download since we can't generate PPTX in frontend
-          if (content.contentData && Array.isArray(content.contentData)) {
-            let slidesText = `${content.title}\n\n`;
-            content.contentData.forEach((slide, index) => {
-              slidesText += `Slide ${index + 1}: ${slide.title}\n`;
-              slide.points.forEach((point, pointIndex) => {
-                slidesText += `  ${pointIndex + 1}. ${point}\n`;
-              });
-              slidesText += '\n';
-            });
-            
-            const blob = new Blob([slidesText], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
-            const link = document.createElement('a');
-            link.href = url;
-            link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
-            document.body.appendChild(link);
-            link.click();
-            link.remove();
-            window.URL.revokeObjectURL(url);
-            return;
-          } else {
-            alert('No slides data available for download');
-            return;
-          }
+          endpoint = '/download-slides';
+          payload = { slides: content.contentData, title: content.title };
+          filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx`;
           break;
         default:
           alert(`Download not supported for content type: ${content.type}`);

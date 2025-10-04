@@ -51,30 +51,52 @@ const ContentDetail = ({ content }) => {
           filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
           break;
         case 'slides':
-          // For slides, create a simple text-based download
-          if (content.contentData && Array.isArray(content.contentData)) {
-            let slidesText = `${content.title}\n\n`;
-            content.contentData.forEach((slide, index) => {
-              slidesText += `Slide ${index + 1}: ${slide.title}\n`;
-              slide.points.forEach((point, pointIndex) => {
-                slidesText += `  ${pointIndex + 1}. ${point}\n`;
-              });
-              slidesText += '\n';
+          // For slides, call the backend to generate a properly formatted PowerPoint
+          try {
+            const response = await api.post('/generate-slides', {
+              url: content.url || 'file-upload',
+              slides: content.contentData
+            }, {
+              responseType: 'blob'
             });
-            
-            const blob = new Blob([slidesText], { type: 'text/plain' });
-            const url = window.URL.createObjectURL(blob);
+
+            // Create download link for PowerPoint file
+            const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
-            link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+            link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx`);
             document.body.appendChild(link);
             link.click();
             link.remove();
             window.URL.revokeObjectURL(url);
             return;
-          } else {
-            alert('No slides data available for download');
-            return;
+          } catch (error) {
+            console.error('PowerPoint generation failed:', error);
+            // Fallback to text download
+            if (content.contentData && Array.isArray(content.contentData)) {
+              let slidesText = `${content.title}\n\n`;
+              content.contentData.forEach((slide, index) => {
+                slidesText += `Slide ${index + 1}: ${slide.title}\n`;
+                slide.points.forEach((point, pointIndex) => {
+                  slidesText += `  ${pointIndex + 1}. ${point}\n`;
+                });
+                slidesText += '\n';
+              });
+              
+              const blob = new Blob([slidesText], { type: 'text/plain' });
+              const url = window.URL.createObjectURL(blob);
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              window.URL.revokeObjectURL(url);
+              return;
+            } else {
+              alert('No slides data available for download');
+              return;
+            }
           }
         default:
           alert(`Download not supported for content type: ${contentType}`);
