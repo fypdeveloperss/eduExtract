@@ -8,6 +8,7 @@ function Content() {
   const [content, setContent] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [quizAttempt, setQuizAttempt] = useState(null);
 
   useEffect(() => {
     const fetchContentDetails = async () => {
@@ -41,6 +42,30 @@ function Content() {
 
         const data = await response.json();
         setContent(data);
+        
+        // If this is a quiz, fetch quiz attempts
+        if (data.type === 'quiz') {
+          try {
+            const quizAttemptsResponse = await fetch(`http://localhost:5000/api/content/user/quiz-attempts`, {
+              headers: {
+                'Authorization': `Bearer ${idToken}`
+              }
+            });
+            
+            if (quizAttemptsResponse.ok) {
+              const quizAttempts = await quizAttemptsResponse.json();
+              // Find the attempt for this specific quiz
+              const attempt = quizAttempts.find(attempt => {
+                const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
+                return attemptQuizId === contentId;
+              });
+              setQuizAttempt(attempt);
+            }
+          } catch (err) {
+            console.error("Error fetching quiz attempts:", err);
+            // Don't set error, just continue without quiz attempt data
+          }
+        }
       } catch (err) {
         console.error("Error fetching content details:", err);
         setError(err.message || "An unexpected error occurred.");
@@ -116,19 +141,61 @@ function Content() {
       case 'quiz':
         return (
           <div className="space-y-6">
-            {content.contentData.map((q, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-bold text-lg mb-3">{q.question}</h3>
-                <ul className="space-y-1 text-gray-700 dark:text-gray-300">
-                  {q.options.map((option, i) => (
-                    <li key={i} className={`${option === q.answer ? 'font-semibold text-green-600 dark:text-green-400' : ''}`}>
-                      {option}
-                      {option === q.answer && <span className="ml-2 text-sm">(Correct Answer)</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {content.contentData.map((q, index) => {
+              const userAnswer = quizAttempt?.userAnswers?.[index];
+              const correctAnswer = q.answer;
+              const isCorrect = userAnswer === correctAnswer;
+              
+              return (
+                <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
+                  <h3 className="font-bold text-lg mb-3">{q.question}</h3>
+                  
+                  {/* Show user's answer and result if quiz attempt exists */}
+                  {quizAttempt && (
+                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-blue-800 dark:text-blue-200">Your Answer:</span>
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${
+                          isCorrect 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                        }`}>
+                          {userAnswer || 'No answer provided'}
+                        </span>
+                        <span className={`text-sm font-medium ${
+                          isCorrect 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <ul className="space-y-1 text-gray-700 dark:text-gray-300">
+                    {q.options.map((option, i) => {
+                      const isUserAnswer = quizAttempt && userAnswer === option;
+                      const isCorrectAnswer = option === correctAnswer;
+                      
+                      return (
+                        <li key={i} className={`p-2 rounded ${
+                          isCorrectAnswer 
+                            ? 'bg-green-100 dark:bg-green-900/30 font-semibold text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700' 
+                            : isUserAnswer 
+                              ? 'bg-red-100 dark:bg-red-900/30 font-semibold text-red-700 dark:text-red-400 border border-red-300 dark:border-red-700'
+                              : 'bg-gray-50 dark:bg-gray-700'
+                        }`}>
+                          {option}
+                          {isCorrectAnswer && <span className="ml-2 text-sm text-green-600 dark:text-green-400">(Correct Answer)</span>}
+                          {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-red-600 dark:text-red-400">(Your Answer)</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         );
       case 'summary':

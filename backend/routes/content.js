@@ -10,6 +10,7 @@ const AdminService = require('../services/adminService');
 
 // Import models
 const GeneratedContent = require('../models/GeneratedContent');
+const QuizAttempt = require('../models/QuizAttempt');
 
 // Utility function to get transcript from video file
 async function getTranscript(filePath) {
@@ -176,6 +177,102 @@ router.delete('/:contentId', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error deleting content:', error);
     res.status(500).json({ error: 'Failed to delete content' });
+  }
+});
+
+// Save quiz attempt
+router.post('/quiz-attempt', verifyToken, async (req, res) => {
+  try {
+    const { quizId, userAnswers, timeSpent = 0 } = req.body;
+    const userId = req.user.uid;
+
+    if (!quizId || !userAnswers) {
+      return res.status(400).json({ error: 'Quiz ID and user answers are required' });
+    }
+
+    // Get the original quiz data
+    const quiz = await GeneratedContent.findById(quizId);
+    if (!quiz || quiz.type !== 'quiz') {
+      return res.status(404).json({ error: 'Quiz not found' });
+    }
+
+    const quizData = quiz.contentData;
+    const totalQuestions = quizData.length;
+    let correctCount = 0;
+
+    // Calculate score
+    const correctAnswers = quizData.map(q => q.answer);
+    userAnswers.forEach((answer, index) => {
+      if (answer === correctAnswers[index]) {
+        correctCount++;
+      }
+    });
+
+    const score = Math.round((correctCount / totalQuestions) * 100);
+
+    // Save quiz attempt
+    const quizAttempt = new QuizAttempt({
+      userId,
+      quizId,
+      quizTitle: quiz.title,
+      quizData,
+      userAnswers,
+      correctAnswers,
+      score,
+      totalQuestions,
+      correctCount,
+      timeSpent,
+      completedAt: new Date(),
+      isCompleted: true
+    });
+
+    await quizAttempt.save();
+    
+    console.log('Quiz attempt saved:', {
+      quizId: quizAttempt.quizId,
+      userId: quizAttempt.userId,
+      score: quizAttempt.score
+    });
+
+    res.json({
+      success: true,
+      attempt: {
+        id: quizAttempt._id,
+        score,
+        correctCount,
+        totalQuestions,
+        completedAt: quizAttempt.completedAt
+      }
+    });
+
+  } catch (error) {
+    console.error('Error saving quiz attempt:', error);
+    res.status(500).json({ error: 'Failed to save quiz attempt' });
+  }
+});
+
+// Get user's quiz attempts
+router.get('/user/quiz-attempts', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { quizId } = req.query;
+
+    let query = { userId };
+    if (quizId) {
+      query.quizId = quizId;
+    }
+
+    const attempts = await QuizAttempt.find(query)
+      .populate('quizId', 'title type createdAt')
+      .sort({ completedAt: -1 });
+
+    console.log('Quiz attempts found:', attempts.length);
+    console.log('Quiz attempts data:', attempts.map(a => ({ quizId: a.quizId, score: a.score })));
+
+    res.json(attempts);
+  } catch (error) {
+    console.error('Error fetching quiz attempts:', error);
+    res.status(500).json({ error: 'Failed to fetch quiz attempts' });
   }
 });
 

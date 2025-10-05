@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import api from "../utils/axios";
 
-function QuizView({ quiz }) {
+function QuizView({ quiz, quizId }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [showResults, setShowResults] = useState(false);
@@ -48,9 +48,24 @@ function QuizView({ quiz }) {
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     // Final elapsed time is captured at the moment of submission
     setShowResults(true);
+    
+    // Save quiz attempt if quizId is provided
+    if (quizId) {
+      try {
+        await api.post('/api/content/quiz-attempt', {
+          quizId,
+          userAnswers: selectedAnswers,
+          timeSpent: elapsedTime
+        });
+        console.log('Quiz attempt saved successfully');
+      } catch (error) {
+        console.error('Failed to save quiz attempt:', error);
+        // Don't show error to user as it's not critical
+      }
+    }
   };
 
   const handleRestart = () => {

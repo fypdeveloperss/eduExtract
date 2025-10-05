@@ -1,6 +1,6 @@
 import React from 'react';
 
-const ContentRenderer = ({ content }) => {
+const ContentRenderer = ({ content, quizAttempt }) => {
   if (!content) {
     return (
       <div className="flex justify-center items-center h-full">
@@ -55,19 +55,63 @@ const ContentRenderer = ({ content }) => {
         const questions = Array.isArray(contentData) ? contentData : [];
         return (
           <div className="space-y-6">
-            {questions.map((q, index) => (
-              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafacc]">{q.question || q.text}</h3>
-                <ul className="space-y-1 text-gray-700 dark:text-[#fafafacc]">
-                  {(q.options || []).map((option, i) => (
-                    <li key={i} className={`${option === q.answer ? 'font-semibold text-green-600 dark:text-green-400' : ''}`}>
-                      {option}
-                      {option === q.answer && <span className="ml-2 text-sm">(Correct Answer)</span>}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {questions.map((q, index) => {
+              const userAnswer = quizAttempt?.userAnswers?.[index];
+              const correctAnswer = q.answer;
+              const isCorrect = userAnswer === correctAnswer;
+              
+              return (
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafacc]">{q.question || q.text}</h3>
+                  
+                  {/* Show user's answer and result if quiz attempt exists */}
+                  {quizAttempt && (
+                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="font-semibold text-blue-800 dark:text-blue-200">Your Answer:</span>
+                        <span className={`px-2 py-1 rounded text-sm font-medium ${
+                          isCorrect 
+                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
+                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                        }`}>
+                          {userAnswer || 'No answer provided'}
+                        </span>
+                        <span className={`text-sm font-medium ${
+                          isCorrect 
+                            ? 'text-green-600 dark:text-green-400' 
+                            : 'text-red-600 dark:text-red-400'
+                        }`}>
+                          {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                        </span>
+                      </div>
+                    </div>
+                  )}
+                  
+                  <ul className="space-y-1 text-gray-700 dark:text-[#fafafacc]">
+                    {(q.options || []).map((option, i) => {
+                      const isUserAnswer = quizAttempt && userAnswer === option;
+                      const isCorrectAnswer = option === correctAnswer;
+                      
+                      return (
+                        <li key={i} className={`p-2 rounded ${
+                          isCorrectAnswer 
+                            ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
+                            : isUserAnswer 
+                              ? 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800'
+                              : ''
+                        }`}>
+                          <span className={`${isCorrectAnswer ? 'font-semibold text-green-600 dark:text-green-400' : ''}`}>
+                            {option}
+                          </span>
+                          {isCorrectAnswer && <span className="ml-2 text-sm text-green-600 dark:text-green-400">(Correct Answer)</span>}
+                          {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-red-600 dark:text-red-400">(Your Answer)</span>}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         );
       case 'summary':

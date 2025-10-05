@@ -19,6 +19,7 @@ function Dashboard() {
   const [slides, setSlides] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [quiz, setQuiz] = useState([]);
+  const [quizContentId, setQuizContentId] = useState(null);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
   const [summary, setSummary] = useState("");
@@ -297,6 +298,7 @@ function Dashboard() {
         } else if (tabId === "quiz") {
           res = await api.post("/generate-quiz", { url });
           setQuiz(res.data.quiz || []);
+          setQuizContentId(res.data.contentId || null);
         } else if (tabId === "summary") {
           res = await api.post("/generate-summary", { url });
           setSummary(res.data.summary || "");
@@ -331,6 +333,7 @@ function Dashboard() {
               break;
             case 'quiz':
               setQuiz(res.data.quiz || []);
+              setQuizContentId(res.data.contentId || null);
               break;
             case 'summary':
               setSummary(res.data.summary || "");
@@ -786,7 +789,7 @@ function Dashboard() {
                     <>
                       {loadingStates.quiz && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading quiz...</p>}
                       {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
-                      {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+                      {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} quizId={quizContentId} />}
                     </>
                   )}
                   {activeTab === "summary" && (

@@ -15,6 +15,8 @@ const MyContent = () => {
   const [selectedContentForPublish, setSelectedContentForPublish] = useState(null);
   const [downloadingItems, setDownloadingItems] = useState(new Set());
   const [activeTab, setActiveTab] = useState('all');
+  const [quizFilter, setQuizFilter] = useState('unsolved'); // 'solved' or 'unsolved'
+  const [quizAttempts, setQuizAttempts] = useState([]);
 
   useEffect(() => {
     const fetchContent = async () => {
@@ -35,6 +37,21 @@ const MyContent = () => {
       }
     };
     fetchContent();
+  }, [user]);
+
+  // Fetch quiz attempts
+  useEffect(() => {
+    const fetchQuizAttempts = async () => {
+      if (!user) return;
+      try {
+        const res = await api.get('/api/content/user/quiz-attempts');
+        console.log('Quiz attempts fetched:', res.data);
+        setQuizAttempts(res.data);
+      } catch (err) {
+        console.error('Failed to fetch quiz attempts:', err);
+      }
+    };
+    fetchQuizAttempts();
   }, [user]);
 
   const handlePublishToMarketplace = (content) => {
@@ -166,7 +183,42 @@ const MyContent = () => {
     if (activeTab === 'all') {
       return contentList;
     }
-    return contentList.filter(item => (item.type || 'other') === activeTab);
+    
+    let filtered = contentList.filter(item => (item.type || 'other') === activeTab);
+    
+    // Apply quiz filter if we're viewing quizzes
+    if (activeTab === 'quiz') {
+      if (quizFilter === 'solved') {
+        filtered = filtered.filter(item => isQuizSolved(item._id));
+      } else if (quizFilter === 'unsolved') {
+        filtered = filtered.filter(item => !isQuizSolved(item._id));
+      }
+    }
+    
+    return filtered;
+  };
+
+  // Check if a quiz has been solved
+  const isQuizSolved = (quizId) => {
+    console.log('Checking if quiz is solved:', quizId);
+    console.log('Quiz attempts:', quizAttempts);
+    const isSolved = quizAttempts.some(attempt => {
+      // Handle both cases: quizId as string or as populated object
+      const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
+      console.log('Comparing:', attemptQuizId, 'with', quizId.toString());
+      return attemptQuizId === quizId.toString();
+    });
+    console.log('Is solved:', isSolved);
+    return isSolved;
+  };
+
+  // Get quiz attempt for a specific quiz
+  const getQuizAttempt = (quizId) => {
+    return quizAttempts.find(attempt => {
+      // Handle both cases: quizId as string or as populated object
+      const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
+      return attemptQuizId === quizId.toString();
+    });
   };
 
   const filteredContent = getFilteredContent();
@@ -400,6 +452,50 @@ const MyContent = () => {
             </div>
           </div>
           
+          {/* Quiz filter buttons - only show for quiz tab */}
+          {activeTab === 'quiz' && (
+            <div className="mb-6">
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setQuizFilter('unsolved')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    quizFilter === 'unsolved'
+                      ? 'bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 border-2 border-purple-500'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <span className="mr-2">❓</span>
+                  Unsolved ({contentList.filter(item => {
+                    if (item.type === 'quiz') {
+                      const solved = isQuizSolved(item._id);
+                      console.log(`Quiz ${item._id} solved:`, solved);
+                      return !solved;
+                    }
+                    return false;
+                  }).length})
+                </button>
+                <button
+                  onClick={() => setQuizFilter('solved')}
+                  className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+                    quizFilter === 'solved'
+                      ? 'bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 border-2 border-green-500'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  <span className="mr-2">✅</span>
+                  Solved ({contentList.filter(item => {
+                    if (item.type === 'quiz') {
+                      const solved = isQuizSolved(item._id);
+                      console.log(`Quiz ${item._id} solved:`, solved);
+                      return solved;
+                    }
+                    return false;
+                  }).length})
+                </button>
+              </div>
+            </div>
+          )}
+          
           <div className="grid gap-4">
             {filteredContent.map(item => {
               const config = contentTypeConfig[item.type] || contentTypeConfig.other;
@@ -420,6 +516,15 @@ const MyContent = () => {
                         </span>
                         <span>•</span>
                         <span>Created {new Date(item.createdAt).toLocaleDateString()}</span>
+                        {item.type === 'quiz' && isQuizSolved(item._id) && (
+                          <>
+                            <span>•</span>
+                            <span className="flex items-center gap-1 text-green-600 dark:text-green-400">
+                              <span>✅</span>
+                              <span>Score: {getQuizAttempt(item._id)?.score}%</span>
+                            </span>
+                          </>
+                        )}
                         {item.url && (
                           <>
                             <span>•</span>
