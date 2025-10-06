@@ -368,14 +368,14 @@ const MyContent = () => {
               <div className="grid gap-4">
                 {items.map(item => (
                   <div key={item._id} className="bg-white dark:bg-[#171717] rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 hover:shadow-md transition-shadow">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
-                      <div className="flex-1">
-                        <Link 
-                          to={`/content/${item._id}`} 
+            <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+              <div className="flex-1">
+                <Link 
+                  to={`/content/${item._id}`} 
                           className="text-lg font-semibold text-gray-900 dark:text-[#fafafacc] hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
-                        >
-                          {item.title}
-                        </Link>
+                >
+                  {item.title}
+                </Link>
                         <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-gray-400 mt-2">
                           <span className="flex items-center gap-1">
                             <span>{config.icon}</span>
@@ -396,17 +396,17 @@ const MyContent = () => {
                               </a>
                             </>
                           )}
-                        </div>
-                      </div>
-                      
+                </div>
+              </div>
+              
                       <div className="flex flex-col sm:flex-row gap-2 mt-4 lg:mt-0 lg:ml-6">
-                        <Link
-                          to={`/content/${item._id}`}
-                          className="inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
-                        >
-                          <span className="mr-1">👁️</span>
-                          View
-                        </Link>
+                <Link
+                  to={`/content/${item._id}`}
+                  className="inline-flex items-center justify-center bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors"
+                >
+                  <span className="mr-1">👁️</span>
+                  View
+                </Link>
                         
                         <button
                           onClick={() => handleDownload(item)}
@@ -416,16 +416,16 @@ const MyContent = () => {
                           <Download size={14} className="mr-1" />
                           {downloadingItems.has(item._id) ? 'Downloading...' : 'Download'}
                         </button>
-                        
-                        <button
-                          onClick={() => handlePublishToMarketplace(item)}
-                          className="inline-flex items-center justify-center bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
-                        >
-                          <span className="mr-1">🚀</span>
-                          Publish
-                        </button>
-                      </div>
-                    </div>
+                
+                <button
+                  onClick={() => handlePublishToMarketplace(item)}
+                  className="inline-flex items-center justify-center bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-300 px-4 py-2 rounded-lg text-sm font-medium hover:bg-green-200 dark:hover:bg-green-800 transition-colors"
+                >
+                  <span className="mr-1">🚀</span>
+                  Publish
+                </button>
+              </div>
+            </div>
                   </div>
                 ))}
               </div>
