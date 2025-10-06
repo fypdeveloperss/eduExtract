@@ -345,16 +345,142 @@ IMPORTANT:
       throw new Error("No valid slides found in response");
     }
 
-    // Generate PowerPoint
+    // Generate PowerPoint with enhanced formatting
     const pptx = new PptxGenJS();
-    validSlides.forEach((slide) => {
+    
+    // Set presentation properties
+    pptx.defineLayout({ name: 'A4', width: 10, height: 7.5 });
+    pptx.layout = 'A4';
+    
+    // Add title slide
+    const titleSlide = pptx.addSlide();
+    titleSlide.background = { color: '1E3A8A' }; // Blue background
+    titleSlide.addText('Educational Presentation', {
+      x: 1,
+      y: 2,
+      w: 8,
+      h: 1.5,
+      fontSize: 36,
+      bold: true,
+      color: 'FFFFFF',
+      align: 'center',
+      valign: 'middle'
+    });
+    titleSlide.addText(`Generated from: ${url}`, {
+      x: 1,
+      y: 4,
+      w: 8,
+      h: 0.5,
+      fontSize: 16,
+      color: 'E5E7EB',
+      align: 'center',
+      valign: 'middle'
+    });
+    titleSlide.addText(`Created: ${new Date().toLocaleDateString()}`, {
+      x: 1,
+      y: 5,
+      w: 8,
+      h: 0.5,
+      fontSize: 14,
+      color: '9CA3AF',
+      align: 'center',
+      valign: 'middle'
+    });
+
+    // Add content slides with enhanced formatting
+    validSlides.forEach((slide, index) => {
       const s = pptx.addSlide();
-      s.addText(slide.title, { x: 0.5, y: 0.3, fontSize: 24, bold: true });
-      s.addText(slide.points.join("\n"), {
+      
+      // Add header with gradient background
+      s.addShape('rect', {
+        x: 0,
+        y: 0,
+        w: 10,
+        h: 1.2,
+        fill: { color: '3B82F6' }
+      });
+      
+      // Add slide number
+      s.addText(`${index + 1}`, {
+        x: 8.5,
+        y: 0.1,
+        w: 1,
+        h: 0.3,
+        fontSize: 14,
+        color: 'FFFFFF',
+        align: 'center',
+        bold: true
+      });
+      
+      // Add slide title with better styling
+      s.addText(slide.title, {
         x: 0.5,
-        y: 1.2,
-        fontSize: 18,
-        color: "363636",
+        y: 0.2,
+        w: 8,
+        h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: 'FFFFFF',
+        align: 'left',
+        valign: 'middle'
+      });
+      
+      // Add content area with background
+      s.addShape('rect', {
+        x: 0.5,
+        y: 1.5,
+        w: 9,
+        h: 5.5,
+        fill: { color: 'F8FAFC' },
+        line: { color: 'E2E8F0', width: 1 }
+      });
+      
+      // Add bullet points as single text element with proper line spacing
+      const bulletPoints = slide.points.map((point, pointIndex) => {
+        return `• ${point}`;
+      }).join('\n'); // Single line break between bullet points
+      
+      s.addText(bulletPoints, {
+        x: 1.0,
+        y: 2.0,
+        w: 8.0,
+        h: 4.5,
+        fontSize: 16,
+        color: '1F2937',
+        align: 'left',
+        valign: 'top',
+        lineSpacing: 24, // Line spacing in points (1.0 = 24 points)
+        autoFit: true,
+        margin: [0.1, 0.1, 0.1, 0.1] // Add margins to prevent text from touching edges
+      });
+      
+      // Add footer
+      s.addShape('rect', {
+        x: 0,
+        y: 6.8,
+        w: 10,
+        h: 0.7,
+        fill: { color: 'F1F5F9' }
+      });
+      
+      s.addText('EduExtract - Educational Content Platform', {
+        x: 0.5,
+        y: 6.9,
+        w: 4,
+        h: 0.3,
+        fontSize: 12,
+        color: '6B7280',
+        align: 'left'
+      });
+      
+      s.addText(`Slide ${index + 1} of ${validSlides.length}`, {
+        x: 7,
+        y: 6.9,
+        w: 2.5,
+        h: 0.3,
+        fontSize: 12,
+        color: '6B7280',
+        align: 'right'
       });
     });
 
@@ -844,9 +970,153 @@ IMPORTANT:
 
         console.log(`Generated ${validSlides.length} valid slides`);
         
+        // Generate PowerPoint with enhanced formatting
+        const pptx = new PptxGenJS();
+        
+        // Set presentation properties
+        pptx.defineLayout({ name: 'A4', width: 10, height: 7.5 });
+        pptx.layout = 'A4';
+        
+        // Add title slide
+        const titleSlide = pptx.addSlide();
+        titleSlide.background = { color: '1E3A8A' }; // Blue background
+        titleSlide.addText('Educational Presentation', {
+          x: 1,
+          y: 2,
+          w: 8,
+          h: 1.5,
+          fontSize: 36,
+          bold: true,
+          color: 'FFFFFF',
+          align: 'center',
+          valign: 'middle'
+        });
+        titleSlide.addText(`Generated from: ${req.file.originalname}`, {
+          x: 1,
+          y: 4,
+          w: 8,
+          h: 0.5,
+          fontSize: 16,
+          color: 'E5E7EB',
+          align: 'center',
+          valign: 'middle'
+        });
+        titleSlide.addText(`Created: ${new Date().toLocaleDateString()}`, {
+          x: 1,
+          y: 5,
+          w: 8,
+          h: 0.5,
+          fontSize: 14,
+          color: '9CA3AF',
+          align: 'center',
+          valign: 'middle'
+        });
+
+        // Add content slides with enhanced formatting
+        validSlides.forEach((slide, index) => {
+          const s = pptx.addSlide();
+          
+          // Add header with gradient background
+          s.addShape('rect', {
+            x: 0,
+            y: 0,
+            w: 10,
+            h: 1.2,
+            fill: { color: '3B82F6' }
+          });
+          
+          // Add slide number
+          s.addText(`${index + 1}`, {
+            x: 8.5,
+            y: 0.1,
+            w: 1,
+            h: 0.3,
+            fontSize: 14,
+            color: 'FFFFFF',
+            align: 'center',
+            bold: true
+          });
+          
+          // Add slide title with better styling
+          s.addText(slide.title, {
+            x: 0.5,
+            y: 0.2,
+            w: 8,
+            h: 0.8,
+            fontSize: 28,
+            bold: true,
+            color: 'FFFFFF',
+            align: 'left',
+            valign: 'middle'
+          });
+          
+          // Add content area with background
+          s.addShape('rect', {
+            x: 0.5,
+            y: 1.5,
+            w: 9,
+            h: 5.5,
+            fill: { color: 'F8FAFC' },
+            line: { color: 'E2E8F0', width: 1 }
+          });
+          
+          // Add bullet points as single text element with proper line spacing
+          const bulletPoints = slide.points.map((point, pointIndex) => {
+            return `• ${point}`;
+          }).join('\n'); // Single line break between bullet points
+          
+          s.addText(bulletPoints, {
+            x: 1.0,
+            y: 2.0,
+            w: 8.0,
+            h: 4.5,
+            fontSize: 16,
+            color: '1F2937',
+            align: 'left',
+            valign: 'top',
+            lineSpacing: 24, // Line spacing in points (1.0 = 24 points)
+            autoFit: true,
+            margin: [0.1, 0.1, 0.1, 0.1] // Add margins to prevent text from touching edges
+          });
+          
+          // Add footer
+          s.addShape('rect', {
+            x: 0,
+            y: 6.8,
+            w: 10,
+            h: 0.7,
+            fill: { color: 'F1F5F9' }
+          });
+          
+          s.addText('EduExtract - Educational Content Platform', {
+            x: 0.5,
+            y: 6.9,
+            w: 4,
+            h: 0.3,
+            fontSize: 12,
+            color: '6B7280',
+            align: 'left'
+          });
+          
+          s.addText(`Slide ${index + 1} of ${validSlides.length}`, {
+            x: 7,
+            y: 6.9,
+            w: 2.5,
+            h: 0.3,
+            fontSize: 12,
+            color: '6B7280',
+            align: 'right'
+          });
+        });
+
+        const b64 = await pptx.write("base64");
+        
         generatedContentData = validSlides;
         contentTitle = `Slides from ${req.file.originalname}`;
-        result = { slides: validSlides };
+        result = { 
+          slides: validSlides,
+          pptxBase64: b64
+        };
         break;
 
       case 'quiz':
@@ -954,6 +1224,245 @@ IMPORTANT:
   } finally {
     // Clean up the uploaded file
     cleanupFile(filePath);
+  }
+});
+
+// Import download service
+const downloadService = require('../services/downloadService');
+
+// Download endpoints for all content types
+router.post("/download-blog", verifyToken, async (req, res) => {
+  try {
+    const { blogContent, title } = req.body;
+    
+    if (!blogContent) {
+      return res.status(400).json({ error: "Blog content is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadBlog(blogContent, title || "Generated Blog");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Generated_Blog').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Blog download error:", error);
+    res.status(500).json({ error: "Failed to generate blog PDF" });
+  }
+});
+
+router.post("/download-summary", verifyToken, async (req, res) => {
+  try {
+    const { summary, title } = req.body;
+    
+    if (!summary) {
+      return res.status(400).json({ error: "Summary content is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadSummary(summary, title || "Content Summary");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Content_Summary').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Summary download error:", error);
+    res.status(500).json({ error: "Failed to generate summary PDF" });
+  }
+});
+
+router.post("/download-quiz", verifyToken, async (req, res) => {
+  try {
+    const { quiz, title } = req.body;
+    
+    if (!quiz || !Array.isArray(quiz)) {
+      return res.status(400).json({ error: "Quiz data is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadQuiz(quiz, title || "Quiz");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Quiz').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Quiz download error:", error);
+    res.status(500).json({ error: "Failed to generate quiz PDF" });
+  }
+});
+
+router.post("/download-flashcards", verifyToken, async (req, res) => {
+  try {
+    const { flashcards, title } = req.body;
+    
+    if (!flashcards || !Array.isArray(flashcards)) {
+      return res.status(400).json({ error: "Flashcards data is required" });
+    }
+
+    const pdfBuffer = await downloadService.downloadFlashcards(flashcards, title || "Flashcards");
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Flashcards').replace(/[^a-zA-Z0-9]/g, '_')}.pdf"`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    console.error("Flashcards download error:", error);
+    res.status(500).json({ error: "Failed to generate flashcards PDF" });
+  }
+});
+
+// Download slides as PowerPoint
+router.post('/download-slides', verifyToken, async (req, res) => {
+  try {
+    const { slides, title } = req.body;
+    
+    if (!slides || !Array.isArray(slides) || slides.length === 0) {
+      return res.status(400).json({ error: 'No slides data provided' });
+    }
+
+    // Generate PowerPoint with enhanced formatting
+    const pptx = new PptxGenJS();
+    
+    // Set presentation properties
+    pptx.defineLayout({ name: 'A4', width: 10, height: 7.5 });
+    pptx.layout = 'A4';
+    
+    // Add title slide
+    const titleSlide = pptx.addSlide();
+    titleSlide.background = { color: '1E3A8A' }; // Blue background
+    titleSlide.addText('Educational Presentation', {
+      x: 1,
+      y: 2,
+      w: 8,
+      h: 1.5,
+      fontSize: 36,
+      bold: true,
+      color: 'FFFFFF',
+      align: 'center',
+      valign: 'middle'
+    });
+    titleSlide.addText(`Generated from: ${title || 'Content'}`, {
+      x: 1,
+      y: 4,
+      w: 8,
+      h: 0.5,
+      fontSize: 16,
+      color: 'E5E7EB',
+      align: 'center',
+      valign: 'middle'
+    });
+    titleSlide.addText(`Created: ${new Date().toLocaleDateString()}`, {
+      x: 1,
+      y: 5,
+      w: 8,
+      h: 0.5,
+      fontSize: 14,
+      color: '9CA3AF',
+      align: 'center',
+      valign: 'middle'
+    });
+
+    // Add content slides with enhanced formatting
+    slides.forEach((slide, index) => {
+      const s = pptx.addSlide();
+      
+      // Add header with gradient background
+      s.addShape('rect', {
+        x: 0,
+        y: 0,
+        w: 10,
+        h: 1.2,
+        fill: { color: '3B82F6' }
+      });
+      
+      // Add slide number
+      s.addText(`${index + 1}`, {
+        x: 8.5,
+        y: 0.1,
+        w: 1,
+        h: 0.3,
+        fontSize: 14,
+        color: 'FFFFFF',
+        align: 'center',
+        bold: true
+      });
+      
+      // Add slide title with better styling
+      s.addText(slide.title, {
+        x: 0.5,
+        y: 0.2,
+        w: 8,
+        h: 0.8,
+        fontSize: 28,
+        bold: true,
+        color: 'FFFFFF',
+        align: 'left',
+        valign: 'middle'
+      });
+      
+      // Add content area with background
+      s.addShape('rect', {
+        x: 0.5,
+        y: 1.5,
+        w: 9,
+        h: 5.5,
+        fill: { color: 'F8FAFC' },
+        line: { color: 'E2E8F0', width: 1 }
+      });
+      
+      // Add bullet points as single text element with proper line spacing
+      const bulletPoints = slide.points.map((point, pointIndex) => {
+        return `• ${point}`;
+      }).join('\n'); // Single line break between bullet points
+      
+      s.addText(bulletPoints, {
+        x: 1.0,
+        y: 2.0,
+        w: 8.0,
+        h: 4.5,
+        fontSize: 16,
+        color: '1F2937',
+        align: 'left',
+        valign: 'top',
+        lineSpacing: 24, // Line spacing in points (1.0 = 24 points)
+        autoFit: true,
+        margin: [0.1, 0.1, 0.1, 0.1] // Add margins to prevent text from touching edges
+      });
+      
+      // Add footer
+      s.addShape('rect', {
+        x: 0,
+        y: 6.8,
+        w: 10,
+        h: 0.7,
+        fill: { color: 'F1F5F9' }
+      });
+      
+      s.addText('EduExtract - Educational Content Platform', {
+        x: 0.5,
+        y: 6.9,
+        w: 4,
+        h: 0.3,
+        fontSize: 12,
+        color: '6B7280',
+        align: 'left'
+      });
+      
+      s.addText(`Slide ${index + 1} of ${slides.length}`, {
+        x: 7,
+        y: 6.9,
+        w: 2.5,
+        h: 0.3,
+        fontSize: 12,
+        color: '6B7280',
+        align: 'right'
+      });
+    });
+
+    const pptxBuffer = await pptx.write("nodebuffer");
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.presentationml.presentation');
+    res.setHeader('Content-Disposition', `attachment; filename="${(title || 'Slides').replace(/[^a-zA-Z0-9]/g, '_')}.pptx"`);
+    res.send(pptxBuffer);
+  } catch (error) {
+    console.error("Slides download error:", error);
+    res.status(500).json({ error: "Failed to generate slides PowerPoint" });
   }
 });
 

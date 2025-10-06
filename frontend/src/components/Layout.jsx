@@ -1,8 +1,9 @@
-import { Outlet, Link } from "react-router-dom";
+import { Outlet, Link, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import UserModal from "./UserModal";
+import PageLoader from "./PageLoader";
 import { useAuth } from "../context/FirebaseAuthContext";
 
 // Add CSS keyframes for fadeIn animation
@@ -10,12 +11,14 @@ const fadeInKeyframes = `
   @keyframes fadeIn {
     from {
       opacity: 0;
-      transform: translateX(-10px);
     }
     to {
       opacity: 1;
-      transform: translateX(0);
     }
+  }
+  
+  .animate-fadeIn {
+    animation: fadeIn 0.6s ease-out forwards;
   }
 `;
 
@@ -28,9 +31,11 @@ if (typeof document !== 'undefined') {
 
 const Layout = () => {
   const { user, logout, toggleAuthModal } = useAuth();
+  const location = useLocation();
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
   // Auto-collapse sidebar on mobile screens
   useEffect(() => {
@@ -48,6 +53,17 @@ const Layout = () => {
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
+
+  // Page loading effect
+  useEffect(() => {
+    setIsPageLoading(true);
+    
+    const timer = setTimeout(() => {
+      setIsPageLoading(false);
+    }, 1000); // 1 second loader
+
+    return () => clearTimeout(timer);
+  }, [location.pathname]);
 
   return (
     <div className="relative min-h-screen">
@@ -268,7 +284,13 @@ const Layout = () => {
         <main 
           className="pt-16 md:px-0 px-0  min-h-screen overflow-y-auto bg-[#FFFFFF] text-[#171717cc] dark:bg-[#121212] dark:text-[#fafafacc] transition-colors duration-300"
         >
-          <Outlet />
+          {isPageLoading ? (
+            <PageLoader />
+          ) : (
+            <div className="animate-fadeIn">
+              <Outlet />
+            </div>
+          )}
         </main>
       </div>
       <AuthModal />

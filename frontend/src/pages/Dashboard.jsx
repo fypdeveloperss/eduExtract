@@ -19,6 +19,7 @@ function Dashboard() {
   const [slides, setSlides] = useState([]);
   const [flashcards, setFlashcards] = useState([]);
   const [quiz, setQuiz] = useState([]);
+  const [quizContentId, setQuizContentId] = useState(null);
   const [activeTab, setActiveTab] = useState("");
   const [error, setError] = useState("");
   const [summary, setSummary] = useState("");
@@ -297,6 +298,7 @@ function Dashboard() {
         } else if (tabId === "quiz") {
           res = await api.post("/generate-quiz", { url });
           setQuiz(res.data.quiz || []);
+          setQuizContentId(res.data.contentId || null);
         } else if (tabId === "summary") {
           res = await api.post("/generate-summary", { url });
           setSummary(res.data.summary || "");
@@ -331,6 +333,7 @@ function Dashboard() {
               break;
             case 'quiz':
               setQuiz(res.data.quiz || []);
+              setQuizContentId(res.data.contentId || null);
               break;
             case 'summary':
               setSummary(res.data.summary || "");
@@ -747,7 +750,11 @@ function Dashboard() {
                     >
                       {tab.icon}
                       {tab.label}
-                      {isLoading && " (Loading...)"}
+                      {isLoading && (
+                        <div className="ml-2">
+                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                        </div>
+                      )}
                       {hasError && " (!)"}
                     </button>
                   );
@@ -759,14 +766,14 @@ function Dashboard() {
                 <div className="content-container custom-scrollbar bg-[#FFFFFF] dark:bg-[#171717] rounded-xl p-6 shadow-lg max-h-[70vh] overflow-y-auto">
                   {activeTab === "blog" && (
                     <>
-                      {loadingStates.blog && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading blog...</p>}
+                      {loadingStates.blog && <Spinner />}
                       {errors.blog && <p className="text-red-500">{errors.blog}</p>}
                       {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
                     </>
                   )}
                   {activeTab === "slides" && (
                     <>
-                      {loadingStates.slides && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading slides...</p>}
+                      {loadingStates.slides && <Spinner />}
                       {errors.slides && <p className="text-red-500">{errors.slides}</p>}
                       {!loadingStates.slides && !errors.slides && (
                         <SlidesView pptxBase64={pptxBase64} slides={slides} />
@@ -775,7 +782,7 @@ function Dashboard() {
                   )}
                   {activeTab === "flashcards" && (
                     <>
-                      {loadingStates.flashcards && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading flashcards...</p>}
+                      {loadingStates.flashcards && <Spinner />}
                       {errors.flashcards && <p className="text-red-500">{errors.flashcards}</p>}
                       {!loadingStates.flashcards && !errors.flashcards && (
                         <FlashCardGallery flashcards={flashcards} />
@@ -784,14 +791,14 @@ function Dashboard() {
                   )}
                   {activeTab === "quiz" && (
                     <>
-                      {loadingStates.quiz && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading quiz...</p>}
+                      {loadingStates.quiz && <Spinner />}
                       {errors.quiz && <p className="text-red-500">{errors.quiz}</p>}
-                      {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+                      {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} quizId={quizContentId} />}
                     </>
                   )}
                   {activeTab === "summary" && (
                     <>
-                      {loadingStates.summary && <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading summary...</p>}
+                      {loadingStates.summary && <Spinner />}
                       {errors.summary && <p className="text-red-500">{errors.summary}</p>}
                       {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}
                     </>
