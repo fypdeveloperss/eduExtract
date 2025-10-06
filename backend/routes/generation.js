@@ -615,6 +615,69 @@ function cleanupFile(filePath) {
   }
 }
 
+// File content extraction endpoint for preview
+router.post("/extract-file-content", verifyToken, upload.single('file'), async (req, res) => {
+  let filePath = null;
+
+  try {
+    if (!req.file) {
+      return res.status(400).json({ error: "No file uploaded" });
+    }
+
+    filePath = req.file.path;
+    console.log(`Extracting content from file: ${req.file.originalname}`);
+
+    // Extract text content from file
+    let fileContent = "";
+    const fileExtension = path.extname(req.file.originalname).toLowerCase();
+
+    if (fileExtension === '.pdf') {
+      const dataBuffer = fs.readFileSync(filePath);
+      const pdfData = await pdfParse(dataBuffer);
+      fileContent = pdfData.text;
+    } else if (fileExtension === '.docx') {
+      const result = await mammoth.extractRawText({ path: filePath });
+      fileContent = result.value;
+    } else if (fileExtension === '.txt') {
+      fileContent = fs.readFileSync(filePath, 'utf8');
+    } else if (fileExtension === '.pptx') {
+      return res.status(400).json({ error: "PPTX file content extraction not yet implemented. Please use PDF, DOCX, or TXT files." });
+    } else {
+      return res.status(400).json({ error: "Unsupported file type. Please upload PDF, DOCX, or TXT files." });
+    }
+
+    if (!fileContent.trim()) {
+      return res.status(400).json({ error: "No text content found in the file" });
+    }
+
+    console.log(`Extracted ${fileContent.length} characters from file`);
+
+    // Clean up the file
+    cleanupFile(filePath);
+
+    res.json({
+      success: true,
+      content: fileContent,
+      fileName: req.file.originalname,
+      fileSize: req.file.size,
+      fileType: req.file.mimetype
+    });
+
+  } catch (error) {
+    console.error('File content extraction error:', error);
+    
+    // Clean up the file in case of error
+    if (filePath) {
+      cleanupFile(filePath);
+    }
+    
+    res.status(500).json({ 
+      error: 'Failed to extract file content',
+      details: error.message 
+    });
+  }
+});
+
 // File processing endpoint
 router.post("/process-file", verifyToken, upload.single('file'), async (req, res) => {
   const { type } = req.body;

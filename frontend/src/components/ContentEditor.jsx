@@ -13,33 +13,100 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
   const [submitting, setSubmitting] = useState(false);
   const [activeTab, setActiveTab] = useState('edit');
   const [showDiff, setShowDiff] = useState(false);
+  const [aiStatus, setAiStatus] = useState(null);
 
   useEffect(() => {
     if (content) {
       setEditedContent(typeof content.content === 'string' ? content.content : JSON.stringify(content.content, null, 2));
       setChangeTitle(`Update ${content.title}`);
     }
+    
+    // Fetch AI status when component loads
+    fetchAiStatus();
   }, [content]);
 
+  const fetchAiStatus = async () => {
+    try {
+      const response = await api.get('/api/collaborate/ai-status');
+      if (response.data.success) {
+        setAiStatus(response.data.status);
+      }
+    } catch (error) {
+      console.error('Failed to fetch AI status:', error);
+      setAiStatus({ available: false, provider: 'unknown' });
+    }
+  };
+
   const handleAiAssist = async () => {
-    if (!aiPrompt.trim()) return;
+    if (!aiPrompt.trim()) {
+      alert('Please enter a prompt for AI assistance');
+      return;
+    }
+
+    if (!editedContent.trim()) {
+      alert('No content to enhance. Please add some content first.');
+      return;
+    }
 
     setAiLoading(true);
     try {
-      const response = await api.post('/api/collaborate/content/ai-assist', {
-        content: editedContent,
+      console.log('Sending AI assist request:', {
+        content: editedContent.substring(0, 100) + '...',
         prompt: aiPrompt,
         contentType: content.contentType || 'text'
       });
 
+      const endpoint = '/api/collaborate/content/ai-assist';
+      
+      const response = await api.post(endpoint, {
+        content: editedContent,
+        prompt: aiPrompt,
+        contentType: content.contentType || content.type || 'text'
+      });
+
+      console.log('AI assist response:', response.data);
+
       if (response.data.success) {
         setEditedContent(response.data.enhancedContent);
+        setAiAssistMode(true); // Mark that AI assistance was used
         setAiPrompt('');
         setShowDiff(true);
+        setActiveTab('edit'); // Switch to edit tab to show the result
+        
+        // Show success message with AI service info
+        const aiInfo = response.data.aiService;
+        
+        if (aiInfo?.method === 'groq-ai') {
+          console.log(`Content enhanced using ${aiInfo.provider} (${aiInfo.model})`);
+        }
+        
+        console.log('AI enhancement successful:', {
+          provider: aiInfo?.provider,
+          method: aiInfo?.method,
+          model: aiInfo?.model
+        });
+      } else {
+        console.error('AI assist failed:', response.data.error);
+        alert(`AI assistance failed: ${response.data.error}`);
       }
     } catch (error) {
       console.error('AI assist error:', error);
-      alert('Error getting AI assistance. Please try again.');
+      let errorMessage = 'Unknown error occurred';
+      
+      if (error.response) {
+        // Server responded with error
+        console.log('Error response:', error.response.data);
+        errorMessage = error.response.data?.error || `Server error: ${error.response.status}`;
+      } else if (error.request) {
+        // Request was made but no response received
+        console.log('No response received:', error.request);
+        errorMessage = 'Network error: Unable to connect to server. Please check if the backend is running on port 5000.';
+      } else {
+        // Something happened in setting up the request
+        errorMessage = error.message;
+      }
+      
+      alert(`Error getting AI assistance: ${errorMessage}`);
     } finally {
       setAiLoading(false);
     }
@@ -188,11 +255,26 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
           {activeTab === 'ai' && (
             <div className="space-y-4">
               <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
-                <h3 className="font-medium text-blue-800 dark:text-blue-200 mb-2">
-                  🤖 AI Content Assistant
-                </h3>
+                <div className="flex items-center justify-between mb-2">
+                  <h3 className="font-medium text-blue-800 dark:text-blue-200">
+                    🤖 AI Content Assistant
+                  </h3>
+                  {aiStatus && (
+                    <div className="flex items-center text-xs">
+                      <div className={`w-2 h-2 rounded-full mr-1 ${
+                        aiStatus.available ? 'bg-green-500' : 'bg-yellow-500'
+                      }`}></div>
+                      <span className="text-blue-600 dark:text-blue-300">
+                        {aiStatus.available ? `${aiStatus.provider} AI` : 'Fallback Mode'}
+                      </span>
+                    </div>
+                  )}
+                </div>
                 <p className="text-blue-700 dark:text-blue-300 text-sm">
-                  Describe how you'd like to improve or modify the content. The AI will help enhance it based on your instructions.
+                  {aiStatus?.available 
+                    ? `Powered by ${aiStatus.model || 'Llama'} AI model. Describe how you'd like to improve or modify the content.`
+                    : 'Using basic enhancement rules. Describe how you\'d like to improve or modify the content.'
+                  }
                 </p>
               </div>
 
@@ -206,33 +288,84 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
                   className="w-full h-24 p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
                   placeholder="e.g., 'Make this more concise and add bullet points' or 'Improve the writing style and fix grammar'"
                 />
+                
+                <div className="mt-2">
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick suggestions:</p>
+                  <div className="flex flex-wrap gap-1">
+                    {[
+                      'Make it more concise',
+                      'Add bullet points',
+                      'Fix grammar',
+                      'Make it professional',
+                      'Simplify the language',
+                      'Add more details',
+                      'Make it engaging'
+                    ].map((suggestion) => (
+                      <button
+                        key={suggestion}
+                        onClick={() => setAiPrompt(suggestion)}
+                        className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
+                      >
+                        {suggestion}
+                      </button>
+                    ))}
+                  </div>
+                </div>
               </div>
 
-              <button
-                onClick={handleAiAssist}
-                disabled={aiLoading || !aiPrompt.trim()}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium flex items-center"
-              >
-                {aiLoading ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <span className="mr-2">✨</span>
-                    Enhance with AI
-                  </>
+              <div className="flex gap-2 flex-wrap">
+                <button
+                  onClick={handleAiAssist}
+                  disabled={aiLoading || !aiPrompt.trim()}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium flex items-center"
+                >
+                  {aiLoading ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      <span className="mr-2">✨</span>
+                      Enhance with AI
+                    </>
+                  )}
+                </button>
+                
+                {aiAssistMode && (
+                  <button
+                    onClick={() => {
+                      setEditedContent(typeof content.content === 'string' ? content.content : JSON.stringify(content.content, null, 2));
+                      setAiAssistMode(false);
+                      setShowDiff(false);
+                    }}
+                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"
+                  >
+                    <span className="mr-2">↺</span>
+                    Reset to Original
+                  </button>
                 )}
-              </button>
+              </div>
+
+              {aiAssistMode && (
+                <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center mb-2">
+                    <span className="text-green-600 dark:text-green-400 mr-2">✅</span>
+                    <span className="font-medium text-green-800 dark:text-green-200">AI Enhancement Applied</span>
+                  </div>
+                  <p className="text-green-700 dark:text-green-300 text-sm">
+                    Your content has been enhanced using AI. You can view the changes in the Edit tab or compare them in the Diff tab.
+                  </p>
+                </div>
+              )}
 
               {editedContent && (
                 <div>
                   <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Current Content
+                    Current Content Preview
                   </label>
                   <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 max-h-64 overflow-y-auto">
-                    <pre className="text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200">{editedContent}</pre>
+                    <pre className="text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200">{editedContent.substring(0, 500)}...</pre>
                   </div>
                 </div>
               )}

@@ -16,5 +16,11 @@ export default defineConfig({
           secure: false
         }
       }
+    },
+    optimizeDeps: {
+      include: ['pdfjs-dist']
+    },
+    define: {
+      global: 'globalThis'
     }
 })

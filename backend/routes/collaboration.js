@@ -4,9 +4,11 @@ const { verifyToken } = require('../middleware/auth');
 const CollaborationService = require('../services/collaborationService');
 const SharedContentService = require('../services/sharedContentService');
 const ChangeRequestService = require('../services/changeRequestService');
+const AIAssistService = require('../services/aiAssistService');
 
-// Initialize collaboration service (will be updated with socket manager in server.js)
+// Initialize services
 let collaborationService = new CollaborationService();
+const aiAssistService = new AIAssistService();
 
 // Function to set socket manager
 function setSocketManager(socketManager) {
@@ -642,11 +644,47 @@ router.patch('/content/:contentId/status', verifyToken, async (req, res) => {
   }
 });
 
-// AI Content Assistant endpoint
+// AI Service Status endpoint
+router.get('/ai-status', verifyToken, async (req, res) => {
+  try {
+    const status = aiAssistService.getStatus();
+    
+    res.json({
+      success: true,
+      status: {
+        ...status,
+        timestamp: new Date().toISOString(),
+        message: status.available 
+          ? 'AI assistance is available using Groq/Llama model'
+          : 'AI assistance using fallback mode (no API key configured)'
+      }
+    });
+    
+  } catch (error) {
+    console.error('Error getting AI status:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get AI service status'
+    });
+  }
+});
+
+
+
+// AI Content Assistant endpoint using Groq/Llama
 router.post('/content/ai-assist', verifyToken, async (req, res) => {
   try {
     const { content, prompt, contentType = 'text' } = req.body;
+    const userId = req.user.uid;
 
+    console.log('AI assist request received:', {
+      userId,
+      contentLength: content?.length || 0,
+      prompt: prompt?.substring(0, 100) || 'No prompt',
+      contentType
+    });
+
+    // Validate inputs
     if (!content || !prompt) {
       return res.status(400).json({
         success: false,
@@ -654,56 +692,67 @@ router.post('/content/ai-assist', verifyToken, async (req, res) => {
       });
     }
 
-    // Simple AI assistance simulation - in production, integrate with actual AI service
-    let enhancedContent = content;
-    
-    // Basic content enhancement based on common prompts
-    const promptLower = prompt.toLowerCase();
-    
-    if (promptLower.includes('concise') || promptLower.includes('shorter')) {
-      // Make content more concise
-      enhancedContent = content.split('\n').map(line => {
-        if (line.trim().length > 100) {
-          return line.substring(0, 80) + '...';
-        }
-        return line;
-      }).join('\n');
-    } else if (promptLower.includes('bullet') || promptLower.includes('list')) {
-      // Convert to bullet points
-      const sentences = content.split(/[.!?]+/).filter(s => s.trim());
-      enhancedContent = sentences.map(sentence => `• ${sentence.trim()}`).join('\n');
-    } else if (promptLower.includes('grammar') || promptLower.includes('improve')) {
-      // Basic grammar improvements
-      enhancedContent = content
-        .replace(/\bi\b/g, 'I')
-        .replace(/\s+/g, ' ')
-        .replace(/([.!?])\s*([a-z])/g, (match, punct, letter) => punct + ' ' + letter.toUpperCase())
-        .trim();
-    } else if (promptLower.includes('expand') || promptLower.includes('detail')) {
-      // Add more detail
-      enhancedContent = content + '\n\n[Enhanced with additional context and details based on AI analysis]';
-    } else {
-      // Default enhancement
-      enhancedContent = content + '\n\n[Content enhanced based on: ' + prompt + ']';
+    if (content.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Content cannot be empty'
+      });
     }
 
-    // Simulate processing delay
-    await new Promise(resolve => setTimeout(resolve, 1000));
+    if (prompt.trim().length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: 'Prompt cannot be empty'
+      });
+    }
+
+    // Use the AI Assist Service with Groq/Llama
+    const result = await aiAssistService.enhanceContent(content, prompt, contentType);
+
+    console.log('AI assist completed:', {
+      success: result.success,
+      method: result.method,
+      model: result.model || 'fallback'
+    });
 
     res.json({
       success: true,
-      enhancedContent,
-      originalContent: content,
-      appliedPrompt: prompt,
-      contentType
+      enhancedContent: result.enhancedContent,
+      originalContent: result.originalContent,
+      appliedPrompt: result.appliedPrompt,
+      contentType: result.contentType,
+      aiService: {
+        method: result.method,
+        model: result.model,
+        provider: result.method === 'groq-ai' ? 'Groq' : 'Fallback'
+      },
+      enhancement: result.method === 'groq-ai' 
+        ? 'Content enhanced using Llama AI model via Groq API'
+        : 'Content enhanced using fallback rules'
     });
 
   } catch (error) {
     console.error('Error in AI content assistance:', error);
-    res.status(500).json({
-      success: false,
-      error: 'AI assistance service temporarily unavailable'
-    });
+    
+    // Return appropriate error based on the type
+    if (error.message.includes('API')) {
+      res.status(503).json({
+        success: false,
+        error: 'AI service temporarily unavailable. Please try again later.',
+        details: error.message
+      });
+    } else if (error.message.includes('required') || error.message.includes('empty')) {
+      res.status(400).json({
+        success: false,
+        error: error.message
+      });
+    } else {
+      res.status(500).json({
+        success: false,
+        error: 'AI assistance service encountered an error',
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
   }
 });
 
