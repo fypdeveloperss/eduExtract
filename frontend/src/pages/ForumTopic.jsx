@@ -17,13 +17,24 @@ function ForumTopic() {
   const [pagination, setPagination] = useState({});
 
   useEffect(() => {
-    fetchTopic();
+    // Check if user has already viewed this topic in this session
+    const viewedTopics = JSON.parse(sessionStorage.getItem('viewedTopics') || '[]');
+    const hasViewedThisTopic = viewedTopics.includes(id);
+    
+    if (!hasViewedThisTopic) {
+      // Mark as viewed in session storage
+      viewedTopics.push(id);
+      sessionStorage.setItem('viewedTopics', JSON.stringify(viewedTopics));
+      fetchTopic(true); // Increment view count
+    } else {
+      fetchTopic(false); // Don't increment view count
+    }
   }, [id, currentPage]);
 
-  const fetchTopic = async () => {
+  const fetchTopic = async (incrementView = false) => {
     try {
       setLoading(true);
-      const response = await api.get(`/api/forum/topics/${id}?page=${currentPage}&limit=10`);
+      const response = await api.get(`/api/forum/topics/${id}?page=${currentPage}&limit=10&incrementView=${incrementView}`);
       setTopic(response.data.topic);
       setPosts(response.data.posts);
       setPagination(response.data.pagination || {});

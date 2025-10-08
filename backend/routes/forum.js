@@ -67,7 +67,7 @@ router.get('/topics', async (req, res) => {
 router.get('/topics/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { page = 1, limit = 10 } = req.query;
+    const { page = 1, limit = 10, incrementView = 'true' } = req.query;
     const skip = (page - 1) * limit;
     
     // Get topic details
@@ -79,9 +79,11 @@ router.get('/topics/:id', async (req, res) => {
       return res.status(404).json({ success: false, error: 'Topic not found' });
     }
     
-    // Increment view count
-    await ForumTopic.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
-    topic.viewCount += 1;
+    // Only increment view count if incrementView is true
+    if (incrementView === 'true') {
+      await ForumTopic.findByIdAndUpdate(id, { $inc: { viewCount: 1 } });
+      topic.viewCount += 1;
+    }
     
     // Get posts for this topic
     const posts = await ForumPost.find({ topicId: id })
@@ -113,7 +115,11 @@ router.get('/topics/:id', async (req, res) => {
 router.post('/topics', verifyToken, async (req, res) => {
   try {
     const { title, content, categoryId } = req.body;
-    const { uid, displayName, email } = req.user;
+    const { uid, displayName, email, name } = req.user;
+    
+    // Debug logging for Google auth
+    console.log('Forum user data:', { uid, displayName, email, name });
+    console.log('Full user object:', req.user);
     
     if (!title || !content || !categoryId) {
       return res.status(400).json({ success: false, error: 'Title, content, and category are required' });
@@ -130,7 +136,7 @@ router.post('/topics', verifyToken, async (req, res) => {
       content,
       categoryId,
       authorId: uid,
-      authorName: displayName || 'Anonymous',
+      authorName: displayName || name || email?.split('@')[0] || `User_${uid.slice(-6)}` || 'Anonymous',
       authorEmail: email || 'unknown@example.com'
     });
     
@@ -151,7 +157,10 @@ router.post('/topics/:id/posts', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const { uid, displayName, email } = req.user;
+    const { uid, displayName, email, name } = req.user;
+    
+    // Debug logging for Google auth
+    console.log('Forum post user data:', { uid, displayName, email, name });
     
     if (!content) {
       return res.status(400).json({ success: false, error: 'Content is required' });
@@ -171,7 +180,7 @@ router.post('/topics/:id/posts', verifyToken, async (req, res) => {
       content,
       topicId: id,
       authorId: uid,
-      authorName: displayName || 'Anonymous',
+      authorName: displayName || name || email?.split('@')[0] || `User_${uid.slice(-6)}` || 'Anonymous',
       authorEmail: email || 'unknown@example.com'
     });
     
