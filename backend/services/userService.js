@@ -93,6 +93,57 @@ class UserService {
     }
   }
 
+  // Get user by UID
+  static async getUserByUid(uid) {
+    try {
+      return await User.findOne({ uid });
+    } catch (error) {
+      console.error('Error getting user by UID:', error);
+      throw error;
+    }
+  }
+
+  // Update user
+  static async updateUser(uid, updateData) {
+    try {
+      const user = await User.findOne({ uid });
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      // Update only the provided fields
+      if (updateData.name !== undefined) {
+        user.name = updateData.name;
+      }
+      if (updateData.email !== undefined) {
+        user.email = updateData.email;
+      }
+      if (updateData.isActive !== undefined) {
+        user.isActive = updateData.isActive;
+      }
+      
+      user.lastLogin = new Date();
+      await user.save();
+      
+      return user;
+    } catch (error) {
+      console.error('Error updating user:', error);
+      throw error;
+    }
+  }
+
+  // Delete user
+  static async deleteUser(uid) {
+    try {
+      const result = await User.deleteOne({ uid });
+      return result.deletedCount > 0;
+    } catch (error) {
+      console.error('Error deleting user:', error);
+      throw error;
+    }
+  }
+
   // Get user statistics
   static async getUserStats() {
     try {

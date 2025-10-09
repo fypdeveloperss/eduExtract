@@ -5,7 +5,8 @@ import {
   signOut,
   onAuthStateChanged,
   GoogleAuthProvider,
-  signInWithPopup
+  signInWithPopup,
+  updateProfile
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
 
@@ -154,6 +155,19 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  const updateUserProfile = async (profileData) => {
+    try {
+      if (!auth.currentUser) {
+        throw new Error('No user logged in');
+      }
+      await updateProfile(auth.currentUser, profileData);
+      // The user state will be updated automatically by onAuthStateChanged
+    } catch (error) {
+      setError(error.message);
+      throw error;
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -174,7 +188,8 @@ export const AuthProvider = ({ children }) => {
         isAdmin,
         adminLoading,
         checkAdminStatus,
-        manualAdminCheck
+        manualAdminCheck,
+        updateProfile: updateUserProfile
       }}
     >
       {children}

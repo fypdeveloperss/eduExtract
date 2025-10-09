@@ -3,7 +3,27 @@ const router = express.Router();
 const ForumCategory = require('../models/ForumCategory');
 const ForumTopic = require('../models/ForumTopic');
 const ForumPost = require('../models/ForumPost');
+const User = require('../models/User');
 const { verifyToken, verifyAdmin } = require('../middleware/auth');
+
+// Helper function to get latest user data from database
+async function getLatestUserData(uid, fallbackUser) {
+  try {
+    const user = await User.findOne({ uid }).lean();
+    return {
+      displayName: user?.name || fallbackUser.displayName,
+      email: user?.email || fallbackUser.email,
+      name: user?.name
+    };
+  } catch (error) {
+    console.error('Error fetching user data:', error);
+    return {
+      displayName: fallbackUser.displayName,
+      email: fallbackUser.email,
+      name: fallbackUser.name
+    };
+  }
+}
 
 // Get all categories
 router.get('/categories', async (req, res) => {
@@ -115,11 +135,15 @@ router.get('/topics/:id', async (req, res) => {
 router.post('/topics', verifyToken, async (req, res) => {
   try {
     const { title, content, categoryId } = req.body;
-    const { uid, displayName, email, name } = req.user;
+    const { uid } = req.user;
+    
+    // Fetch latest user data from database
+    const userData = await getLatestUserData(uid, req.user);
+    const { displayName, email, name } = userData;
     
     // Debug logging for Google auth
     console.log('Forum user data:', { uid, displayName, email, name });
-    console.log('Full user object:', req.user);
+    console.log('Database user data:', userData);
     
     if (!title || !content || !categoryId) {
       return res.status(400).json({ success: false, error: 'Title, content, and category are required' });
@@ -157,10 +181,15 @@ router.post('/topics/:id/posts', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
     const { content } = req.body;
-    const { uid, displayName, email, name } = req.user;
+    const { uid } = req.user;
+    
+    // Fetch latest user data from database
+    const userData = await getLatestUserData(uid, req.user);
+    const { displayName, email, name } = userData;
     
     // Debug logging for Google auth
     console.log('Forum post user data:', { uid, displayName, email, name });
+    console.log('Database user data:', userData);
     
     if (!content) {
       return res.status(400).json({ success: false, error: 'Content is required' });

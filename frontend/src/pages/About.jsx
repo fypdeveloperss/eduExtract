@@ -67,28 +67,28 @@ const About = () => {
 
   const teamMembers = [
     {
-      name: "Sarah Chen",
-      role: "CEO & Co-Founder",
-      description: "Former Google AI researcher with 10+ years in educational technology.",
-      avatar: "SC"
+      name: "Saad Ameer",
+      role: "Developer",
+      description: "Full-stack developer specializing in React and Node.js technologies.",
+      avatar: "SA"
     },
     {
-      name: "Michael Rodriguez",
-      role: "CTO & Co-Founder",
-      description: "Expert in machine learning and scalable educational platforms.",
-      avatar: "MR"
+      name: "Sarosh Ali",
+      role: "Developer",
+      description: "Backend developer expert in API development and database management.",
+      avatar: "SA"
     },
     {
-      name: "Emily Johnson",
-      role: "Head of Education",
-      description: "Former university professor specializing in curriculum design.",
-      avatar: "EJ"
+      name: "Syed Hamza",
+      role: "Developer",
+      description: "Frontend developer focused on creating responsive and interactive user interfaces.",
+      avatar: "SH"
     },
     {
-      name: "David Kim",
-      role: "Lead Designer",
-      description: "UX/UI expert focused on creating intuitive learning experiences.",
-      avatar: "DK"
+      name: "Dr. Imran",
+      role: "Project Supervisor",
+      description: "Academic supervisor providing guidance and oversight for the educational technology project.",
+      avatar: "DI"
     }
   ];
 

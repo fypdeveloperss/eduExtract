@@ -3,10 +3,11 @@ import { useState, useEffect } from "react";
 import ThemeToggle from "./ThemeToggle";
 import AuthModal from "./AuthModal";
 import UserModal from "./UserModal";
+import SettingsModal from "./SettingsModal";
 import PageLoader from "./PageLoader";
 import { useAuth } from "../context/FirebaseAuthContext";
 
-// Add CSS keyframes for fadeIn animation
+// Add CSS keyframes for fadeIn and slideInFromBottom animations
 const fadeInKeyframes = `
   @keyframes fadeIn {
     from {
@@ -17,8 +18,23 @@ const fadeInKeyframes = `
     }
   }
   
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
   .animate-fadeIn {
     animation: fadeIn 0.6s ease-out forwards;
+  }
+  
+  .animate-slideInFromBottom {
+    animation: slideInFromBottom 0.2s ease-out forwards;
   }
 `;
 
@@ -35,6 +51,8 @@ const Layout = () => {
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
   const [isUserModalOpen, setIsUserModalOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isPageLoading, setIsPageLoading] = useState(false);
 
   // Auto-collapse sidebar on mobile screens
@@ -65,6 +83,26 @@ const Layout = () => {
     return () => clearTimeout(timer);
   }, [location.pathname]);
 
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (isUserDropdownOpen) {
+        const dropdown = document.querySelector('[data-dropdown="user-menu"]');
+        if (dropdown && !dropdown.contains(event.target)) {
+          setIsUserDropdownOpen(false);
+        }
+      }
+    };
+
+    if (isUserDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isUserDropdownOpen]);
+
   return (
     <div className="relative min-h-screen">
       {/* Mobile Overlay */}
@@ -76,7 +114,7 @@ const Layout = () => {
       )}
       
       {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? (isMobile ? 'w-0 p-0' : 'w-16 p-2') : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'}`}>
+      <aside className={`${sidebarCollapsed ? (isMobile ? 'w-0 p-0' : 'w-16 p-2') : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'} flex flex-col border-r border-gray-200 dark:border-[#171717]`}>
         {/* Sidebar Header */}
         <div className={`flex items-center justify-between mb-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
           {!sidebarCollapsed && (
@@ -99,7 +137,7 @@ const Layout = () => {
         </div>
 
         {/* Navigation */}
-        <nav className={`mt-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
+        <nav className={`mt-4 flex-1 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
           <ul className="space-y-2">
             <li>
               <Link
@@ -229,6 +267,117 @@ const Layout = () => {
             </li>
           </ul>
         </nav>
+
+        {/* User Profile Section - Bottom of Sidebar */}
+        {user && (
+          <div className={`mt-auto border-t border-gray-200 dark:border-gray-700 pt-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''} relative`} data-dropdown="user-menu">
+            {/* User Profile Clickable Area */}
+            <button
+              onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
+              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 group hover:shadow-lg`}
+            >
+              {!sidebarCollapsed && (
+                <div className="flex items-center w-full">
+                  <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 rounded-full flex items-center justify-center mr-3 group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                    <svg className="w-5 h-5 text-white dark:text-gray-900 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                    </svg>
+                  </div>
+                  <div className="flex-1 min-w-0 transition-transform duration-300 text-left">
+                    <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa] truncate">
+                      {user?.displayName || 'User'}
+                    </p>
+                    <p className="text-xs text-[#4B5563] dark:text-[#9CA3AF] truncate">
+                      {user?.email}
+                    </p>
+                  </div>
+                  <svg className={`w-4 h-4 text-[#4B5563] dark:text-[#9CA3AF] transition-all duration-300 group-hover:scale-110 ${isUserDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </svg>
+                </div>
+              )}
+              {sidebarCollapsed && (
+                <div className="w-8 h-8 bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 rounded-full flex items-center justify-center group-hover:scale-110 group-hover:shadow-lg transition-all duration-300">
+                  <svg className="w-5 h-5 text-white dark:text-gray-900 group-hover:scale-110 transition-transform duration-300" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                  </svg>
+                </div>
+              )}
+            </button>
+
+            {/* Dropdown Menu */}
+            {isUserDropdownOpen && !sidebarCollapsed && (
+              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 animate-slideInFromBottom">
+                <div className="py-2">
+                  {/* Settings */}
+                  <button
+                    onClick={() => {
+                      setIsSettingsOpen(true);
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                  >
+                    <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    <span>Settings</span>
+                  </button>
+
+                  {/* Pricing */}
+                  <button
+                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                  >
+                    <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                    </svg>
+                    <span>Pricing</span>
+                  </button>
+
+                  {/* History */}
+                  <button
+                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                  >
+                    <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span>History</span>
+                  </button>
+
+                  {/* Dark Mode Toggle */}
+                  <div className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group">
+                    <div className="flex items-center">
+                      <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                      </svg>
+                      <span>Dark mode</span>
+                    </div>
+                    <div className="group-hover:scale-110 transition-transform duration-200">
+                      <ThemeToggle />
+                    </div>
+                  </div>
+
+                  {/* Divider */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+
+                  {/* Logout */}
+                  <button
+                    onClick={() => {
+                      logout();
+                      setIsUserDropdownOpen(false);
+                    }}
+                    className="w-full flex items-center px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group"
+                  >
+                    <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    <span>Log out</span>
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        )}
       </aside>
       {/* Right Content Area */}
       <div className={`${sidebarCollapsed ? (isMobile ? 'ml-0' : 'ml-16') : (isMobile ? 'ml-0' : 'ml-64')} relative transition-all duration-300 ease-in-out`}>
@@ -297,7 +446,12 @@ const Layout = () => {
       <UserModal 
         isOpen={isUserModalOpen} 
         onClose={() => setIsUserModalOpen(false)} 
-        user={user} 
+        user={user}
+        onSettingsClick={() => setIsSettingsOpen(true)}
+      />
+      <SettingsModal 
+        isOpen={isSettingsOpen} 
+        onClose={() => setIsSettingsOpen(false)} 
       />
     </div>
   );
