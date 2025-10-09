@@ -46,13 +46,13 @@ const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
     <div className="fixed inset-0 z-50 flex items-start justify-end pt-20 pr-4">
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-[#171717] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 p-6 w-72 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300"
+        className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#fafafa1a] p-2 w-72 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300"
         style={{
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
         }}
       >
         {/* User Info Section */}
-        <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+        <div className="border-b border-gray-200 dark:border-[#fafafa1a] pb-4 mb-4">
           <div className="flex items-center space-x-4">
             <div className="w-12 h-12 bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 rounded-full flex items-center justify-center shadow-lg">
               <svg 
@@ -75,7 +75,7 @@ const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
         </div>
 
         {/* Theme Toggle Section */}
-        <div className="border-b border-gray-200 dark:border-gray-700 pb-4 mb-4">
+        <div className="border-b border-gray-200 dark:border-[#fafafa1a] pb-4 mb-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-2">
               <svg 
@@ -106,7 +106,7 @@ const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
               onClose();
               onSettingsClick();
             }}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg transition-all duration-200 group"
+            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#fafafa1a] rounded-2xl transition-all duration-200 group"
           >
             <svg 
               className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" 
@@ -135,7 +135,7 @@ const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
               logout();
               onClose();
             }}
-            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 group"
+            className="w-full flex items-center space-x-3 px-4 py-3 text-sm font-medium text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-2xl transition-all duration-200 group"
           >
             <svg 
               className="w-5 h-5 group-hover:scale-110 transition-transform duration-200" 
