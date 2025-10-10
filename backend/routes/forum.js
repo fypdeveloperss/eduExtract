@@ -25,9 +25,58 @@ async function getLatestUserData(uid, fallbackUser) {
   }
 }
 
+// Create default categories if none exist
+async function createDefaultCategories() {
+  try {
+    const existingCount = await ForumCategory.countDocuments();
+    if (existingCount === 0) {
+      const defaultCategories = [
+        {
+          name: 'General Discussion',
+          description: 'General topics and discussions about the platform',
+          order: 1
+        },
+        {
+          name: 'Educational Content',
+          description: 'Discussions about educational materials, learning resources, and study tips',
+          order: 2
+        },
+        {
+          name: 'Technical Support',
+          description: 'Get help with technical issues and platform features',
+          order: 3
+        },
+        {
+          name: 'Feature Requests',
+          description: 'Suggest new features and improvements for the platform',
+          order: 4
+        },
+        {
+          name: 'Marketplace',
+          description: 'Discussions about buying, selling, and sharing educational content',
+          order: 5
+        },
+        {
+          name: 'Collaboration',
+          description: 'Find study partners and discuss collaborative learning',
+          order: 6
+        }
+      ];
+
+      await ForumCategory.insertMany(defaultCategories);
+      console.log('Default forum categories created successfully');
+    }
+  } catch (error) {
+    console.error('Error creating default categories:', error);
+  }
+}
+
 // Get all categories
 router.get('/categories', async (req, res) => {
   try {
+    // Create default categories if none exist
+    await createDefaultCategories();
+    
     const categories = await ForumCategory.find({ isActive: true })
       .sort({ order: 1, createdAt: 1 })
       .populate('lastTopic', 'title authorName createdAt')
@@ -609,6 +658,26 @@ router.delete('/admin/topics/:id', verifyToken, verifyAdmin, async (req, res) =>
   } catch (error) {
     console.error('Error deleting topic:', error);
     res.status(500).json({ success: false, error: 'Failed to delete topic' });
+  }
+});
+
+// Initialize default categories (public route for setup)
+router.post('/init-categories', async (req, res) => {
+  try {
+    await createDefaultCategories();
+    
+    const categories = await ForumCategory.find({ isActive: true })
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+    
+    res.json({ 
+      success: true, 
+      message: 'Default categories initialized successfully',
+      categories 
+    });
+  } catch (error) {
+    console.error('Error initializing categories:', error);
+    res.status(500).json({ success: false, error: 'Failed to initialize categories' });
   }
 });
 

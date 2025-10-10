@@ -29,12 +29,31 @@ function ForumCreate() {
   const fetchCategories = async () => {
     try {
       const response = await api.get('/api/forum/categories');
-      setCategories(response.data.categories || []);
+      const fetchedCategories = response.data.categories || [];
+      setCategories(fetchedCategories);
+      
+      // If no categories exist, try to initialize default ones
+      if (fetchedCategories.length === 0) {
+        await initializeCategories();
+      }
     } catch (error) {
       console.error('Error fetching categories:', error);
       setError('Failed to load categories');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeCategories = async () => {
+    try {
+      const response = await api.post('/api/forum/init-categories');
+      if (response.data.success) {
+        setCategories(response.data.categories || []);
+        console.log('Default categories initialized');
+      }
+    } catch (error) {
+      console.error('Error initializing categories:', error);
+      // Don't show error to user as this is automatic
     }
   };
 
@@ -126,20 +145,35 @@ function ForumCreate() {
               <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
                 Category *
               </label>
-              <select
-                name="categoryId"
-                value={formData.categoryId}
-                onChange={handleInputChange}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
-                required
-              >
-                <option value="">Select a category</option>
-                {categories.map(category => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
+              {categories.length === 0 ? (
+                <div className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-gray-50 dark:bg-[#2E2E2E] text-center">
+                  <p className="text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                    No categories available yet.
+                  </p>
+                  <button
+                    type="button"
+                    onClick={initializeCategories}
+                    className="text-blue-600 hover:text-blue-700 text-sm underline"
+                  >
+                    Initialize Default Categories
+                  </button>
+                </div>
+              ) : (
+                <select
+                  name="categoryId"
+                  value={formData.categoryId}
+                  onChange={handleInputChange}
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                  required
+                >
+                  <option value="">Select a category</option>
+                  {categories.map(category => (
+                    <option key={category._id} value={category._id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+              )}
               <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
                 Choose the most appropriate category for your topic
               </p>
