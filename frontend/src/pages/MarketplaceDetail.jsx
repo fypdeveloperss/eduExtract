@@ -4,6 +4,7 @@ import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
 import PaymentModal from '../components/PaymentModal';
 import ContentDetail from '../components/ContentDetail';
+import ReviewSection from '../components/ReviewSection';
 
 function MarketplaceDetail() {
   const { id } = useParams();
@@ -89,24 +90,120 @@ function MarketplaceDetail() {
         link.remove();
         window.URL.revokeObjectURL(url);
       } else {
-        // For text content, create a text file
-        const contentText = typeof content.contentData === 'string' 
-          ? content.contentData 
-          : JSON.stringify(content.contentData, null, 2);
-        
-        const blob = new Blob([contentText], { type: 'text/plain' });
-        const url = window.URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.href = url;
-        link.setAttribute('download', `${content.title}.txt`);
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-        window.URL.revokeObjectURL(url);
+        // For educational content, generate PDF using the same logic as ContentDetail
+        let endpoint = '';
+        let payload = {};
+        let filename = '';
+
+        switch (content.contentType) {
+          case 'blog':
+            endpoint = '/download-blog';
+            payload = { blogContent: content.contentData, title: content.title };
+            filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            break;
+          case 'summary':
+            endpoint = '/download-summary';
+            payload = { summary: content.contentData, title: content.title };
+            filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            break;
+          case 'quiz':
+            endpoint = '/download-quiz';
+            payload = { quiz: content.contentData, title: content.title };
+            filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            break;
+          case 'flashcards':
+            endpoint = '/download-flashcards';
+            payload = { flashcards: content.contentData, title: content.title };
+            filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pdf`;
+            break;
+          case 'slides':
+            // For slides, call the backend to generate a properly formatted PowerPoint
+            try {
+              const response = await api.post('/generate-slides', {
+                url: content.url || 'file-upload',
+                slides: content.contentData
+              }, {
+                responseType: 'blob'
+              });
+
+              // Create download link for PowerPoint file
+              const url = window.URL.createObjectURL(new Blob([response.data]));
+              const link = document.createElement('a');
+              link.href = url;
+              link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx`);
+              document.body.appendChild(link);
+              link.click();
+              link.remove();
+              window.URL.revokeObjectURL(url);
+              return;
+            } catch (error) {
+              console.error('PowerPoint generation failed:', error);
+              // Fallback to text download
+              if (content.contentData && Array.isArray(content.contentData)) {
+                let slidesText = `${content.title}\n\n`;
+                content.contentData.forEach((slide, index) => {
+                  slidesText += `Slide ${index + 1}: ${slide.title}\n`;
+                  slide.points.forEach((point, pointIndex) => {
+                    slidesText += `  ${pointIndex + 1}. ${point}\n`;
+                  });
+                  slidesText += '\n';
+                });
+                
+                const blob = new Blob([slidesText], { type: 'text/plain' });
+                const url = window.URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                window.URL.revokeObjectURL(url);
+                return;
+              } else {
+                setError('No slides data available for download');
+                return;
+              }
+            }
+          case 'document':
+          case 'personal':
+          default:
+            // For other content types, fallback to text file download
+            const contentText = typeof content.contentData === 'string' 
+              ? content.contentData 
+              : JSON.stringify(content.contentData, null, 2);
+            
+            const blob = new Blob([contentText], { type: 'text/plain' });
+            const url = window.URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.setAttribute('download', `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`);
+            document.body.appendChild(link);
+            link.click();
+            link.remove();
+            window.URL.revokeObjectURL(url);
+            return;
+        }
+
+        // For supported content types, make API call to generate PDF
+        if (endpoint) {
+          const response = await api.post(endpoint, payload, {
+            responseType: 'blob'
+          });
+
+          // Create download link
+          const url = window.URL.createObjectURL(new Blob([response.data]));
+          const link = document.createElement('a');
+          link.href = url;
+          link.setAttribute('download', filename);
+          document.body.appendChild(link);
+          link.click();
+          link.remove();
+          window.URL.revokeObjectURL(url);
+        }
       }
     } catch (error) {
       console.error('Download failed:', error);
-      setError('Failed to download content. Please try again.');
+      setError(`Failed to download ${content.contentType}: ${error.message || 'Please try again.'}`);
     } finally {
       setDownloading(false);
     }
@@ -289,8 +386,12 @@ function MarketplaceDetail() {
                         </>
                       ) : (
                         <>
-                          <span className="mr-2">⬇️</span>
-                          Download Content
+                          <span className="mr-2">📄</span>
+                          {['blog', 'summary', 'quiz', 'flashcards'].includes(content.contentType) 
+                            ? 'Download PDF' 
+                            : content.contentType === 'slides' 
+                              ? 'Download PPTX' 
+                              : 'Download Content'}
                         </>
                       )}
                     </button>
@@ -403,45 +504,11 @@ function MarketplaceDetail() {
                 )}
 
                 {/* Reviews Section */}
-                <div>
-                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-                    <span className="mr-2">⭐</span>
-                    Reviews ({reviews.length})
-                  </h3>
-                  
-                  {reviews.length === 0 ? (
-                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-6 text-center">
-                      <p className="text-[#171717cc] dark:text-[#fafafacc]">No reviews yet. Be the first to review this content!</p>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      {reviews.map((review) => (
-                        <div key={review._id} className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4">
-                          <div className="flex items-center justify-between mb-2">
-                            <div className="flex items-center space-x-2">
-                              <div className="flex text-yellow-400">
-                                {[...Array(5)].map((_, i) => (
-                                  <span key={i} className={i < review.rating ? 'text-yellow-400' : 'text-gray-300'}>
-                                    ★
-                                  </span>
-                                ))}
-                              </div>
-                              <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                                by {review.reviewerName || 'Anonymous'}
-                              </span>
-                            </div>
-                            <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                              {new Date(review.createdAt).toLocaleDateString()}
-                            </span>
-                          </div>
-                          {review.review && (
-                            <p className="text-[#171717cc] dark:text-[#fafafacc]">{review.review}</p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
+                <ReviewSection 
+                  contentId={id}
+                  hasAccess={canAccessContent}
+                  onReviewSubmitted={fetchContentDetails}
+                />
               </div>
 
               {/* Sidebar */}

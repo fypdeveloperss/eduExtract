@@ -226,7 +226,7 @@ class DownloadService {
       `;
       
       q.options.forEach((option, optIndex) => {
-        const isCorrect = optIndex === q.correctAnswer;
+        const isCorrect = option === q.answer;
         html += `
           <div class="option ${isCorrect ? 'correct-answer' : ''}">
             ${String.fromCharCode(65 + optIndex)}. ${option}

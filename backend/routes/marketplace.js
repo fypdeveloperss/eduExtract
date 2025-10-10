@@ -435,7 +435,7 @@ router.get('/content/:id', async (req, res) => {
     // Increment view count
     await MarketplaceContent.findByIdAndUpdate(id, { $inc: { views: 1 } });
 
-    // Get reviews for this content
+    // Get reviews for this content with reviewer info
     const reviews = await ContentReview.find({ 
       contentId: id, 
       status: 'active' 
@@ -448,6 +448,19 @@ router.get('/content/:id', async (req, res) => {
     const avgRating = reviews.length > 0 
       ? reviews.reduce((sum, review) => sum + review.rating, 0) / reviews.length 
       : 0;
+
+    // Populate reviewer names
+    const reviewsWithNames = await Promise.all(
+      reviews.map(async (review) => {
+        const reviewer = await User.findOne({ uid: review.reviewerId })
+          .select('name')
+          .lean();
+        return {
+          ...review,
+          reviewerName: reviewer?.name || 'Anonymous User'
+        };
+      })
+    );
 
     // Get creator info and stats (creatorId stores Firebase UID string)
     const creator = await User.findOne({ uid: content.creatorId })
@@ -463,7 +476,7 @@ router.get('/content/:id', async (req, res) => {
         averageRating: Math.round(avgRating * 10) / 10,
         totalReviews: reviews.length
       },
-      reviews,
+      reviews: reviewsWithNames,
       creator,
       creatorStats
     });
@@ -549,6 +562,12 @@ router.post('/content/:id/review', verifyToken, async (req, res) => {
     const content = await MarketplaceContent.findById(id);
     if (!content) {
       return res.status(404).json({ error: 'Content not found' });
+    }
+
+    // Check if user has access to this content (must have purchased or it's free)
+    const accessInfo = await PaymentService.checkAccess(id, userId);
+    if (!accessInfo.hasAccess) {
+      return res.status(403).json({ error: 'You must have access to this content to leave a review' });
     }
 
     // Check if user already reviewed this content
