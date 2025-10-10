@@ -14,7 +14,6 @@ function MarketplaceUpload() {
     category: '',
     subject: '',
     difficulty: 'beginner',
-    contentType: 'document',
     tags: '',
     price: 0,
     currency: 'USD'
@@ -45,15 +44,7 @@ function MarketplaceUpload() {
     { value: 'advanced', label: 'Advanced', color: 'text-red-600' }
   ];
 
-  const contentTypes = [
-    { value: 'document', label: 'Document (PDF, DOC, etc.)', icon: '📄' },
-    { value: 'blog', label: 'Blog Post', icon: '✍️' },
-    { value: 'slides', label: 'Presentation Slides', icon: '📊' },
-    { value: 'flashcards', label: 'Flashcards', icon: '🗂️' },
-    { value: 'quiz', label: 'Quiz/Test', icon: '❓' },
-    { value: 'summary', label: 'Summary', icon: '📝' },
-    { value: 'personal', label: 'Personal Notes', icon: '📓' }
-  ];
+
 
   const currencies = [
     { value: 'USD', label: 'USD ($)', symbol: '$' },
@@ -110,7 +101,7 @@ function MarketplaceUpload() {
       return;
     }
 
-    if (!selectedFile && formData.contentType === 'document') {
+    if (!selectedFile) {
       setError('Please select a file to upload');
       return;
     }
@@ -133,14 +124,12 @@ function MarketplaceUpload() {
         }
       });
 
-      // Add file if selected
+      // Always set contentType to 'document' for file uploads
+      formDataToSend.append('contentType', 'document');
+
+      // Add file
       if (selectedFile) {
         formDataToSend.append('document', selectedFile);
-      }
-
-      // Add content data for non-document types
-      if (formData.contentType !== 'document') {
-        formDataToSend.append('contentData', 'Content will be added here');
       }
 
       const response = await api.post('/api/marketplace/upload', formDataToSend, {
@@ -162,7 +151,6 @@ function MarketplaceUpload() {
         category: '',
         subject: '',
         difficulty: 'beginner',
-        contentType: 'document',
         tags: '',
         price: 0,
         currency: 'USD'
@@ -347,102 +335,67 @@ function MarketplaceUpload() {
               </div>
             </div>
 
-            {/* Content Type & File Upload Section */}
+            {/* File Upload Section */}
             <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
               <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                 <span className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
                   📁
                 </span>
-                Content & File Upload
+                File Upload
               </h3>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                    Content Type *
-                  </label>
-                  <div className="grid grid-cols-1 gap-2">
-                    {contentTypes.map(type => (
-                      <label key={type.value} className="flex items-center p-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2E2E2E]">
-                        <input
-                          type="radio"
-                          name="contentType"
-                          value={type.value}
-                          checked={formData.contentType === type.value}
-                          onChange={handleInputChange}
-                          className="mr-3"
-                        />
-                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                          {type.icon} {type.label}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                    Upload File
-                  </label>
+              <div>
+                <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                  Upload File *
+                </label>
+                
+                <div className="border-2 border-dashed border-gray-300 dark:border-[#2E2E2E] rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    onChange={handleFileSelect}
+                    accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
+                    className="hidden"
+                  />
                   
-                  {formData.contentType === 'document' && (
-                    <div className="border-2 border-dashed border-gray-300 dark:border-[#2E2E2E] rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
-                      <input
-                        ref={fileInputRef}
-                        type="file"
-                        onChange={handleFileSelect}
-                        accept=".pdf,.doc,.docx,.txt,.ppt,.pptx,.jpg,.jpeg,.png,.gif"
-                        className="hidden"
-                      />
-                      
-                      {!selectedFile ? (
-                        <div>
-                          <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                            <span className="text-2xl">📄</span>
-                          </div>
-                          <p className="text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                            <button
-                              type="button"
-                              onClick={() => fileInputRef.current?.click()}
-                              className="text-blue-600 hover:text-blue-700 font-medium"
-                            >
-                              Click to upload
-                            </button>
-                            {' '}or drag and drop
-                          </p>
-                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                            PDF, DOC, DOCX, TXT, PPT, PPTX, JPG, PNG, GIF (max 10MB)
-                          </p>
-                        </div>
-                      ) : (
-                        <div className="text-left">
-                          <div className="flex items-center justify-between mb-2">
-                            <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">
-                              {selectedFile.name}
-                            </span>
-                            <button
-                              type="button"
-                              onClick={() => setSelectedFile(null)}
-                              className="text-red-500 hover:text-red-700"
-                            >
-                              ✕
-                            </button>
-                          </div>
-                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                            Size: {formatFileSize(selectedFile.size)}
-                          </p>
-                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                            Type: {selectedFile.type || 'Unknown'}
-                          </p>
-                        </div>
-                      )}
-                    </div>
-                  )}
-
-                  {formData.contentType !== 'document' && (
-                    <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-4">
+                  {!selectedFile ? (
+                    <div>
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                        <span className="text-2xl">📄</span>
+                      </div>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                        <button
+                          type="button"
+                          onClick={() => fileInputRef.current?.click()}
+                          className="text-blue-600 hover:text-blue-700 font-medium"
+                        >
+                          Click to upload
+                        </button>
+                        {' '}or drag and drop
+                      </p>
                       <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                        For {formData.contentType} content, you'll be able to add the content directly in the next step.
+                        PDF, DOC, DOCX, TXT, PPT, PPTX, JPG, PNG, GIF (max 10MB)
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="text-left">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">
+                          {selectedFile.name}
+                        </span>
+                        <button
+                          type="button"
+                          onClick={() => setSelectedFile(null)}
+                          className="text-red-500 hover:text-red-700"
+                        >
+                          ✕
+                        </button>
+                      </div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                        Size: {formatFileSize(selectedFile.size)}
+                      </p>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                        Type: {selectedFile.type || 'Unknown'}
                       </p>
                     </div>
                   )}
