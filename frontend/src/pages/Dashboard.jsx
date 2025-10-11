@@ -13,6 +13,7 @@ import useContentContext from "../hooks/useContentContext";
 import "./Dashboard.css";
 import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
+import AuthModal from "../components/AuthModal";
 
 function Dashboard() {
   const [url, setUrl] = useState("");
@@ -309,6 +310,12 @@ function Dashboard() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
 
     if (uploadMode === "youtube") {
       const extractedVideoId = extractVideoId(url);
