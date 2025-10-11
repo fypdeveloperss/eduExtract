@@ -122,7 +122,7 @@ const Layout = () => {
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg 
@@ -142,7 +142,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Home"
               >
                 {!sidebarCollapsed && (
@@ -163,7 +163,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/dashboard"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Dashboard"
               >
                 {!sidebarCollapsed && (
@@ -184,7 +184,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/content"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="My Content"
               >
                 {!sidebarCollapsed && (
@@ -205,7 +205,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/marketplace"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Marketplace"
               >
                 {!sidebarCollapsed && (
@@ -226,7 +226,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/forum"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Forum"
               >
                 {!sidebarCollapsed && (
@@ -247,7 +247,7 @@ const Layout = () => {
             <li>
               <Link
                 to="/collaborate"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="CollaborateHub"
               >
                 {!sidebarCollapsed && (
@@ -270,11 +270,11 @@ const Layout = () => {
 
         {/* User Profile Section - Bottom of Sidebar */}
         {user && (
-          <div className={`mt-auto border-t border-gray-200 dark:border-gray-700 pt-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''} relative`} data-dropdown="user-menu">
+          <div className={`mt-auto border-t border-gray-200 dark:border-[#fafafa1a] pt-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''} relative`} data-dropdown="user-menu">
             {/* User Profile Clickable Area */}
             <button
               onClick={() => setIsUserDropdownOpen(!isUserDropdownOpen)}
-              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-3 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-all duration-300 group hover:shadow-lg`}
+              className={`w-full flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-2 rounded-2xl hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] transition-all duration-300 group hover:shadow-lg`}
             >
               {!sidebarCollapsed && (
                 <div className="flex items-center w-full">
@@ -307,15 +307,15 @@ const Layout = () => {
 
             {/* Dropdown Menu */}
             {isUserDropdownOpen && !sidebarCollapsed && (
-              <div className="absolute bottom-full left-0 right-0 mb-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-30 animate-slideInFromBottom">
-                <div className="py-2">
+              <div className="absolute bottom-full left-0 right-0 mb-2 p-1 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl shadow-lg z-30 animate-slideInFromBottom">
+                <div className="py-0">
                   {/* Settings */}
                   <button
                     onClick={() => {
                       setIsSettingsOpen(true);
                       setIsUserDropdownOpen(false);
                     }}
-                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    className="w-full flex rounded-2xl items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] transition-all duration-200 group"
                   >
                     <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-90 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
@@ -326,7 +326,7 @@ const Layout = () => {
 
                   {/* Pricing */}
                   <button
-                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    className="w-full flex rounded-2xl items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] transition-all duration-200 group"
                   >
                     <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
@@ -336,7 +336,7 @@ const Layout = () => {
 
                   {/* History */}
                   <button
-                    className="w-full flex items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group"
+                    className="w-full flex rounded-2xl items-center px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] transition-all duration-200 group"
                   >
                     <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
@@ -345,7 +345,7 @@ const Layout = () => {
                   </button>
 
                   {/* Dark Mode Toggle */}
-                  <div className="flex items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all duration-200 group">
+                  <div className="flex rounded-2xl items-center justify-between px-4 py-3 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] transition-all duration-200 group">
                     <div className="flex items-center">
                       <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
@@ -358,7 +358,7 @@ const Layout = () => {
                   </div>
 
                   {/* Divider */}
-                  <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
+                  <div className="border-t border-gray-200 dark:border-[#fafafa1a] my-1"></div>
 
                   {/* Logout */}
                   <button
@@ -366,7 +366,7 @@ const Layout = () => {
                       logout();
                       setIsUserDropdownOpen(false);
                     }}
-                    className="w-full flex items-center px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 group"
+                    className="w-full flex rounded-2xl items-center px-4 py-3 text-sm text-red-600 dark:text-red-400 hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] transition-all duration-200 group"
                   >
                     <svg className="w-4 h-4 mr-3 group-hover:scale-110 group-hover:rotate-12 transition-all duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
@@ -404,7 +404,7 @@ const Layout = () => {
             {user ? (
               <button
                 onClick={() => setIsUserModalOpen(!isUserModalOpen)}
-                className="relative p-2 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 hover:from-gray-700 hover:to-gray-900 dark:hover:from-gray-300 dark:hover:to-gray-500 shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
+                className="relative p-2 rounded-full bg-gradient-to-br from-gray-600 to-gray-800 dark:from-gray-400 dark:to-gray-600 hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a] shadow-lg hover:shadow-xl transition-all duration-200 transform hover:scale-105"
                 title="User Menu"
               >
                 <svg 
@@ -421,7 +421,7 @@ const Layout = () => {
             ) : (
               <button
                 onClick={toggleAuthModal}
-                className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-md bg-zinc-800 text-white hover:bg-zinc-700"
+                className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-full bg-zinc-800 text-white hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a]"
               >
                 <span className="hidden sm:inline">Sign In</span>
                 <span className="sm:hidden">Login</span>

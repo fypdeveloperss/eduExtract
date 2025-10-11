@@ -22,13 +22,32 @@ function Forum() {
         api.get('/api/forum/topics?limit=10')
       ]);
       
-      setCategories(categoriesRes.data.categories || []);
+      const fetchedCategories = categoriesRes.data.categories || [];
+      setCategories(fetchedCategories);
       setRecentTopics(topicsRes.data.topics || []);
+      
+      // If no categories exist, try to initialize default ones
+      if (fetchedCategories.length === 0) {
+        await initializeCategories();
+      }
     } catch (error) {
       console.error('Error fetching forum data:', error);
       setError('Failed to load forum data');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const initializeCategories = async () => {
+    try {
+      const response = await api.post('/api/forum/init-categories');
+      if (response.data.success) {
+        setCategories(response.data.categories || []);
+        console.log('Default categories initialized');
+      }
+    } catch (error) {
+      console.error('Error initializing categories:', error);
+      // Don't show error to user as this is automatic
     }
   };
 
@@ -92,7 +111,24 @@ function Forum() {
               Categories
             </h2>
             <div className="space-y-4">
-              {categories.map((category) => (
+              {categories.length === 0 ? (
+                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-8 text-center">
+                  <div className="text-6xl mb-4">📚</div>
+                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                    No Categories Available
+                  </h3>
+                  <p className="text-[#171717cc] dark:text-[#fafafacc] mb-4">
+                    Forum categories are being set up. Please try refreshing the page.
+                  </p>
+                  <button
+                    onClick={initializeCategories}
+                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                  >
+                    Initialize Categories
+                  </button>
+                </div>
+              ) : (
+                categories.map((category) => (
                 <Link
                   key={category._id}
                   to={`/forum/category/${category._id}`}
@@ -121,7 +157,8 @@ function Forum() {
                     </div>
                   </div>
                 </Link>
-              ))}
+                ))
+              )}
             </div>
           </div>
 

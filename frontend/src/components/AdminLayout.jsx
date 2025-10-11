@@ -84,7 +84,7 @@ const AdminLayout = () => {
           )}
           <button
             onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-            className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors"
+            className="p-2 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors"
             title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
             <svg 
@@ -104,7 +104,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Home"
               >
                 {!sidebarCollapsed && (
@@ -125,7 +125,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Dashboard"
               >
                 {!sidebarCollapsed && (
@@ -146,7 +146,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/users"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="User Management"
               >
                 {!sidebarCollapsed && (
@@ -167,7 +167,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/admins"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Admin Management"
               >
                 {!sidebarCollapsed && (
@@ -188,7 +188,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/content"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Content Management"
               >
                 {!sidebarCollapsed && (
@@ -209,7 +209,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/ai-monitoring"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="AI Monitoring"
               >
                 {!sidebarCollapsed && (
@@ -230,7 +230,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/marketplace"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Marketplace"
               >
                 {!sidebarCollapsed && (
@@ -251,7 +251,7 @@ const AdminLayout = () => {
             <li>
               <Link
                 to="/admin/forum-moderation"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors group`}
+                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
                 title="Forum Moderation"
               >
                 {!sidebarCollapsed && (
@@ -279,7 +279,7 @@ const AdminLayout = () => {
           <div className="flex items-center gap-2 sm:gap-4">
             <button
               onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-              className="p-2 rounded-lg hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors lg:hidden"
+              className="p-2 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors lg:hidden"
               title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             >
               <svg 
