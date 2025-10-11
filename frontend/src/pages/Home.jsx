@@ -5,7 +5,6 @@ import sectionImage from "../assets/section_image.jpg";
 import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
-import ChatBot from "../components/ChatBot";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
@@ -14,7 +13,6 @@ export default function Home() {
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const featuresRef = useRef(null);
-  const [chatOpen, setChatOpen] = useState(false);
 
   // Interpolate scroll to transform values
   const rotateX = useTransform(scrollY, [0, 300], [5, 0]);
@@ -559,8 +557,6 @@ export default function Home() {
           </div>
         </div>
       </footer>
-
-      <ChatBot isOpen={chatOpen} setIsOpen={setChatOpen} />
     </div>
   );
 }

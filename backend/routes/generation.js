@@ -15,10 +15,15 @@ const upload = require('../middleware/upload');
 // Import models
 const User = require('../models/User');
 const GeneratedContent = require('../models/GeneratedContent');
+const ChatHistory = require('../models/ChatHistory');
+
+// Import services
+const ChatContextService = require('../services/chatContextService');
 
 // Initialize services
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
+const chatContextService = new ChatContextService();
 
 // Enhanced retry utility function with better error handling
 async function withRetry(operation, maxRetries = 3, delay = 1000) {
@@ -670,18 +675,66 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
 });
 
 /**
- * CHATBOT ENDPOINT
+ * ENHANCED CHATBOT ENDPOINT WITH CONTEXT AWARENESS
  */
 router.post("/api/chat", verifyToken, async (req, res) => {
   try {
-    const { messages } = req.body;
+    const { messages, contentContext, sessionId } = req.body;
+    const userId = req.user.uid;
+    const userName = req.user.name || req.user.email?.split('@')[0] || 'User';
 
+    console.log(`Chat request from user ${userId}, session: ${sessionId || 'new'}`);
+
+    // Get or create chat session
+    let chatSession = null;
+    if (sessionId) {
+      chatSession = await ChatHistory.findOne({ userId, sessionId });
+    }
+    
+    if (!chatSession) {
+      const newSessionId = sessionId || `session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      chatSession = await ChatHistory.createSession(userId, newSessionId);
+      console.log(`Created new chat session: ${newSessionId}`);
+    }
+
+    // Build context if provided
+    let contextualPrompt = "You are a helpful educational assistant for EduExtract. You can help users with understanding content, navigating the app, and answering questions about educational materials. Be concise and friendly in your responses.";
+    
+    if (contentContext) {
+      try {
+        console.log('Building context for chat...');
+        const context = await chatContextService.buildUserContext(
+          userId,
+          contentContext.currentSession || {},
+          contentContext.originalSource || null
+        );
+        
+        contextualPrompt = chatContextService.createContextualPrompt(context, userName);
+        
+        // Update session with context snapshot
+        chatSession.contextSnapshot = context;
+        await chatSession.save();
+        
+        console.log(`Context built successfully. Token estimate: ${chatContextService.estimateTokenCount(context)}`);
+      } catch (contextError) {
+        console.error('Error building context:', contextError);
+        // Continue with basic prompt if context building fails
+      }
+    }
+
+    // Prepare messages with contextual system prompt
     const systemPrompt = {
       role: "system",
-      content: "You are a helpful educational assistant for EduExtract. Only answer questions related to education and this app."
+      content: contextualPrompt
     };
 
-    const finalMessages = [systemPrompt, ...messages];
+    // Get recent messages from session (last 10)
+    const recentMessages = chatSession.getRecentMessages(10);
+    
+    // Combine system prompt, recent messages, and new messages
+    const finalMessages = [systemPrompt, ...recentMessages, ...messages];
+
+    console.log(`Sending ${finalMessages.length} messages to AI (including system prompt and ${recentMessages.length} recent messages)`);
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
@@ -704,10 +757,129 @@ router.post("/api/chat", verifyToken, async (req, res) => {
     }
 
     const aiResponse = completion.choices[0]?.message?.content;
-    res.json({ message: aiResponse });
+    
+    // Save the conversation to chat history
+    try {
+      // Add user message
+      await chatSession.addMessage('user', messages[messages.length - 1].content);
+      
+      // Add AI response
+      await chatSession.addMessage('assistant', aiResponse);
+      
+      console.log(`Saved conversation to session ${chatSession.sessionId}`);
+    } catch (saveError) {
+      console.error('Error saving chat history:', saveError);
+      // Don't fail the request if saving history fails
+    }
+
+    res.json({ 
+      message: aiResponse,
+      sessionId: chatSession.sessionId,
+      contextLoaded: !!contentContext
+    });
   } catch (error) {
     console.error("Chat error:", error);
     res.status(500).json({ error: "Failed to get response from AI" });
+  }
+});
+
+/**
+ * GET USER'S CONTENT CONTEXT FOR CHATBOT
+ */
+router.get("/api/chat/context", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    
+    console.log(`Fetching context for user: ${userId}`);
+    
+    // Fetch user's recent content
+    const userHistory = await chatContextService.fetchUserHistory(userId);
+    
+    // Format the context for frontend
+    const contextSummary = {
+      totalItems: userHistory.length,
+      recentItems: userHistory.slice(0, 10).map(item => ({
+        id: item._id,
+        type: item.type,
+        title: item.title,
+        createdAt: item.createdAt,
+        preview: chatContextService.getContentPreview(item.contentData, item.type)
+      })),
+      contentTypes: userHistory.reduce((acc, item) => {
+        acc[item.type] = (acc[item.type] || 0) + 1;
+        return acc;
+      }, {})
+    };
+    
+    res.json({
+      success: true,
+      context: contextSummary
+    });
+  } catch (error) {
+    console.error("Error fetching chat context:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch context" 
+    });
+  }
+});
+
+/**
+ * GET CHAT HISTORY FOR USER
+ */
+router.get("/api/chat/history", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const limit = parseInt(req.query.limit) || 10;
+    
+    const chatHistory = await ChatHistory.getUserHistory(userId, limit);
+    
+    res.json({
+      success: true,
+      history: chatHistory
+    });
+  } catch (error) {
+    console.error("Error fetching chat history:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch chat history" 
+    });
+  }
+});
+
+/**
+ * GET SPECIFIC CHAT SESSION
+ */
+router.get("/api/chat/history/:sessionId", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const sessionId = req.params.sessionId;
+    
+    const session = await ChatHistory.findOne({ userId, sessionId });
+    
+    if (!session) {
+      return res.status(404).json({ 
+        success: false,
+        error: "Session not found" 
+      });
+    }
+    
+    res.json({
+      success: true,
+      session: {
+        sessionId: session.sessionId,
+        messages: session.messages,
+        contextSnapshot: session.contextSnapshot,
+        createdAt: session.createdAt,
+        updatedAt: session.updatedAt
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching chat session:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch chat session" 
+    });
   }
 });
 
