@@ -696,13 +696,13 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white">
+    <div className="min-h-screen bg-white dark:bg-[#121212]">
       {/* Main Content */}
       <div className={`${showContentLayout ? 'px-4 py-8' : 'max-w-4xl mx-auto px-4 py-16'}`}>
         {/* Header */}
         {!showContentLayout && (
           <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 mb-4">
+            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-[#fafafa] mb-4">
               What do you want to learn?
             </h1>
           </div>
@@ -713,8 +713,8 @@ function Dashboard() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
           {/* Upload Card */}
           <div 
-            className={`relative bg-white border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 hover:border-gray-300"
+            className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+              uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             }`}
             onClick={() => {
               setUploadMode("file");
@@ -722,23 +722,23 @@ function Dashboard() {
             }}
           >
             <div className="absolute top-3 right-3">
-              <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full">
+              <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs font-semibold px-2 py-1 rounded-full">
                 Popular
               </span>
             </div>
             <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Upload size={32} className="text-blue-600" />
+              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Upload size={32} className="text-blue-600 dark:text-blue-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Upload</h3>
-              <p className="text-sm text-gray-600">File, audio, video</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Upload</h3>
+              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">File, audio, video</p>
             </div>
           </div>
 
           {/* Paste Card */}
           <div 
-            className={`bg-white border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 hover:border-gray-300"
+            className={`bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
+              uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             }`}
             onClick={() => {
               setUploadMode("youtube");
@@ -747,30 +747,30 @@ function Dashboard() {
             }}
           >
             <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Link size={32} className="text-purple-600" />
+              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Link size={32} className="text-purple-600 dark:text-purple-400" />
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Paste</h3>
-              <p className="text-sm text-gray-600">YouTube, website, text</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Paste</h3>
+              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">YouTube, website, text</p>
             </div>
           </div>
 
           {/* Record Card */}
           <div 
-            className="bg-white border-2 border-gray-200 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-gray-300"
+            className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#2E2E2E] rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             onClick={() => {
               // Future feature - recording functionality
               alert("Recording feature coming soon!");
             }}
           >
             <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                 </svg>
               </div>
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">Record</h3>
-              <p className="text-sm text-gray-600">Record class, video call</p>
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Record</h3>
+              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">Record class, video call</p>
             </div>
           </div>
         </div>
@@ -781,9 +781,9 @@ function Dashboard() {
           <div className="max-w-3xl mx-auto mt-6">
             <div
               className={`relative border-2 ${
-                dragActive ? "border-blue-500 bg-blue-50" : "border-dashed border-gray-300"
+                dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-dashed border-gray-300 dark:border-[#2E2E2E]"
               } rounded-2xl p-8 text-center transition-all ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 hover:bg-gray-50"
+                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-[#2E2E2E]"
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -805,31 +805,31 @@ function Dashboard() {
               />
               <div className="space-y-4">
                 <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-blue-100 rounded-2xl flex items-center justify-center">
-                    <Upload size={32} className="text-blue-600" />
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
+                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
                   </div>
                 </div>
                 <div>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
-                    className="text-blue-600 hover:text-blue-700 font-semibold text-lg"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-lg"
                     disabled={isLoading}
                   >
                     Click to upload
                   </button>
-                  <span className="text-gray-600 text-lg">
+                  <span className="text-gray-600 dark:text-[#fafafacc] text-lg">
                     {" "}or drag and drop
                   </span>
                 </div>
-                <p className="text-sm text-gray-500">
+                <p className="text-sm text-gray-500 dark:text-[#fafafacc]">
                   PDF, DOCX, TXT, PPTX (max 10MB)
                 </p>
                 {selectedFile && (
-                  <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
                     <div className="flex items-center justify-center space-x-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <p className="text-sm text-green-700 font-medium">
+                      <p className="text-sm text-green-700 dark:text-green-400 font-medium">
                         Selected: {selectedFile.name}
                       </p>
                     </div>
@@ -841,8 +841,8 @@ function Dashboard() {
         )}
         
         {!showContentLayout && error && (
-          <div className="max-w-3xl mx-auto mt-4 bg-red-50 border border-red-200 rounded-lg p-4">
-            <p className="text-red-700 text-sm text-center">{error}</p>
+          <div className="max-w-3xl mx-auto mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+            <p className="text-red-700 dark:text-red-400 text-sm text-center">{error}</p>
           </div>
         )}
 
@@ -854,7 +854,7 @@ function Dashboard() {
               {uploadMode === "youtube" && videoId && (
                 <div 
                   ref={videoContainerRef}
-                  className={`bg-white rounded-2xl shadow-xl overflow-hidden transition-all duration-700 ease-in-out flex flex-col h-full ${
+                  className={`bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden transition-all duration-700 ease-in-out flex flex-col h-full ${
                     showVideo 
                       ? "opacity-100 transform translate-y-0" 
                       : "opacity-0 transform -translate-y-10"
@@ -872,20 +872,20 @@ function Dashboard() {
                   </div>
                   
                   {/* Video Info - Compact footer */}
-                  <div className="p-4 border-t border-gray-100 bg-gray-50 flex-shrink-0">
+                  <div className="p-4 border-t border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E] flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600 font-medium">Ready for processing</span>
+                        <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">Ready for processing</span>
                       </div>
                       
                       {/* Action Buttons - More professional */}
                       <div className="flex gap-2">
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center space-x-1">
+                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#3E3E3E] transition-colors flex items-center space-x-1">
                           <FileText size={14} />
                           <span>Chapters</span>
                         </button>
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 text-gray-700 text-sm font-medium hover:bg-gray-200 transition-colors flex items-center space-x-1">
+                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#3E3E3E] transition-colors flex items-center space-x-1">
                           <BookOpen size={14} />
                           <span>Transcript</span>
                         </button>
@@ -896,24 +896,24 @@ function Dashboard() {
               )}
 
               {uploadMode === "file" && selectedFile && (
-                <div className="bg-white rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col">
+                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col">
                   {/* File Header */}
-                  <div className="p-4 border-b border-gray-100 bg-gray-50">
+                  <div className="p-4 border-b border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center">
-                          <FileText className="w-4 h-4 text-gray-600" />
+                        <div className="w-8 h-8 bg-gray-100 dark:bg-[#171717] rounded-lg flex items-center justify-center">
+                          <FileText className="w-4 h-4 text-gray-600 dark:text-[#fafafacc]" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900">{selectedFile.name}</p>
-                          <p className="text-sm text-gray-500">
+                          <p className="font-medium text-gray-900 dark:text-[#fafafa]">{selectedFile.name}</p>
+                          <p className="text-sm text-gray-500 dark:text-[#fafafacc]">
                             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600 font-medium">Ready for processing</span>
+                        <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">Ready for processing</span>
                       </div>
                     </div>
                   </div>
@@ -921,14 +921,14 @@ function Dashboard() {
                   {/* File Preview - Takes remaining space */}
                   <div className="flex-1 p-4">
                     {selectedFile.type === "application/pdf" && (
-                      <div className="h-full border border-gray-200 rounded-lg overflow-hidden">
+                      <div className="h-full border border-gray-200 dark:border-[#2E2E2E] rounded-lg overflow-hidden">
                         <PDFViewer file={selectedFile} />
                       </div>
                     )}
                   </div>
                   
                   {/* Remove File Button */}
-                  <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
+                  <div className="p-4 border-t border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E] text-center">
                     <button
                       onClick={() => {
                         setSelectedFile(null);
@@ -966,7 +966,7 @@ function Dashboard() {
                           fileInputRef.current.value = "";
                         }
                       }}
-                      className="text-sm text-red-500 hover:text-red-700 transition-colors font-medium"
+                      className="text-sm text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors font-medium"
                     >
                       Remove file
                     </button>
@@ -978,20 +978,20 @@ function Dashboard() {
         {/* Right column: Learning Materials - Takes 1/3 of the space */}
         <div className="lg:col-span-1 flex flex-col h-full">
           {/* Learning Materials Header */}
-          <div className="bg-white rounded-2xl shadow-xl p-6 mb-6">
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-6 mb-6">
             <div className="flex items-center justify-between mb-6">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-100 rounded-xl flex items-center justify-center">
-                  <Target size={20} className="text-gray-600" />
+                <div className="w-10 h-10 bg-gray-100 dark:bg-[#2E2E2E] rounded-xl flex items-center justify-center">
+                  <Target size={20} className="text-gray-600 dark:text-[#fafafacc]" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900">Learning Materials</h3>
-                  <p className="text-sm text-gray-500">Generate educational content from your source</p>
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-[#fafafa]">Learning Materials</h3>
+                  <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Generate educational content from your source</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 font-medium">AI Ready</span>
+                <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">AI Ready</span>
               </div>
             </div>
             
@@ -1044,10 +1044,10 @@ function Dashboard() {
                     key={tab.id}
                     className={`p-4 rounded-xl text-left transition-all duration-200 border ${
                       isDisabled
-                        ? "bg-gray-50 text-gray-400 cursor-not-allowed border-gray-200"
+                        ? "bg-gray-50 dark:bg-[#2E2E2E] text-gray-400 dark:text-[#fafafacc] cursor-not-allowed border-gray-200 dark:border-[#2E2E2E]"
                         : isActive
-                        ? "bg-blue-50 text-blue-700 border-blue-200 shadow-sm"
-                        : "bg-white text-gray-700 border-gray-200 hover:border-gray-300 hover:shadow-sm"
+                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 shadow-sm"
+                        : "bg-white dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E] hover:shadow-sm"
                     }`}
                     onClick={() => !isDisabled && handleTabClick(tab.id)}
                     disabled={isDisabled}
@@ -1055,13 +1055,13 @@ function Dashboard() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isActive ? 'bg-blue-100' : 'bg-gray-100'
+                          isActive ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-[#2E2E2E]'
                         }`}>
-                          <tab.icon size={16} className={isActive ? 'text-blue-600' : tab.color} />
+                          <tab.icon size={16} className={isActive ? 'text-blue-600 dark:text-blue-400' : tab.color} />
                         </div>
                         <div>
                           <div className="font-medium">{tab.label}</div>
-                          <div className="text-sm text-gray-500">{tab.description}</div>
+                          <div className="text-sm text-gray-500 dark:text-[#fafafacc]">{tab.description}</div>
                         </div>
                       </div>
                       
@@ -1091,19 +1091,19 @@ function Dashboard() {
       {hasContent && (
         <div className="w-full px-4 py-6">
           <div className="max-w-7xl mx-auto">
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
+            <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden">
               <div className="p-8">
                 {activeTab === "blog" && (
                   <div>
                     {loadingStates.blog && (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 text-lg">Generating blog post...</p>
+                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating blog post...</p>
                       </div>
                     )}
                     {errors.blog && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-700">{errors.blog}</p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-400">{errors.blog}</p>
                       </div>
                     )}
                     {!loadingStates.blog && !errors.blog && <BlogView blog={blog} />}
@@ -1114,12 +1114,12 @@ function Dashboard() {
                     {loadingStates.slides && (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 text-lg">Generating slides...</p>
+                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating slides...</p>
                       </div>
                     )}
                     {errors.slides && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-700">{errors.slides}</p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-400">{errors.slides}</p>
                       </div>
                     )}
                     {!loadingStates.slides && !errors.slides && (
@@ -1132,12 +1132,12 @@ function Dashboard() {
                     {loadingStates.flashcards && (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 text-lg">Generating flashcards...</p>
+                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating flashcards...</p>
                       </div>
                     )}
                     {errors.flashcards && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-700">{errors.flashcards}</p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-400">{errors.flashcards}</p>
                       </div>
                     )}
                     {!loadingStates.flashcards && !errors.flashcards && (
@@ -1150,15 +1150,15 @@ function Dashboard() {
                     {loadingStates.quiz && (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 text-lg">Generating quiz...</p>
+                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating quiz...</p>
                       </div>
                     )}
                     {errors.quiz && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-700">{errors.quiz}</p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-400">{errors.quiz}</p>
                       </div>
                     )}
-                    {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} />}
+                    {!loadingStates.quiz && !errors.quiz && <QuizView quiz={quiz} quizId={currentSessionContent.quiz?.metadata?.contentId} />}
                   </div>
                 )}
                 {activeTab === "summary" && (
@@ -1166,12 +1166,12 @@ function Dashboard() {
                     {loadingStates.summary && (
                       <div className="text-center py-12">
                         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 text-lg">Generating summary...</p>
+                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating summary...</p>
                       </div>
                     )}
                     {errors.summary && (
-                      <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                        <p className="text-red-700">{errors.summary}</p>
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                        <p className="text-red-700 dark:text-red-400">{errors.summary}</p>
                       </div>
                     )}
                     {!loadingStates.summary && !errors.summary && <SummaryView summary={summary} />}

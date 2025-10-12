@@ -55,16 +55,24 @@ function QuizView({ quiz, quizId }) {
     // Save quiz attempt if quizId is provided
     if (quizId) {
       try {
-        await api.post('/api/content/quiz-attempt', {
+        console.log('Saving quiz attempt with quizId:', quizId);
+        console.log('User answers:', selectedAnswers);
+        console.log('Time spent:', elapsedTime);
+        
+        const response = await api.post('/api/content/quiz-attempt', {
           quizId,
           userAnswers: selectedAnswers,
           timeSpent: elapsedTime
         });
-        console.log('Quiz attempt saved successfully');
+        
+        console.log('Quiz attempt saved successfully:', response.data);
       } catch (error) {
         console.error('Failed to save quiz attempt:', error);
+        console.error('Error details:', error.response?.data);
         // Don't show error to user as it's not critical
       }
+    } else {
+      console.warn('No quizId provided, quiz attempt not saved');
     }
   };
 
