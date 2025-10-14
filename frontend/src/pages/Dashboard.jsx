@@ -75,6 +75,15 @@ function Dashboard() {
     getContextForChat
   } = useContentContext();
 
+  // Debug: Watch for changes in originalSource
+  useEffect(() => {
+    console.log('Original source changed:', originalSource);
+    if (originalSource) {
+      const context = getContextForChat();
+      console.log('Context after original source change:', context);
+    }
+  }, [originalSource, getContextForChat]);
+
   // Function to create or update user record
   const createOrUpdateUser = async () => {
     if (!user) return;
@@ -519,6 +528,9 @@ function Dashboard() {
 
   // Function to handle tab click and lazy load data
   const handleTabClick = async (tabId) => {
+    console.log('Tab clicked:', tabId);
+    console.log('Current state - videoId:', videoId, 'selectedFile:', selectedFile, 'originalSource:', originalSource);
+    
     if (!videoId && !selectedFile && !originalSource?.content) return;
     
     setActiveTab(tabId);
@@ -530,6 +542,91 @@ function Dashboard() {
     try {
       // Create or update user record before generating content
       await createOrUpdateUser();
+      
+        // If Chat tab is clicked, fetch transcript/file content for context
+        if (tabId === "chat") {
+          if (videoId && url) {
+            // Fetch transcript for YouTube video
+            try {
+              console.log('Fetching transcript for chat context...');
+              const transcriptResponse = await api.post('/api/transcript', { url });
+              const transcriptText = transcriptResponse.data.transcript;
+              
+              if (transcriptText && transcriptText.trim().length > 0) {
+                console.log('Transcript fetched, storing in context...');
+                setOriginalSourceContent({
+                  type: 'youtube',
+                  url: url,
+                  videoId: videoId,
+                  content: transcriptText
+                });
+                console.log('Transcript fetched and stored in context for chat:', transcriptText.substring(0, 100) + '...');
+                
+                // Store context in database for chat component
+                try {
+                  const context = {
+                    currentSession: {},
+                    originalSource: {
+                      type: 'youtube',
+                      url: url,
+                      videoId: videoId,
+                      content: transcriptText
+                    },
+                    metadata: {
+                      hasCurrentSession: false,
+                      hasOriginalSource: true,
+                      totalHistoryItems: 0
+                    }
+                  };
+                  
+                  await api.post('/api/chat/context/store', { context });
+                  console.log('Context stored in database for chat');
+                } catch (contextError) {
+                  console.error('Error storing context in database:', contextError);
+                }
+              }
+            } catch (transcriptError) {
+              console.error('Error fetching transcript for chat:', transcriptError);
+            }
+          } else if (selectedFile && fileContent) {
+            // Use file content for context
+            setOriginalSourceContent({
+              type: 'file',
+              fileName: selectedFile.name,
+              fileType: selectedFile.type,
+              content: fileContent
+            });
+            console.log('File content stored in context for chat');
+            
+            // Store context in database for chat component
+            try {
+              const context = {
+                currentSession: {},
+                originalSource: {
+                  type: 'file',
+                  fileName: selectedFile.name,
+                  fileType: selectedFile.type,
+                  content: fileContent
+                },
+                metadata: {
+                  hasCurrentSession: false,
+                  hasOriginalSource: true,
+                  totalHistoryItems: 0
+                }
+              };
+              
+              await api.post('/api/chat/context/store', { context });
+              console.log('File context stored in database for chat');
+            } catch (contextError) {
+              console.error('Error storing file context in database:', contextError);
+            }
+          }
+          
+          // Mark chat as loaded and return early
+          setLoaded(prev => ({ ...prev, [tabId]: true }));
+          setLoadingStates(prev => ({ ...prev, [tabId]: false }));
+          return;
+        }
       
       let res;
       if (videoId) {

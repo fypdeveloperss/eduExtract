@@ -35,6 +35,16 @@ const EmbeddedChat = () => {
     scrollToBottom();
   }, [messages]);
 
+  // Cleanup: Delete context when component unmounts
+  useEffect(() => {
+    return () => {
+      // Delete context from database when chat component unmounts
+      api.delete('/api/chat/context/delete').catch(error => {
+        console.error('Error deleting context on unmount:', error);
+      });
+    };
+  }, []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!input.trim()) return;
@@ -45,13 +55,30 @@ const EmbeddedChat = () => {
     setIsLoading(true);
 
     try {
-      // Get context for the chat
-      const contentContext = getContextForChat();
-      const hasContextData = hasContext();
+      // Fetch context from database
+      let contentContext = null;
+      try {
+        const contextResponse = await api.get('/api/chat/context/fetch');
+        if (contextResponse.data.success && contextResponse.data.context) {
+          contentContext = contextResponse.data.context;
+          console.log('Context fetched from database:', contentContext);
+        } else {
+          console.log('No context found in database, using local context');
+          contentContext = getContextForChat();
+        }
+      } catch (contextError) {
+        console.error('Error fetching context from database:', contextError);
+        contentContext = getContextForChat();
+      }
       
-      console.log('Sending chat with context:', hasContextData, contentContext);
+      const hasContextData = contentContext && (contentContext.originalSource || Object.keys(contentContext.currentSession || {}).length > 0);
+      
+      console.log('Sending RESTRICTED chat with context:', hasContextData, contentContext);
+      console.log('Original source content:', contentContext?.originalSource);
+      console.log('Current session content:', contentContext?.currentSession);
+      console.log('Full context object:', JSON.stringify(contentContext, null, 2));
 
-      const response = await api.post('/api/chat', {
+      const response = await api.post('/api/chat/restricted', {
         messages: [
           { role: 'user', content: userMessage }
         ],

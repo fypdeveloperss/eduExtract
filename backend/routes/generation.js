@@ -16,6 +16,7 @@ const upload = require('../middleware/upload');
 const User = require('../models/User');
 const GeneratedContent = require('../models/GeneratedContent');
 const ChatHistory = require('../models/ChatHistory');
+const ChatContext = require('../models/ChatContext');
 
 // Import services
 const ChatContextService = require('../services/chatContextService');
@@ -731,10 +732,16 @@ router.post("/api/chat", verifyToken, async (req, res) => {
     // Get recent messages from session (last 10)
     const recentMessages = chatSession.getRecentMessages(10);
     
+    // Clean recent messages to remove _id property that Groq doesn't support
+    const cleanRecentMessages = recentMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
     // Combine system prompt, recent messages, and new messages
-    const finalMessages = [systemPrompt, ...recentMessages, ...messages];
+    const finalMessages = [systemPrompt, ...cleanRecentMessages, ...messages];
 
-    console.log(`Sending ${finalMessages.length} messages to AI (including system prompt and ${recentMessages.length} recent messages)`);
+    console.log(`Sending ${finalMessages.length} messages to AI (including system prompt and ${cleanRecentMessages.length} recent messages)`);
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
@@ -1635,6 +1642,293 @@ router.post('/download-slides', verifyToken, async (req, res) => {
   } catch (error) {
     console.error("Slides download error:", error);
     res.status(500).json({ error: "Failed to generate slides PowerPoint" });
+  }
+});
+
+/**
+ * STORE CHAT CONTEXT IN DATABASE
+ */
+router.post("/api/chat/context/store", verifyToken, async (req, res) => {
+  try {
+    const { context } = req.body;
+    const userId = req.user.uid;
+    const sessionId = `chat_context_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+    console.log(`Storing chat context for user: ${userId}, session: ${sessionId}`);
+
+    // Delete any existing context for this user
+    await ChatContext.deleteMany({ userId });
+
+    // Store context in MongoDB
+    const chatContext = new ChatContext({
+      userId,
+      context,
+      sessionId
+    });
+
+    await chatContext.save();
+
+    console.log(`Context stored in MongoDB for user: ${userId}`);
+
+    res.json({
+      success: true,
+      message: "Context stored successfully",
+      sessionId
+    });
+  } catch (error) {
+    console.error("Error storing chat context:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to store context" 
+    });
+  }
+});
+
+/**
+ * GET CHAT CONTEXT FROM DATABASE
+ */
+router.get("/api/chat/context/fetch", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+
+    console.log(`Fetching chat context for user: ${userId}`);
+
+    // Get context from MongoDB
+    const contextData = await ChatContext.findOne({ userId }).sort({ createdAt: -1 });
+
+    if (!contextData) {
+      return res.json({
+        success: true,
+        context: null,
+        message: "No context found"
+      });
+    }
+
+    console.log(`Context retrieved from MongoDB for user: ${userId}`);
+
+    res.json({
+      success: true,
+      context: contextData.context
+    });
+  } catch (error) {
+    console.error("Error fetching chat context:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch context" 
+    });
+  }
+});
+
+/**
+ * DELETE CHAT CONTEXT FROM DATABASE
+ */
+router.delete("/api/chat/context/delete", verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+
+    console.log(`Deleting chat context for user: ${userId}`);
+
+    // Delete context from MongoDB
+    await ChatContext.deleteMany({ userId });
+
+    console.log(`Context deleted from MongoDB for user: ${userId}`);
+
+    res.json({
+      success: true,
+      message: "Context deleted successfully"
+    });
+  } catch (error) {
+    console.error("Error deleting chat context:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to delete context" 
+    });
+  }
+});
+
+/**
+ * FETCH YOUTUBE TRANSCRIPT
+ */
+router.post("/api/transcript", verifyToken, async (req, res) => {
+  try {
+    const { url } = req.body;
+    const userId = req.user.uid;
+
+    if (!url) {
+      return res.status(400).json({ error: "URL is required" });
+    }
+
+    console.log(`Fetching transcript for user: ${userId}, URL: ${url}`);
+
+    const videoId = new URL(url).searchParams.get("v");
+    if (!videoId) {
+      return res.status(400).json({ error: "Invalid YouTube URL" });
+    }
+
+    const transcriptText = await getTranscriptText(url);
+    
+    console.log(`Transcript fetched successfully (${transcriptText.length} characters)`);
+
+    res.json({
+      success: true,
+      transcript: transcriptText,
+      videoId: videoId,
+      url: url
+    });
+  } catch (error) {
+    console.error("Error fetching transcript:", error);
+    res.status(500).json({ 
+      success: false,
+      error: "Failed to fetch transcript",
+      details: error.message 
+    });
+  }
+});
+
+/**
+ * RESTRICTED CHAT ENDPOINT - Only uses current file/video content
+ */
+router.post("/api/chat/restricted", verifyToken, async (req, res) => {
+  try {
+    const { messages, contentContext, sessionId } = req.body;
+    const userId = req.user.uid;
+    const userName = req.user.name || req.user.email?.split('@')[0] || 'User';
+
+    console.log(`Restricted chat request from user ${userId}, session: ${sessionId || 'new'}`);
+
+    let chatSession = null;
+    if (sessionId) {
+      chatSession = await ChatHistory.findOne({ userId, sessionId });
+    }
+    
+    if (!chatSession) {
+      const newSessionId = sessionId || `restricted_session_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      chatSession = await ChatHistory.createSession(userId, newSessionId);
+      console.log(`Created new restricted chat session: ${newSessionId}`);
+    }
+
+    let contextualPrompt = "You are a helpful educational assistant for EduExtract. You can help users with understanding content, navigating the app, and answering questions about educational materials. Be concise and friendly in your responses.";
+    
+    if (contentContext) {
+      try {
+        console.log('Building restricted context for embedded chat...');
+        
+        // Build restricted context - only current file/video content
+        const restrictedContext = {
+          currentSession: contentContext.currentSession || {},
+          originalSource: contentContext.originalSource || null,
+          metadata: {
+            currentSessionItems: Object.keys(contentContext.currentSession || {}).length,
+            hasOriginalSource: !!contentContext.originalSource,
+            isRestricted: true
+          }
+        };
+        
+        // Create restricted prompt
+        contextualPrompt = `You are an AI tutor for ${userName} using EduExtract. You can ONLY answer questions based on the current file or video content that the user has uploaded/processed.
+
+CRITICAL RESTRICTIONS:
+- You MUST ONLY use information from the current file/video content provided below
+- Do NOT use any external knowledge or general information
+- If a question cannot be answered from the provided content, say "I can only answer questions based on the current file/video content you've uploaded. Please ask something related to that content."
+- Do NOT reference any previous content or user history
+- Stay strictly within the bounds of the provided content`;
+
+        if (restrictedContext.originalSource) {
+          contextualPrompt += `\n\nCURRENT FILE/VIDEO CONTENT (Your ONLY source of information):`;
+          contextualPrompt += `\nType: ${restrictedContext.originalSource.type}`;
+          if (restrictedContext.originalSource.url) {
+            contextualPrompt += `\nSource: ${restrictedContext.originalSource.url}`;
+          }
+          contextualPrompt += `\nContent: ${restrictedContext.originalSource.content}`;
+        }
+
+        if (restrictedContext.currentSession && Object.keys(restrictedContext.currentSession).length > 0) {
+          contextualPrompt += `\n\nGENERATED CONTENT FROM CURRENT FILE/VIDEO:`;
+          Object.keys(restrictedContext.currentSession).forEach(type => {
+            const content = restrictedContext.currentSession[type];
+            if (content) {
+              contextualPrompt += `\n\n${type.toUpperCase()}:`;
+              if (typeof content.content === 'string') {
+                contextualPrompt += `\n${content.content}`;
+              } else if (typeof content.content === 'object') {
+                contextualPrompt += `\n${JSON.stringify(content.content, null, 2)}`;
+              }
+            }
+          });
+        }
+
+        contextualPrompt += `\n\nYou can help the user by:
+- Explaining concepts ONLY from the current file/video content
+- Answering questions ONLY about the current file/video content
+- Creating new educational materials ONLY based on the current file/video content
+- Summarizing or analyzing ONLY the current file/video content
+
+REMEMBER: You are restricted to ONLY the content provided above. Do not use any external knowledge.`;
+        
+        chatSession.contextSnapshot = restrictedContext;
+        await chatSession.save();
+        
+        console.log(`Restricted context built successfully. Current session items: ${restrictedContext.metadata.currentSessionItems}, has original source: ${restrictedContext.metadata.hasOriginalSource}`);
+      } catch (contextError) {
+        console.error('Error building restricted context:', contextError);
+      }
+    }
+
+    const systemPrompt = {
+      role: "system",
+      content: contextualPrompt
+    };
+
+    const recentMessages = chatSession.getRecentMessages(10);
+    const cleanRecentMessages = recentMessages.map(msg => ({
+      role: msg.role,
+      content: msg.content
+    }));
+    
+    const finalMessages = [systemPrompt, ...cleanRecentMessages, ...messages];
+
+    console.log(`Sending ${finalMessages.length} messages to AI (including restricted system prompt and ${cleanRecentMessages.length} recent messages)`);
+
+    const completion = await withRetry(async () => {
+      const result = await groq.chat.completions.create({
+        messages: finalMessages,
+        model: "meta-llama/llama-4-scout-17b-16e-instruct",
+        temperature: 0.7,
+        max_tokens: 1024,
+      });
+
+      if (!result.choices?.[0]?.message?.content) {
+        throw new Error("Invalid AI response format");
+      }
+
+      return result;
+    }, 3);
+
+    const finishReason = completion.choices[0]?.finish_reason;
+    if (finishReason === "length") {
+      console.log("Max tokens reached. Truncating response.");
+    }
+
+    const aiResponse = completion.choices[0]?.message?.content;
+    
+    try {
+      await chatSession.addMessage('user', messages[messages.length - 1].content);
+      await chatSession.addMessage('assistant', aiResponse);
+      console.log(`Saved restricted conversation to session ${chatSession.sessionId}`);
+    } catch (saveError) {
+      console.error('Error saving restricted chat history:', saveError);
+    }
+
+    res.json({ 
+      message: aiResponse,
+      sessionId: chatSession.sessionId,
+      contextLoaded: !!contentContext,
+      isRestricted: true
+    });
+  } catch (error) {
+    console.error("Restricted chat error:", error);
+    res.status(500).json({ error: "Failed to get response from AI" });
   }
 });
 
