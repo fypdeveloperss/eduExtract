@@ -26,9 +26,15 @@ export const AuthProvider = ({ children }) => {
       setUser(user);
       setLoading(false);
       
-      // Check admin status when user changes
+      // Create or update user in database when they log in
       if (user) {
-        await checkAdminStatus();
+        try {
+          await createOrUpdateUserInDB(user);
+          console.log('User creation completed, now checking admin status');
+          await checkAdminStatus();
+        } catch (error) {
+          console.error('Error in user setup:', error);
+        }
       } else {
         setIsAdmin(false);
       }
@@ -36,6 +42,32 @@ export const AuthProvider = ({ children }) => {
 
     return () => unsubscribe();
   }, []);
+
+  const createOrUpdateUserInDB = async (user) => {
+    try {
+      const token = await user.getIdToken();
+      const response = await fetch('/api/users', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          uid: user.uid,
+          name: user.displayName || user.email?.split('@')[0] || 'Unknown User',
+          email: user.email
+        })
+      });
+      
+      if (response.ok) {
+        console.log('User created/updated in database successfully');
+      } else {
+        console.error('Failed to create/update user in database');
+      }
+    } catch (error) {
+      console.error('Error creating/updating user in database:', error);
+    }
+  };
 
   const checkAdminStatus = async () => {
     if (!user) return;

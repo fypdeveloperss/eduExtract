@@ -169,6 +169,109 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+// Get onboarding status
+router.get('/onboarding-status', verifyToken, async (req, res) => {
+  try {
+    console.log('Getting onboarding status for user:', req.user.uid);
+    const user = await UserService.getUserByUid(req.user.uid);
+    
+    if (!user) {
+      console.log('User not found in database');
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    console.log('User found, onboarding status:', {
+      isCompleted: user.onboarding?.isCompleted,
+      preferencesSet: user.onboarding?.preferencesSet
+    });
+    
+    res.json({
+      isCompleted: user.onboarding?.isCompleted || false,
+      preferencesSet: user.onboarding?.preferencesSet || false
+    });
+  } catch (error) {
+    console.error('Error getting onboarding status:', error);
+    res.status(500).json({ error: 'Failed to get onboarding status' });
+  }
+});
+
+// Complete onboarding
+router.post('/complete-onboarding', verifyToken, async (req, res) => {
+  try {
+    const user = await UserService.completeOnboarding(req.user.uid);
+    res.json(user);
+  } catch (error) {
+    console.error('Error completing onboarding:', error);
+    res.status(500).json({ error: 'Failed to complete onboarding' });
+  }
+});
+
+// Skip onboarding
+router.post('/skip-onboarding', verifyToken, async (req, res) => {
+  try {
+    const user = await UserService.skipOnboarding(req.user.uid);
+    res.json(user);
+  } catch (error) {
+    console.error('Error skipping onboarding:', error);
+    res.status(500).json({ error: 'Failed to skip onboarding' });
+  }
+});
+
+// Get user preferences
+router.get('/preferences', verifyToken, async (req, res) => {
+  try {
+    const user = await UserService.getUserByUid(req.user.uid);
+    
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    
+    res.json(user.preferences || {});
+  } catch (error) {
+    console.error('Error getting preferences:', error);
+    res.status(500).json({ error: 'Failed to get preferences' });
+  }
+});
+
+// Update user preferences
+router.put('/preferences', verifyToken, async (req, res) => {
+  try {
+    const user = await UserService.updatePreferences(req.user.uid, req.body);
+    res.json(user);
+  } catch (error) {
+    console.error('Error updating preferences:', error);
+    res.status(500).json({ error: 'Failed to update preferences' });
+  }
+});
+
+// Get default preferences
+router.get('/preferences/default', (req, res) => {
+  res.json({
+    contentPreferences: {
+      quizFormat: 'multiple-choice',
+      summaryLength: 'medium',
+      flashcardStyle: 'simple',
+      presentationSlides: 10
+    },
+    tonePreferences: {
+      communicationStyle: 'academic',
+      complexityLevel: 'intermediate',
+      languageStyle: 'formal'
+    },
+    learningBehavior: {
+      preferredLearningTime: 'anytime',
+      studySessionLength: 30,
+      difficultyProgression: 'moderate'
+    },
+    contentCustomization: {
+      includeExamples: true,
+      includeVisuals: true,
+      includeReferences: false,
+      personalizedExamples: false
+    }
+  });
+});
+
 // Get user by ID (admin only) - legacy endpoint (must come last)
 router.get('/:userId', verifyToken, async (req, res) => {
   try {

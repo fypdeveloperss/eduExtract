@@ -59,7 +59,7 @@ function Dashboard() {
   });
   const [showContentLayout, setShowContentLayout] = useState(false);
   const videoContainerRef = useRef(null);
-  const { user } = useAuth();
+  const { user, toggleAuthModal } = useAuth();
   
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
@@ -101,6 +101,12 @@ function Dashboard() {
 
   // Handle modal submission
   const handleModalSubmit = ({ type, content }) => {
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     if (type === 'url') {
       setUrl(content);
       // Clear previous session context and set new original source
@@ -130,6 +136,12 @@ function Dashboard() {
 
   // Handle URL submission
   const handleUrlSubmit = async (urlToProcess) => {
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     const extractedVideoId = extractVideoId(urlToProcess);
     if (!extractedVideoId) {
       setError("Please enter a valid YouTube URL");
@@ -182,6 +194,12 @@ function Dashboard() {
 
   // Handle text content submission
   const handleTextSubmit = async (textContent) => {
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     setError("");
     setIsLoading(true);
     setBlog("");
@@ -234,6 +252,12 @@ function Dashboard() {
   // Handle file content processing
   const processFileContent = async () => {
     console.log('Processing file content:', { fileContent: fileContent?.length, selectedFile: selectedFile?.name });
+    
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
     
     if (!fileContent || fileContent.trim().length === 0) {
       setError("No content extracted from file. Please try a different file.");
@@ -315,6 +339,13 @@ function Dashboard() {
   const handleDrag = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     if (e.type === "dragenter" || e.type === "dragover") {
       setDragActive(true);
     } else if (e.type === "dragleave") {
@@ -327,12 +358,24 @@ function Dashboard() {
     e.stopPropagation();
     setDragActive(false);
     
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       handleFileSelect(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileSelect = async (file) => {
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     if (!file) {
       setError("No file selected");
       return;
@@ -364,6 +407,12 @@ function Dashboard() {
   };
 
   const extractFileContent = async (file) => {
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
     try {
       setIsExtractingContent(true);
       setError("");
@@ -530,6 +579,12 @@ function Dashboard() {
   const handleTabClick = async (tabId) => {
     console.log('Tab clicked:', tabId);
     console.log('Current state - videoId:', videoId, 'selectedFile:', selectedFile, 'originalSource:', originalSource);
+    
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
     
     if (!videoId && !selectedFile && !originalSource?.content) return;
     
@@ -887,6 +942,10 @@ function Dashboard() {
               uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             }`}
             onClick={() => {
+              if (!user) {
+                toggleAuthModal(true);
+                return;
+              }
               setUploadMode("file");
               resetStates();
             }}
@@ -911,6 +970,10 @@ function Dashboard() {
               uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             }`}
             onClick={() => {
+              if (!user) {
+                toggleAuthModal(true);
+                return;
+              }
               setUploadMode("youtube");
               setShowPasteModal(true);
               resetStates();
@@ -929,6 +992,10 @@ function Dashboard() {
           <div 
             className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#2E2E2E] rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#3E3E3E]"
             onClick={() => {
+              if (!user) {
+                toggleAuthModal(true);
+                return;
+              }
               // Future feature - recording functionality
               alert("Recording feature coming soon!");
             }}
@@ -965,6 +1032,10 @@ function Dashboard() {
                 type="file"
                 className="hidden"
                 onChange={(e) => {
+                  if (!user) {
+                    toggleAuthModal(true);
+                    return;
+                  }
                   const file = e.target.files?.[0];
                   if (file) {
                     handleFileSelect(file);
@@ -982,7 +1053,13 @@ function Dashboard() {
                 <div>
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => {
+                      if (!user) {
+                        toggleAuthModal(true);
+                        return;
+                      }
+                      fileInputRef.current?.click();
+                    }}
                     className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-lg"
                     disabled={isLoading}
                   >

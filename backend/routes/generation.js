@@ -128,33 +128,6 @@ async function getTranscriptText(url) {
   });
 }
 
-// Helper function to create or update user
-async function createOrUpdateUser(uid, name, email) {
-  try {
-    let user = await User.findOne({ uid });
-    
-    if (user) {
-      // Update existing user
-      user.name = name;
-      user.email = email;
-      user.lastLogin = new Date();
-      await user.save();
-    } else {
-      // Create new user
-      user = new User({
-        uid,
-        name,
-        email
-      });
-      await user.save();
-    }
-    
-    return user;
-  } catch (error) {
-    console.error('Error creating/updating user:', error);
-    throw error;
-  }
-}
 
 /**
  * BLOG GENERATION
@@ -164,8 +137,6 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid; // Get userId from verified token
 
-    // Create or update user record
-    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
@@ -228,8 +199,6 @@ router.post("/generate-flashcards", verifyToken, async (req, res) => {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
-    // Create or update user record
-    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     const flashcards = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -304,8 +273,6 @@ router.post("/generate-slides", verifyToken, async (req, res) => {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
-    // Create or update user record
-    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     // Using the updated getTranscriptText function
     const transcriptText = await getTranscriptText(url);
@@ -529,8 +496,6 @@ router.post("/generate-quiz", verifyToken, async (req, res) => {
     const transcriptText = await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
-    // Create or update user record
-    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     const quiz = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -604,8 +569,6 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
     const videoId = new URL(url).searchParams.get("v");
     if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
 
-    // Create or update user record
-    await createOrUpdateUser(userId, req.user.name || 'Unknown User', req.user.email || 'unknown@example.com');
 
     // Use the cached transcript function for consistency
     const transcriptText = await getTranscriptText(url);

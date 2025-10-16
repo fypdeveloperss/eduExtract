@@ -6,6 +6,10 @@ import Contact from "./pages/Contact";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/FirebaseAuthContext";
 import { CollaborationProvider } from "./context/CollaborationContext";
+import { OnboardingProvider } from "./context/OnboardingContext";
+import { PreferencesProvider } from "./context/PreferencesContext";
+import OnboardingModal from "./components/OnboardingModal";
+import PreferencesSettings from "./components/PreferencesSettings";
 import Content from "./components/Content";
 import MyContent from "./components/MyContent";
 import Admin from "./pages/Admin";
@@ -32,38 +36,44 @@ function App() {
   return (
     <AuthProvider>
       <CollaborationProvider>
-        <Router>
-          <Routes>
-            <Route index element={<Home />} />
-            <Route path="/about" element={<About />} />
-            <Route path="/contact" element={<Contact />} />
-            <Route path="/" element={<Layout />}>
-              <Route path="dashboard" element={<Dashboard />} />
-              <Route path="content" element={<MyContent/>}/>
-              <Route path="content/:contentId" element={<Content/>}/>
-              <Route path="marketplace" element={<Marketplace />} />
-              <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
-              <Route path="marketplace/upload" element={<MarketplaceUpload />} />
-              <Route path="forum" element={<Forum />} />
-              <Route path="forum/category/:id" element={<ForumCategory />} />
-              <Route path="forum/topic/:id" element={<ForumTopic />} />
-              <Route path="forum/create" element={<ForumCreate />} />
-              <Route path="collaborate" element={<CollaborateHub />} />
-              <Route path="collaborate/invitations" element={<CollaborationInvites />} />
-              <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
-              <Route path="collaborate/invite/:token" element={<InviteAccept />} />
-              <Route path="collaborate/content/:contentId" element={<SharedContentView />} />
-            </Route>
-          <Route path="/admin" element={<AdminLayout />}>
-            <Route index element={<Admin />} />
-            <Route path="users" element={<Users />} />
-            <Route path="admins" element={<AdminManagement />} />
-            <Route path="marketplace" element={<AdminMarketplace />} />
-            <Route path="forum" element={<AdminForum />} />
-            <Route path="forum-moderation" element={<AdminForumModeration />} />
-          </Route>
-        </Routes>
-      </Router>
+        <OnboardingProvider>
+          <PreferencesProvider>
+            <Router>
+              <Routes>
+                <Route index element={<Home />} />
+                <Route path="/about" element={<About />} />
+                <Route path="/contact" element={<Contact />} />
+                <Route path="/" element={<Layout />}>
+                  <Route path="dashboard" element={<Dashboard />} />
+                  <Route path="content" element={<MyContent/>}/>
+                  <Route path="content/:contentId" element={<Content/>}/>
+                  <Route path="preferences" element={<PreferencesSettings />} />
+                  <Route path="marketplace" element={<Marketplace />} />
+                  <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
+                  <Route path="marketplace/upload" element={<MarketplaceUpload />} />
+                  <Route path="forum" element={<Forum />} />
+                  <Route path="forum/category/:id" element={<ForumCategory />} />
+                  <Route path="forum/topic/:id" element={<ForumTopic />} />
+                  <Route path="forum/create" element={<ForumCreate />} />
+                  <Route path="collaborate" element={<CollaborateHub />} />
+                  <Route path="collaborate/invitations" element={<CollaborationInvites />} />
+                  <Route path="collaborate/space/:spaceId" element={<CollaborationSpace />} />
+                  <Route path="collaborate/invite/:token" element={<InviteAccept />} />
+                  <Route path="collaborate/content/:contentId" element={<SharedContentView />} />
+                </Route>
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<Admin />} />
+                <Route path="users" element={<Users />} />
+                <Route path="admins" element={<AdminManagement />} />
+                <Route path="marketplace" element={<AdminMarketplace />} />
+                <Route path="forum" element={<AdminForum />} />
+                <Route path="forum-moderation" element={<AdminForumModeration />} />
+              </Route>
+            </Routes>
+            <OnboardingModal />
+          </Router>
+          </PreferencesProvider>
+        </OnboardingProvider>
       </CollaborationProvider>
     </AuthProvider>
   );

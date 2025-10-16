@@ -14,6 +14,7 @@ import {
   Copy,
   Info
 } from 'lucide-react';
+import PreferencesSettings from './PreferencesSettings';
 
 // Add CSS keyframes for animations
 const animationKeyframes = `
@@ -66,6 +67,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.displayName || '');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  const [accountInnerTab, setAccountInnerTab] = useState('accountInfo'); // 'accountInfo' | 'userPrefs'
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -176,6 +178,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
 
   const settingsTabs = [
     { id: 'account', label: 'Account', icon: User },
+    { id: 'user-prefs', label: 'User Preferences', icon: Settings },
     { id: 'personalization', label: 'Personalization', icon: Globe },
     { id: 'billing', label: 'Plan & Billing', icon: CreditCard },
     { id: 'members', label: 'Members', icon: Users },
@@ -228,8 +231,33 @@ const SettingsModal = ({ isOpen, onClose }) => {
           {activeTab === 'account' && (
             <div className="space-y-6">
               <div>
-                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">Account</h3>
+                <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Account</h3>
+
+                {/* Account inner tabs */}
+                <div className="flex items-center gap-2 mb-4">
+                  <button
+                    onClick={() => setAccountInnerTab('accountInfo')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      accountInnerTab === 'accountInfo'
+                        ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    Profile
+                  </button>
+                  <button
+                    onClick={() => setAccountInnerTab('userPrefs')}
+                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
+                      accountInnerTab === 'userPrefs'
+                        ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                    }`}
+                  >
+                    User Preferences
+                  </button>
+                </div>
                 
+                {accountInnerTab === 'accountInfo' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div className="flex-1">
@@ -301,7 +329,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
                       <p className="text-gray-900 dark:text-white">Study</p>
                     </div>
-                    <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -313,7 +341,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">School</label>
                       <p className="text-gray-900 dark:text-white">COMSATS University Islamabad (CUI)</p>
                     </div>
-                    <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -325,7 +353,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Courses</label>
                       <p className="text-gray-900 dark:text-white">Computer Science</p>
                     </div>
-                    <button className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -355,10 +383,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       </svg>
                     </div>
                   </div>
-                </div>
-
-                {/* Referral Section */}
-                <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  {/* Referral Section */}
+                  <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="font-medium text-blue-900 dark:text-blue-100">15% Off - Referral Link</h4>
@@ -379,8 +405,23 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       </button>
                     </div>
                   </div>
+                  </div>
                 </div>
+                )}
+
+                {accountInnerTab === 'userPrefs' && (
+                  <div className="mt-2">
+                    {/* Inline preferences editor */}
+                    <PreferencesSettings />
+                  </div>
+                )}
               </div>
+            </div>
+          )}
+
+          {activeTab === 'user-prefs' && (
+            <div className="space-y-6">
+              <PreferencesSettings embedded />
             </div>
           )}
 

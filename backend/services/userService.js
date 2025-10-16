@@ -13,11 +13,15 @@ class UserService {
         user.lastLogin = new Date();
         await user.save();
       } else {
-        // Create new user
+        // Create new user with default onboarding values
         user = new User({
           uid,
           name,
-          email
+          email,
+          onboarding: {
+            isCompleted: false,
+            preferencesSet: false
+          }
         });
         await user.save();
       }
@@ -158,6 +162,68 @@ class UserService {
       };
     } catch (error) {
       console.error('Error getting user stats:', error);
+      throw error;
+    }
+  }
+
+  // Complete onboarding
+  static async completeOnboarding(uid) {
+    try {
+      const user = await User.findOne({ uid });
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      user.onboarding.isCompleted = true;
+      user.onboarding.preferencesSet = true;
+      user.onboarding.completedAt = new Date();
+      
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error('Error completing onboarding:', error);
+      throw error;
+    }
+  }
+
+  // Skip onboarding
+  static async skipOnboarding(uid) {
+    try {
+      const user = await User.findOne({ uid });
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      user.onboarding.isCompleted = true;
+      user.onboarding.preferencesSet = false;
+      user.onboarding.completedAt = new Date();
+      
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error('Error skipping onboarding:', error);
+      throw error;
+    }
+  }
+
+  // Update user preferences
+  static async updatePreferences(uid, preferences) {
+    try {
+      const user = await User.findOne({ uid });
+      
+      if (!user) {
+        throw new Error('User not found');
+      }
+      
+      user.preferences = preferences;
+      user.onboarding.preferencesSet = true;
+      
+      await user.save();
+      return user;
+    } catch (error) {
+      console.error('Error updating preferences:', error);
       throw error;
     }
   }
