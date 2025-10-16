@@ -8,6 +8,7 @@ const OnboardingModal = () => {
   const { updatePreferences } = usePreferences();
   
   console.log('OnboardingModal component rendered with isOnboarding:', isOnboarding);
+  const [coursesInput, setCoursesInput] = useState('');
   const [localPreferences, setLocalPreferences] = useState({
     contentPreferences: {
       quizFormat: 'multiple-choice',
@@ -38,6 +39,13 @@ const OnboardingModal = () => {
     }
   });
   const [saving, setSaving] = useState(false);
+
+  // Initialize coursesInput with existing courses data
+  useEffect(() => {
+    if (localPreferences.studyProfile?.courses) {
+      setCoursesInput(localPreferences.studyProfile.courses.join(', '));
+    }
+  }, [localPreferences.studyProfile?.courses]);
 
   const steps = [
     {
@@ -111,17 +119,8 @@ const OnboardingModal = () => {
               </label>
               <input
                 type="text"
-                value={localPreferences.studyProfile.courses.join(', ')}
-                onChange={(e) => setLocalPreferences({
-                  ...localPreferences,
-                  studyProfile: {
-                    ...localPreferences.studyProfile,
-                    courses: e.target.value
-                      .split(',')
-                      .map(s => s.trim())
-                      .filter(Boolean)
-                  }
-                })}
+                value={coursesInput}
+                onChange={(e) => setCoursesInput(e.target.value)}
                 placeholder="e.g., Computer Science, Data Structures"
                 className="w-full p-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
               />
@@ -210,7 +209,17 @@ const OnboardingModal = () => {
       // Save preferences and complete onboarding
       setSaving(true);
       try {
-        await updatePreferences(localPreferences);
+        const payload = {
+          ...localPreferences,
+          studyProfile: {
+            ...localPreferences.studyProfile,
+            courses: coursesInput
+              .split(',')
+              .map(s => s.trim())
+              .filter(Boolean)
+          }
+        };
+        await updatePreferences(payload);
         await completeOnboarding();
       } catch (error) {
         console.error('Failed to save preferences:', error);

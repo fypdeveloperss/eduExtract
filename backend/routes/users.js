@@ -268,6 +268,11 @@ router.get('/preferences/default', (req, res) => {
       includeVisuals: true,
       includeReferences: false,
       personalizedExamples: false
+    },
+    studyProfile: {
+      purpose: '',
+      school: '',
+      courses: []
     }
   });
 });

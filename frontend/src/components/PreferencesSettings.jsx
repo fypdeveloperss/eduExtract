@@ -102,7 +102,7 @@ const PreferencesSettings = ({ embedded = false }) => {
         <div className="flex items-center justify-between mb-6">
           <h1 className="text-xl font-semibold text-gray-900 dark:text-white">User Preferences</h1>
           <div className="flex gap-2">
-            <button onClick={handleReset} className="px-3 py-1.5 bg-gray-100 dark:bg-[#2E2E2E] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#3E3E3E] transition-colors flex items-center gap-2">
+            <button onClick={handleReset} className="px-3 py-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors flex items-center gap-2">
               <RotateCcw className="w-4 h-4" />
               <span>Reset</span>
             </button>
@@ -114,7 +114,7 @@ const PreferencesSettings = ({ embedded = false }) => {
         </div>
 
         {/* Content Preferences */}
-        <div className="divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="divide-y divide-gray-200 dark:divide-[#fafafa1a]">
           <div className="py-4 flex items-center justify-between">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quiz Format</label>
@@ -128,7 +128,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                   quizFormat: e.target.value
                 }
               })}
-              className="w-56 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
               <option value="multiple-choice">Multiple Choice</option>
               <option value="true-false">True/False</option>
@@ -150,7 +150,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                   summaryLength: e.target.value
                 }
               })}
-              className="w-56 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
               <option value="brief">Brief</option>
               <option value="medium">Medium</option>
@@ -171,7 +171,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                   flashcardStyle: e.target.value
                 }
               })}
-              className="w-56 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
               <option value="simple">Simple</option>
               <option value="detailed">Detailed</option>
@@ -195,7 +195,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                   presentationSlides: parseInt(e.target.value)
                 }
               })}
-              className="w-28 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-28 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             />
           </div>
         </div>
@@ -219,7 +219,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                     communicationStyle: e.target.value
                   }
                 })}
-                className="w-full p-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
               >
                 <option value="academic">Academic</option>
                 <option value="casual">Casual</option>
@@ -241,7 +241,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                     complexityLevel: e.target.value
                   }
                 })}
-                className="w-full p-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
               >
                 <option value="beginner">Beginner</option>
                 <option value="intermediate">Intermediate</option>
@@ -262,7 +262,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                     languageStyle: e.target.value
                   }
                 })}
-                className="w-full p-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
+                className="w-full p-3 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-[#fafafa] focus:ring-2 focus:ring-blue-500"
               >
                 <option value="formal">Formal</option>
                 <option value="informal">Informal</option>
@@ -287,7 +287,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                   purpose: e.target.value
                 }
               })}
-              className="w-56 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
               <option value="">Select</option>
               <option value="Study">Study</option>
@@ -312,7 +312,7 @@ const PreferencesSettings = ({ embedded = false }) => {
                 }
               })}
               placeholder="COMSATS University Islamabad (CUI)"
-              className="w-72 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-72 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             />
           </div>
 
@@ -325,7 +325,7 @@ const PreferencesSettings = ({ embedded = false }) => {
               value={coursesInput}
               onChange={(e) => setCoursesInput(e.target.value)}
               placeholder="Computer Science, Data Structures"
-              className="w-96 p-2 border border-gray-300 dark:border-gray-700 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+              className="w-96 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             />
           </div>
         </div>
@@ -336,7 +336,7 @@ const PreferencesSettings = ({ embedded = false }) => {
             Content Customization
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#fafafa1a] rounded-lg">
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-[#fafafa]">Include Examples</h3>
                 <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Add practical examples to content</p>
@@ -355,7 +355,7 @@ const PreferencesSettings = ({ embedded = false }) => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#fafafa1a] rounded-lg">
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-[#fafafa]">Include Visuals</h3>
                 <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Add diagrams and visual aids</p>
@@ -374,7 +374,7 @@ const PreferencesSettings = ({ embedded = false }) => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#fafafa1a] rounded-lg">
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-[#fafafa]">Include References</h3>
                 <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Add source citations and references</p>
@@ -393,7 +393,7 @@ const PreferencesSettings = ({ embedded = false }) => {
               />
             </div>
 
-            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
+            <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-[#fafafa1a] rounded-lg">
               <div>
                 <h3 className="font-medium text-gray-900 dark:text-[#fafafa]">Personalized Examples</h3>
                 <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Use user's field/industry examples</p>

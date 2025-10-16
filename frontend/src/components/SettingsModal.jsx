@@ -67,7 +67,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.displayName || '');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
-  const [accountInnerTab, setAccountInnerTab] = useState('accountInfo'); // 'accountInfo' | 'userPrefs'
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -189,15 +188,15 @@ const SettingsModal = ({ isOpen, onClose }) => {
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-fadeIn">
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-4xl h-[600px] flex overflow-hidden border border-gray-200 dark:border-gray-700 animate-slideInFromBottom"
+        className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-4xl h-[600px] flex overflow-hidden border border-gray-200 dark:border-[#fafafa1a] animate-slideInFromBottom"
       >
         {/* Left Sidebar */}
-        <div className="w-64 bg-gray-50 dark:bg-[#1E1E1E] p-6 border-r border-gray-200 dark:border-gray-700">
+        <div className="w-64 bg-gray-50 dark:bg-[#1E1E1E] p-6 border-r border-gray-200 dark:border-[#fafafa1a]">
           <div className="flex items-center justify-between mb-6">
             <h2 className="text-lg font-semibold text-gray-900 dark:text-white">Settings</h2>
             <button
               onClick={onClose}
-              className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+              className="p-2 hover:bg-gray-200 dark:hover:bg-[#fafafa1a] rounded-lg transition-colors"
             >
               <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
             </button>
@@ -214,8 +213,8 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   onClick={() => setActiveTab(tab.id)}
                   className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     isActive 
-                      ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm' 
-                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
+                      ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm ' 
+                      : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-[#fafafa1a]'
                   }`}
                 >
                   <Icon className="w-4 h-4" />
@@ -233,31 +232,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
               <div>
                 <h3 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">Account</h3>
 
-                {/* Account inner tabs */}
-                <div className="flex items-center gap-2 mb-4">
-                  <button
-                    onClick={() => setAccountInnerTab('accountInfo')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      accountInnerTab === 'accountInfo'
-                        ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    Profile
-                  </button>
-                  <button
-                    onClick={() => setAccountInnerTab('userPrefs')}
-                    className={`px-3 py-1.5 rounded-lg text-sm font-medium transition-colors ${
-                      accountInnerTab === 'userPrefs'
-                        ? 'bg-white dark:bg-[#171717] text-gray-900 dark:text-white shadow-sm'
-                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800'
-                    }`}
-                  >
-                    User Preferences
-                  </button>
-                </div>
                 
-                {accountInnerTab === 'accountInfo' && (
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-2">
                     <div className="flex-1">
@@ -275,7 +250,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                                 handleCancelEdit();
                               }
                             }}
-                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            className="flex-1 px-3 py-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                             placeholder="Enter your name"
                             autoFocus
                           />
@@ -289,7 +264,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                           <button
                             onClick={handleCancelEdit}
                             disabled={isUpdatingName}
-                            className="px-3 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-3 py-2 bg-gray-200 dark:bg-[#fafafa1a] text-gray-700 dark:text-gray-300 text-sm rounded-lg hover:bg-gray-300 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                           >
                             Cancel
                           </button>
@@ -301,7 +276,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     {!isEditingName && (
                       <button 
                         onClick={handleEditName}
-                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors"
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded transition-colors"
                       >
                         <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -329,7 +304,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
                       <p className="text-gray-900 dark:text-white">Study</p>
                     </div>
-                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -341,7 +316,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">School</label>
                       <p className="text-gray-900 dark:text-white">COMSATS University Islamabad (CUI)</p>
                     </div>
-                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -353,7 +328,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Courses</label>
                       <p className="text-gray-900 dark:text-white">Computer Science</p>
                     </div>
-                    <button onClick={() => setAccountInnerTab('userPrefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded">
+                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
                       <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                       </svg>
@@ -407,14 +382,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   </div>
                   </div>
                 </div>
-                )}
-
-                {accountInnerTab === 'userPrefs' && (
-                  <div className="mt-2">
-                    {/* Inline preferences editor */}
-                    <PreferencesSettings />
-                  </div>
-                )}
               </div>
             </div>
           )}
@@ -459,7 +426,7 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     </div>
                     <button
                       onClick={toggleTheme}
-                      className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded"
+                      className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded"
                     >
                       <ChevronDown className="w-4 h-4 text-gray-400" />
                     </button>
