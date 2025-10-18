@@ -2,6 +2,31 @@ import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import ThemeToggle from './ThemeToggle';
 
+// Add CSS keyframes for slideInFromBottom animation
+const slideInKeyframes = `
+  @keyframes slideInFromBottom {
+    from {
+      opacity: 0;
+      transform: translateY(10px) scale(0.95);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+  
+  .animate-slideInFromBottom {
+    animation: slideInFromBottom 0.2s ease-out forwards;
+  }
+`;
+
+// Inject the CSS
+if (typeof document !== 'undefined') {
+  const style = document.createElement('style');
+  style.textContent = slideInKeyframes;
+  document.head.appendChild(style);
+}
+
 const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
   const { logout } = useAuth();
   const modalRef = useRef(null);
@@ -46,7 +71,7 @@ const UserModal = ({ isOpen, onClose, user, onSettingsClick }) => {
     <div className="fixed inset-0 z-50 flex items-start justify-end pt-20 pr-4">
       <div 
         ref={modalRef}
-        className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#fafafa1a] p-2 w-72 backdrop-blur-sm animate-in slide-in-from-top-2 duration-300"
+        className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl border border-gray-200 dark:border-[#fafafa1a] p-2 w-72 backdrop-blur-sm animate-slideInFromBottom"
         style={{
           boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
         }}

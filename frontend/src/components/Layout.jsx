@@ -421,7 +421,7 @@ const Layout = () => {
             ) : (
               <button
                 onClick={toggleAuthModal}
-                className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-full bg-zinc-800 text-white hover:bg-[#fafafa1a] dark:hover:bg-[#fafafa1a]"
+                className="px-2 py-2 sm:px-4 sm:py-3 text-xs sm:text-sm rounded-full bg-zinc-800 text-white hover:bg-zinc-900 dark:hover:bg-[#fafafa1a] transition-all duration-200"
               >
                 <span className="hidden sm:inline">Sign In</span>
                 <span className="sm:hidden">Login</span>

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { usePreferences } from '../context/PreferencesContext';
 import { Settings, Save, RotateCcw, Check } from 'lucide-react';
 
@@ -8,6 +8,7 @@ const PreferencesSettings = ({ embedded = false }) => {
   const [coursesInput, setCoursesInput] = useState('');
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const coursesInputTouched = useRef(false);
 
   useEffect(() => {
     const defaultPrefs = {
@@ -51,7 +52,11 @@ const PreferencesSettings = ({ embedded = false }) => {
       studyProfile: { ...defaultPrefs.studyProfile, ...(p.studyProfile || {}) }
     };
     setLocalPreferences(merged);
-    setCoursesInput((merged.studyProfile.courses || []).join(', '));
+    
+    // Only update coursesInput if user hasn't touched it
+    if (!coursesInputTouched.current) {
+      setCoursesInput((merged.studyProfile.courses || []).join(', '));
+    }
   }, [preferences]);
 
   const handleSave = async () => {
@@ -80,6 +85,7 @@ const PreferencesSettings = ({ embedded = false }) => {
   const handleReset = async () => {
     try {
       await resetToDefaults();
+      coursesInputTouched.current = false;
       setLocalPreferences(preferences);
       setCoursesInput((preferences?.studyProfile?.courses || []).join(', '));
     } catch (error) {
@@ -89,29 +95,40 @@ const PreferencesSettings = ({ embedded = false }) => {
 
   if (!localPreferences) return <div>Loading...</div>;
 
-  const Outer = ({ children }) => embedded ? (
-    <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-0">{children}</div>
-  ) : (
-    <div className="max-w-4xl mx-auto p-6">
-      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-8">{children}</div>
-    </div>
-  );
-
-  return (
-    <Outer>
-        <div className="flex items-center justify-between mb-6">
-          <h1 className="text-xl font-semibold text-gray-900 dark:text-white">User Preferences</h1>
-          <div className="flex gap-2">
-            <button onClick={handleReset} className="px-3 py-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors flex items-center gap-2">
-              <RotateCcw className="w-4 h-4" />
-              <span>Reset</span>
-            </button>
-            <button onClick={handleSave} disabled={saving} className="px-3 py-1.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#333333] dark:hover:bg-[#e5e5e5] disabled:opacity-50 transition-colors flex items-center gap-2">
-              {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Save className="w-4 h-4" />}
-              <span>Save</span>
-            </button>
+  const outerContent = (
+    <>
+        {!embedded && (
+          <div className="flex items-center justify-between mb-6">
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">User Preferences</h1>
+            <div className="flex gap-2">
+              <button onClick={handleReset} className="px-3 py-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </button>
+              <button onClick={handleSave} disabled={saving} className="px-3 py-1.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#333333] dark:hover:bg-[#e5e5e5] disabled:opacity-50 transition-colors flex items-center gap-2">
+                {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Save className="w-4 h-4" />}
+                <span>Save</span>
+              </button>
+            </div>
           </div>
-        </div>
+        )}
+
+        {/* Header for embedded mode */}
+        {embedded && (
+          <div className="flex items-center justify-between mb-6">
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-white">User Preferences</h3>
+            <div className="flex gap-2">
+              <button onClick={handleReset} className="px-3 py-1.5 text-sm bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                <span>Reset</span>
+              </button>
+              <button onClick={handleSave} disabled={saving} className="px-3 py-1.5 text-sm bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#333333] dark:hover:bg-[#e5e5e5] disabled:opacity-50 transition-colors flex items-center gap-2">
+                {saving ? <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div> : <Save className="w-4 h-4" />}
+                <span>Save</span>
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Content Preferences */}
         <div className="divide-y divide-gray-200 dark:divide-[#fafafa1a]">
@@ -273,7 +290,7 @@ const PreferencesSettings = ({ embedded = false }) => {
         </div>
 
         {/* Study Profile */}
-        <div className="mt-6 divide-y divide-gray-200 dark:divide-gray-700">
+        <div className="mt-6 divide-y divide-gray-200 dark:divide-[#fafafa1a]">
           <div className="py-4 flex items-center justify-between">
             <div>
               <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
@@ -323,7 +340,10 @@ const PreferencesSettings = ({ embedded = false }) => {
             <input
               type="text"
               value={coursesInput}
-              onChange={(e) => setCoursesInput(e.target.value)}
+              onChange={(e) => {
+                coursesInputTouched.current = true;
+                setCoursesInput(e.target.value);
+              }}
               placeholder="Computer Science, Data Structures"
               className="w-96 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             />
@@ -413,7 +433,17 @@ const PreferencesSettings = ({ embedded = false }) => {
             </div>
           </div>
         </div>
-    </Outer>
+    </>
+  );
+
+  return embedded ? (
+    outerContent
+  ) : (
+    <div className="max-w-4xl mx-auto p-6">
+      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-8">
+        {outerContent}
+      </div>
+    </div>
   );
 };
 

@@ -11,8 +11,8 @@ const ThemeToggle = () => {
       className="
         relative inline-flex h-7 w-12 items-center rounded-full transition-colors duration-200 ease-in-out
         focus:outline-none focus:ring-2 focus:ring-gray-500 focus:ring-offset-2
-        bg-gray-200 dark:bg-gray-700
-        hover:bg-gray-300 dark:hover:bg-gray-600
+        bg-gray-200 dark:bg-[#fafafa1a]
+        hover:bg-gray-300 dark:hover:bg-[#fafafa2a]
       "
       role="switch"
       aria-checked={theme === "dark"}
