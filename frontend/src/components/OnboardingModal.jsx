@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useOnboarding } from '../context/OnboardingContext';
 import { usePreferences } from '../context/PreferencesContext';
+import { useAuth } from '../context/FirebaseAuthContext';
 import { X, ArrowRight, ArrowLeft, Check, User, Settings, BookOpen, Sparkles, GraduationCap, Brain } from 'lucide-react';
 
 // Add CSS keyframes for animations
@@ -87,10 +88,12 @@ if (typeof document !== 'undefined') {
 const OnboardingModal = () => {
   const { isOnboarding, onboardingStep, setOnboardingStep, completeOnboarding, skipOnboarding } = useOnboarding();
   const { updatePreferences } = usePreferences();
+  const { user } = useAuth(); // Get current user
   
   console.log('OnboardingModal component rendered with isOnboarding:', isOnboarding);
-  const [coursesInput, setCoursesInput] = useState('');
-  const [localPreferences, setLocalPreferences] = useState({
+  
+  // Function to get fresh default preferences
+  const getDefaultPreferences = () => ({
     contentPreferences: {
       quizFormat: 'multiple-choice',
       summaryLength: 'medium',
@@ -119,7 +122,19 @@ const OnboardingModal = () => {
       courses: []
     }
   });
+  
+  const [coursesInput, setCoursesInput] = useState('');
+  const [localPreferences, setLocalPreferences] = useState(getDefaultPreferences());
   const [saving, setSaving] = useState(false);
+
+  // Reset state when user changes (new user logs in)
+  useEffect(() => {
+    if (user?.uid) {
+      console.log('User changed, resetting onboarding form state for user:', user.uid);
+      setLocalPreferences(getDefaultPreferences());
+      setCoursesInput('');
+    }
+  }, [user?.uid]);
 
   // Initialize coursesInput with existing courses data
   useEffect(() => {
