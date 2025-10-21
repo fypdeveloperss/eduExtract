@@ -134,7 +134,10 @@ async function getTranscriptText(url) {
  */
 router.post("/generate-blog", verifyToken, async (req, res) => {
   try {
-    const transcriptText = await getTranscriptText(req.body.url);
+    // Accept either URL or direct text content
+    const transcriptText = req.body.textContent 
+      ? req.body.textContent 
+      : await getTranscriptText(req.body.url);
     const userId = req.user.uid; // Get userId from verified token
 
 
@@ -171,7 +174,9 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
 
     // Attempt to extract a title from the blog post for storage
     const titleMatch = blogPost.match(/<h1[^>]*>(.*?)<\/h1>/i);
-    const title = titleMatch ? titleMatch[1].trim() : `Blog Post from ${req.body.url}`;
+    const title = titleMatch 
+      ? titleMatch[1].trim() 
+      : (req.body.url ? `Blog Post from ${req.body.url}` : 'Blog Post from Text');
 
     // Save generated content to MongoDB
     const newContent = new GeneratedContent({
@@ -179,7 +184,7 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
       type: 'blog',
       title: title,
       contentData: blogPost,
-      url: req.body.url
+      url: req.body.url || null
     });
     await newContent.save();
     console.log(`Saved new blog post (ID: ${newContent._id}) to database.`);
@@ -196,7 +201,10 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
  */
 router.post("/generate-flashcards", verifyToken, async (req, res) => {
   try {
-    const transcriptText = await getTranscriptText(req.body.url);
+    // Accept either URL or direct text content
+    const transcriptText = req.body.textContent 
+      ? req.body.textContent 
+      : await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
 
@@ -244,9 +252,9 @@ IMPORTANT:
     const newContent = new GeneratedContent({
       userId,
       type: 'flashcards',
-      title: `Flashcards from ${req.body.url}`,
+      title: req.body.url ? `Flashcards from ${req.body.url}` : 'Flashcards from Text',
       contentData: validFlashcards,
-      url: req.body.url
+      url: req.body.url || null
     });
     await newContent.save();
     console.log(`Saved new flashcards (ID: ${newContent._id}) to database.`);
@@ -266,16 +274,19 @@ IMPORTANT:
  * SLIDES GENERATION
  */
 router.post("/generate-slides", verifyToken, async (req, res) => {
-  const { url } = req.body;
+  const { url, textContent } = req.body;
   const userId = req.user.uid;
 
   try {
-    const videoId = new URL(url).searchParams.get("v");
-    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
-
-
-    // Using the updated getTranscriptText function
-    const transcriptText = await getTranscriptText(url);
+    // Accept either URL or direct text content
+    let transcriptText;
+    if (textContent) {
+      transcriptText = textContent;
+    } else {
+      const videoId = new URL(url).searchParams.get("v");
+      if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+      transcriptText = await getTranscriptText(url);
+    }
 
     const slides = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
@@ -463,9 +474,9 @@ IMPORTANT:
     const newContent = new GeneratedContent({
       userId,
       type: 'slides',
-      title: `Slides from ${url}`,
+      title: url ? `Slides from ${url}` : 'Slides from Text',
       contentData: validSlides, // Storing the slide array
-      url: url
+      url: url || null
     });
     await newContent.save();
     console.log(`Saved new slides (ID: ${newContent._id}) to database.`);
@@ -493,7 +504,10 @@ IMPORTANT:
  */
 router.post("/generate-quiz", verifyToken, async (req, res) => {
   try {
-    const transcriptText = await getTranscriptText(req.body.url);
+    // Accept either URL or direct text content
+    const transcriptText = req.body.textContent 
+      ? req.body.textContent 
+      : await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
 
@@ -544,9 +558,9 @@ IMPORTANT:
     const newContent = new GeneratedContent({
       userId,
       type: 'quiz',
-      title: `Quiz from ${req.body.url}`,
+      title: req.body.url ? `Quiz from ${req.body.url}` : 'Quiz from Text',
       contentData: validQuiz,
-      url: req.body.url
+      url: req.body.url || null
     });
     await newContent.save();
     console.log(`Saved new quiz (ID: ${newContent._id}) to database.`);
@@ -562,16 +576,19 @@ IMPORTANT:
  * SUMMARY GENERATION
  */
 router.post("/generate-summary", verifyToken, async (req, res) => {
-  const { url } = req.body;
+  const { url, textContent } = req.body;
   const userId = req.user.uid;
 
   try {
-    const videoId = new URL(url).searchParams.get("v");
-    if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
-
-
-    // Use the cached transcript function for consistency
-    const transcriptText = await getTranscriptText(url);
+    // Accept either URL or direct text content
+    let transcriptText;
+    if (textContent) {
+      transcriptText = textContent;
+    } else {
+      const videoId = new URL(url).searchParams.get("v");
+      if (!videoId) return res.status(400).json({ error: "Invalid YouTube URL" });
+      transcriptText = await getTranscriptText(url);
+    }
     
     console.log(`Processing transcript for summary (${transcriptText.length} characters)`);
     
@@ -624,9 +641,9 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
     const newContent = new GeneratedContent({
       userId,
       type: 'summary',
-      title: `Summary from ${url}`,
+      title: url ? `Summary from ${url}` : 'Summary from Text',
       contentData: summary,
-      url: url
+      url: url || null
     });
     await newContent.save();
     console.log(`Saved new summary (ID: ${newContent._id}) to database.`);

@@ -31,6 +31,7 @@ const MarketplaceContentSelectionModal = ({
       setSelectedContent([preSelectedContent._id]);
       setContentMetadata({
         [preSelectedContent._id]: {
+          title: '',
           price: 0,
           category: 'other',
           subject: '',
@@ -80,6 +81,7 @@ const MarketplaceContentSelectionModal = ({
         setContentMetadata(prevMeta => ({
           ...prevMeta,
           [contentId]: {
+            title: '',
             price: 0,
             category: 'other',
             subject: '',
@@ -106,6 +108,7 @@ const MarketplaceContentSelectionModal = ({
       const newMetadata = {};
       allIds.forEach(id => {
         newMetadata[id] = {
+          title: '',
           price: 0,
           category: 'other',
           subject: '',
@@ -137,11 +140,11 @@ const MarketplaceContentSelectionModal = ({
     // Validate that all selected content has required metadata
     const missingMetadata = selectedContent.filter(id => {
       const meta = contentMetadata[id];
-      return !meta || !meta.subject.trim() || !meta.description.trim();
+      return !meta || !meta.title?.trim() || !meta.subject.trim() || !meta.description.trim();
     });
 
     if (missingMetadata.length > 0) {
-      setError('Please fill in all required fields (subject and description) for all selected content.');
+      setError('Please fill in all required fields (title, subject and description) for all selected content.');
       return;
     }
 
@@ -361,6 +364,20 @@ const MarketplaceContentSelectionModal = ({
                           </span>
                           Marketplace Details
                         </h4>
+                        
+                        <div className="mb-4">
+                          <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                            Marketplace Title *
+                          </label>
+                          <input
+                            type="text"
+                            value={contentMetadata[content._id]?.title || ''}
+                            onChange={(e) => handleMetadataChange(content._id, 'title', e.target.value)}
+                            placeholder="e.g., Complete Introduction to Calculus Quiz"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                          />
+                          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Give your content an attractive, descriptive title for the marketplace</p>
+                        </div>
                         
                         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                           <div>

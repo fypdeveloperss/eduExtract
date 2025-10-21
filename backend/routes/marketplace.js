@@ -1016,14 +1016,14 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
         }
 
         // Validate marketplace metadata
-        const { price, category, subject, difficulty, description, tags } = marketplaceMetadata;
+        const { title, price, category, subject, difficulty, description, tags } = marketplaceMetadata;
         
-        if (!subject || !description || !category || !difficulty) {
+        if (!title || !subject || !description || !category || !difficulty) {
           results.push({
             success: false,
             originalId: contentId,
             title: userContent.title,
-            error: 'Missing required marketplace metadata (subject, description, category, difficulty)'
+            error: 'Missing required marketplace metadata (title, subject, description, category, difficulty)'
           });
           errorCount++;
           continue;
@@ -1058,7 +1058,7 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
         // Check if user already has marketplace content with the same title
         const existingContent = await MarketplaceContent.findOne({
           creatorId: userId,
-          title: userContent.title,
+          title: title.trim(),
           status: { $in: ['pending', 'approved'] }
         });
 
@@ -1066,7 +1066,7 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
           results.push({
             success: false,
             originalId: contentId,
-            title: userContent.title,
+            title: title,
             error: 'You already have marketplace content with this title'
           });
           errorCount++;
@@ -1091,7 +1091,7 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
         const newMarketplaceContent = new MarketplaceContent({
           contentId: userContent._id,
           creatorId: userId,
-          title: userContent.title.trim(),
+          title: title.trim(),
           description: description.trim(),
           category,
           subject: subject.trim(),
@@ -1106,6 +1106,7 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
           metadata: {
             sourceType: 'user_content',
             originalContentId: userContent._id,
+            originalTitle: userContent.title, // Keep track of original title
             originalCreatedAt: userContent.createdAt,
             originalUpdatedAt: userContent.updatedAt
           }
@@ -1132,7 +1133,7 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
           success: true,
           originalId: contentId,
           marketplaceContentId: newMarketplaceContent._id,
-          title: userContent.title,
+          title: title,
           status: newMarketplaceContent.status,
           message: newMarketplaceContent.status === 'approved' ? 
             'Content published and approved automatically' : 
