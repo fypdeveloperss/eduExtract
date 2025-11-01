@@ -10,7 +10,10 @@ const SlideCarousel = ({ slides }) => {
     <p className="text-[#171717cc] dark:text-[#fafafacc]">No slides to show.</p>
   );
 
-  const { title, points } = slides[index];
+  const currentSlide = slides[index];
+  const { title } = currentSlide;
+  // Support both 'content' and 'points' for backward compatibility
+  const bulletPoints = currentSlide.content || currentSlide.points || [];
 
   return (
     <div className="w-full max-w-xl mx-auto p-6 text-center bg-[#FFFFFF] dark:bg-[#171717] rounded-lg shadow-lg border border-[#EEEEEE] dark:border-[#2E2E2E]">
@@ -18,7 +21,7 @@ const SlideCarousel = ({ slides }) => {
         {title}
       </h2>
       <ul className="text-left list-disc list-inside mb-6">
-        {points.map((pt, i) => (
+        {bulletPoints.map((pt, i) => (
           <li 
             key={i} 
             className="mb-1 text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"

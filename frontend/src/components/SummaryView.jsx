@@ -48,7 +48,10 @@ function SummaryView({ summary }) {
           {isDownloading ? 'Downloading...' : 'Download PDF'}
         </button>
       </div>
-      <p className="summary-text">{summary}</p>
+      <div 
+        className="summary-text" 
+        dangerouslySetInnerHTML={{ __html: summary }}
+      />
     </div>
   );
 }

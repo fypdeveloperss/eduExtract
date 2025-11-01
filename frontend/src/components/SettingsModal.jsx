@@ -300,42 +300,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   </div>
 
                   <div className="flex items-center justify-between py-2">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Purpose</label>
-                      <p className="text-gray-900 dark:text-white">Study</p>
-                    </div>
-                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">School</label>
-                      <p className="text-gray-900 dark:text-white">COMSATS University Islamabad (CUI)</p>
-                    </div>
-                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2">
-                    <div>
-                      <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Courses</label>
-                      <p className="text-gray-900 dark:text-white">Computer Science</p>
-                    </div>
-                    <button onClick={() => setActiveTab('user-prefs')} className="p-1 hover:bg-gray-100 dark:hover:bg-[#fafafa1a] rounded">
-                      <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                      </svg>
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between py-2">
                     <div className="flex items-center gap-2">
                       <div>
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Streaks</label>

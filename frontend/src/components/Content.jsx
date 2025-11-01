@@ -2,6 +2,24 @@ import React, { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext'; // Assuming you have this context for user ID and token
 
+// Add styles for HTML content rendering
+const summaryStyles = `
+  .prose h1, .prose h2, .prose h3, .prose h4 {
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 1rem;
+    line-height: 1.3;
+  }
+  .prose h1 { font-size: 2rem; }
+  .prose h2 { font-size: 1.75rem; }
+  .prose h3 { font-size: 1.5rem; }
+  .prose p { margin-bottom: 1rem; line-height: 1.8; }
+  .prose ul, .prose ol { margin-left: 1.5rem; margin-bottom: 1rem; }
+  .prose li { margin-bottom: 0.5rem; line-height: 1.7; }
+  .prose strong, .prose b { font-weight: 600; }
+  .prose em, .prose i { font-style: italic; }
+`;
+
 function Content() {
   const { contentId } = useParams(); // Get contentId from URL
   const { user } = useAuth(); // Get user from auth context
@@ -126,16 +144,21 @@ function Content() {
       case 'slides':
         return (
           <div className="space-y-6">
-            {content.contentData.map((slide, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-bold text-xl mb-3">{slide.title}</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
-                  {slide.points.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {content.contentData.map((slide, index) => {
+              // Support both 'content' and 'points' for backward compatibility
+              const bulletPoints = slide.content || slide.points || [];
+              
+              return (
+                <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
+                  <h3 className="font-bold text-xl mb-3">{slide.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                    {bulletPoints.map((point, i) => (
+                      <li key={i}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         );
       case 'quiz':
@@ -143,7 +166,8 @@ function Content() {
           <div className="space-y-6">
             {content.contentData.map((q, index) => {
               const userAnswer = quizAttempt?.userAnswers?.[index];
-              const correctAnswer = q.answer;
+              // Support both 'answer' and 'correctAnswer' fields
+              const correctAnswer = q.correctAnswer || q.answer;
               const isCorrect = userAnswer === correctAnswer;
               
               return (
@@ -200,7 +224,10 @@ function Content() {
         );
       case 'summary':
         return (
-          <p className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg">{content.contentData}</p>
+          <div 
+            className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg prose dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: content.contentData }}
+          />
         );
       default:
         return <p className="text-gray-700 dark:text-gray-300">Unsupported content type.</p>;
@@ -208,17 +235,20 @@ function Content() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-      <h1 className="text-3xl font-bold mb-6 text-center text-[#121212] dark:text-[#fafafa]">{content.title}</h1>
-      <div className="bg-white dark:bg-[#171717] rounded-lg shadow-xl p-6 sm:p-8">
-        {renderContentData()}
+    <>
+      <style>{summaryStyles}</style>
+      <div className="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <h1 className="text-3xl font-bold mb-6 text-center text-[#121212] dark:text-[#fafafa]">{content.title}</h1>
+        <div className="bg-white dark:bg-[#171717] rounded-lg shadow-xl p-6 sm:p-8">
+          {renderContentData()}
+        </div>
+        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+          Generated on: {new Date(content.createdAt).toLocaleDateString()}
+          {content.url && <p>Source: <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">{content.url}</a></p>}
+          {content.filePath && <p>Original File: {content.filePath.split('/').pop()}</p>}
+        </div>
       </div>
-      <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
-        Generated on: {new Date(content.createdAt).toLocaleDateString()}
-        {content.url && <p>Source: <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">{content.url}</a></p>}
-        {content.filePath && <p>Original File: {content.filePath.split('/').pop()}</p>}
-      </div>
-    </div>
+    </>
   );
 }
 

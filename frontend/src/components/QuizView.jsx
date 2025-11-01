@@ -86,8 +86,11 @@ function QuizView({ quiz, quizId }) {
 
   const getScore = () =>
     quiz.reduce(
-      (score, q, idx) =>
-        q.answer === selectedAnswers[idx] ? score + 1 : score,
+      (score, q, idx) => {
+        // Support both 'answer' and 'correctAnswer' fields
+        const correctAnswer = q.correctAnswer || q.answer;
+        return correctAnswer === selectedAnswers[idx] ? score + 1 : score;
+      },
       0
     );
 
@@ -136,7 +139,9 @@ function QuizView({ quiz, quizId }) {
 
         <ul className="space-y-4">
           {quiz.map((q, idx) => {
-            const isCorrect = selectedAnswers[idx] === q.answer;
+            // Support both 'answer' and 'correctAnswer' fields
+            const correctAnswer = q.correctAnswer || q.answer;
+            const isCorrect = selectedAnswers[idx] === correctAnswer;
             return (
               <li
                 key={idx}
@@ -154,7 +159,7 @@ function QuizView({ quiz, quizId }) {
                 {!isCorrect && (
                   <p>
                     Correct answer:{" "}
-                    <span className="text-green-500">{q.answer}</span>
+                    <span className="text-green-500">{correctAnswer}</span>
                   </p>
                 )}
               </li>

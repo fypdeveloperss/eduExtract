@@ -291,8 +291,6 @@ const OnboardingModal = () => {
             >
               <option value="multiple-choice">Multiple Choice</option>
               <option value="true-false">True/False</option>
-              <option value="fill-blank">Fill in the Blank</option>
-              <option value="mixed">Mixed Format</option>
             </select>
           </div>
 

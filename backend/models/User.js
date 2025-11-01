@@ -31,7 +31,18 @@ const userSchema = new mongoose.Schema({
         enum: ['multiple-choice', 'true-false', 'fill-blank', 'mixed'],
         default: 'multiple-choice'
       },
+      quizQuestions: {
+        type: Number,
+        min: 5,
+        max: 20,
+        default: 10
+      },
       summaryLength: {
+        type: String,
+        enum: ['brief', 'medium', 'detailed'],
+        default: 'medium'
+      },
+      blogLength: {
         type: String,
         enum: ['brief', 'medium', 'detailed'],
         default: 'medium'

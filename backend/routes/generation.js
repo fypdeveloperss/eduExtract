@@ -21,6 +21,16 @@ const ChatContext = require('../models/ChatContext');
 // Import services
 const ChatContextService = require('../services/chatContextService');
 
+// Import prompt builder utility
+const {
+  getTokenCount,
+  buildBlogPrompt,
+  buildFlashcardPrompt,
+  buildSlidesPrompt,
+  buildQuizPrompt,
+  buildSummaryPrompt
+} = require('../utils/promptBuilder');
+
 // Initialize services
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
@@ -140,21 +150,25 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
       : await getTranscriptText(req.body.url);
     const userId = req.user.uid; // Get userId from verified token
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
+    // Get dynamic token count based on preferences
+    const maxTokens = getTokenCount('blog', userPreferences);
+
+    // Build personalized prompt
+    const systemPrompt = buildBlogPrompt(userPreferences);
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
-        temperature: 0.7, // Reduced for more consistent output
-        max_tokens: 2048,
+        temperature: 0.7,
+        max_tokens: maxTokens, // Dynamic based on preferences
         messages: [
           {
             role: "system",
-            content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the transcript.
-            - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
-            - Include an engaging introduction and a thoughtful conclusion.
-            - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-            - Return only valid HTML without CSS or markdown.
-            - Do not include any JSON formatting or code blocks.`,
+            content: systemPrompt
           },
           { role: "user", content: transcriptText },
         ],
@@ -207,28 +221,25 @@ router.post("/generate-flashcards", verifyToken, async (req, res) => {
       : await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
+    // Get dynamic token count based on preferences
+    const maxTokens = getTokenCount('flashcards', userPreferences);
+
+    // Build personalized prompt
+    const systemPrompt = buildFlashcardPrompt(userPreferences);
 
     const flashcards = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
-        max_tokens: 1024,
+        max_tokens: maxTokens, // Dynamic based on preferences
         messages: [
           {
             role: "system",
-            content: `Generate exactly 5-8 educational flashcards as a JSON array.
-Each flashcard must have exactly these fields:
-{
-  "question": "Clear, specific question text",
-  "answer": "Concise, accurate answer text"
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each question should be educational and based on the content
-- Start response with [ and end with ]
-- Example format: [{"question":"What is...?","answer":"It is..."},{"question":"How does...?","answer":"It works by..."}]`,
+            content: systemPrompt
           },
           { role: "user", content: transcriptText },
         ],
@@ -288,27 +299,25 @@ router.post("/generate-slides", verifyToken, async (req, res) => {
       transcriptText = await getTranscriptText(url);
     }
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
+    // Get dynamic token count based on preferences
+    const maxTokens = getTokenCount('slides', userPreferences);
+
+    // Build personalized prompt
+    const systemPrompt = buildSlidesPrompt(userPreferences);
+
     const slides = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
-        max_tokens: 1500,
+        max_tokens: maxTokens, // Dynamic based on preferences
         messages: [
           {
             role: "system",
-            content: `Create exactly 6-10 slide objects based on this transcript. 
-Return a valid JSON array where each object has:
-{
-  "title": "Clear slide title",
-  "points": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each slide should have 2-4 bullet points
-- Start response with [ and end with ]
-- Points should be clear and concise`,
+            content: systemPrompt
           },
           {
             role: "user",
@@ -318,16 +327,18 @@ IMPORTANT:
       });
     }, 3);
 
-    // Validate slide structure
+    // Validate slide structure - support both 'content' and 'points' arrays
     const validSlides = slides.filter(slide => 
       slide && typeof slide === 'object' && 
       typeof slide.title === 'string' && slide.title.trim() &&
-      Array.isArray(slide.points) && slide.points.length > 0
+      (Array.isArray(slide.content) || Array.isArray(slide.points) || typeof slide.content === 'string')
     );
 
     if (validSlides.length === 0) {
       throw new Error("No valid slides found in response");
     }
+
+    console.log(`Valid slides count: ${validSlides.length}`);
 
     // Generate PowerPoint with enhanced formatting
     const pptx = new PptxGenJS();
@@ -350,7 +361,7 @@ IMPORTANT:
       align: 'center',
       valign: 'middle'
     });
-    titleSlide.addText(`Generated from: ${url}`, {
+    titleSlide.addText(`Generated from: ${url || 'Text Content'}`, {
       x: 1,
       y: 4,
       w: 8,
@@ -419,8 +430,11 @@ IMPORTANT:
         line: { color: 'E2E8F0', width: 1 }
       });
       
+      // Get bullet points from either 'content' or 'points' array
+      const pointsArray = slide.content || slide.points || [];
+      
       // Add bullet points as single text element with proper line spacing
-      const bulletPoints = slide.points.map((point, pointIndex) => {
+      const bulletPoints = pointsArray.map((point, pointIndex) => {
         return `• ${point}`;
       }).join('\n'); // Single line break between bullet points
       
@@ -510,29 +524,25 @@ router.post("/generate-quiz", verifyToken, async (req, res) => {
       : await getTranscriptText(req.body.url);
     const userId = req.user.uid;
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
+    // Get dynamic token count based on preferences
+    const maxTokens = getTokenCount('quiz', userPreferences);
+
+    // Build personalized prompt
+    const systemPrompt = buildQuizPrompt(userPreferences);
 
     const quiz = await parseAIResponseWithRetry(async () => {
       return await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
-        max_tokens: 1200,
+        max_tokens: maxTokens, // Dynamic based on preferences
         messages: [
           {
             role: "system",
-            content: `Generate exactly 6-8 multiple-choice quiz questions in JSON format.
-Each object must include:
-{
-  "question": "Clear question text",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "answer": "Option A"
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each question should have exactly 4 options
-- The answer should be one of the options (exact match)
-- Start response with [ and end with ]`,
+            content: systemPrompt
           },
           { role: "user", content: transcriptText },
         ],
@@ -543,9 +553,7 @@ IMPORTANT:
     const validQuiz = quiz.filter(q => 
       q && typeof q === 'object' && 
       typeof q.question === 'string' && q.question.trim() &&
-      Array.isArray(q.options) && q.options.length === 4 &&
-      typeof q.answer === 'string' && q.answer.trim() &&
-      q.options.includes(q.answer)
+      (Array.isArray(q.options) || typeof q.correctAnswer === 'string')
     );
 
     if (validQuiz.length === 0) {
@@ -597,27 +605,29 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
       return res.status(400).json({ error: "Transcript is too short or empty" });
     }
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
+    // Get dynamic token count based on preferences
+    const maxTokens = getTokenCount('summary', userPreferences);
+
+    // Build personalized prompt
+    const systemPrompt = buildSummaryPrompt(userPreferences);
+
     const chatCompletion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
         model: "meta-llama/llama-4-scout-17b-16e-instruct",
         temperature: 0.7,
-        max_tokens: 512,
+        max_tokens: maxTokens, // Dynamic based on preferences
         messages: [
           {
             role: "system",
-            content: `You are tasked with creating a summary of a video transcript. 
-            Create a concise and informative summary that:
-            - Is 150-200 words long
-            - Focuses on the main topics and key points
-            - Uses clear, engaging prose
-            - Does not use markdown, code formatting, or bullet points
-            - Provides value to someone who hasn't watched the video
-            
-            The user will provide the transcript content for you to summarize.`,
+            content: systemPrompt
           },
           {
             role: "user",
-            content: `Please summarize this video transcript:\n\n${transcriptText}`,
+            content: `Please summarize this content:\n\n${transcriptText}`,
           },
         ],
       });
@@ -630,10 +640,18 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
     }, 3);
 
     let summary = chatCompletion.choices[0].message.content;
-    summary = summary.replace(/```(json|text)?/g, "").trim();
     
-    // Remove any potential prefixes like "Summary:" or "Video Summary:"
-    summary = summary.replace(/^(summary|video summary):\s*/i, "");
+    // Remove code blocks and markdown formatting
+    summary = summary.replace(/```(html|json|text|markdown)?/g, "").trim();
+    
+    // Remove any potential prefixes like "Summary:" or "Video Summary:" or "Here is..."
+    summary = summary.replace(/^(here is (the|a)?|summary|video summary):\s*/i, "");
+    summary = summary.replace(/^(here's (the|a)?)\s*/i, "");
+    
+    // Clean up nested p tags around headings (common AI mistake)
+    summary = summary.replace(/<p>\s*<h([1-6])>/g, '<h$1>');
+    summary = summary.replace(/<\/h([1-6])>\s*<\/p>/g, '</h$1>');
+    summary = summary.replace(/<p><\/p>/g, '');
 
     console.log(`Generated summary successfully (${summary.length} characters)`);
     
@@ -1219,8 +1237,11 @@ IMPORTANT:
             line: { color: 'E2E8F0', width: 1 }
           });
           
+          // Get bullet points from either 'content' or 'points' array
+          const pointsArray = slide.content || slide.points || [];
+          
           // Add bullet points as single text element with proper line spacing
-          const bulletPoints = slide.points.map((point, pointIndex) => {
+          const bulletPoints = pointsArray.map((point, pointIndex) => {
             return `• ${point}`;
           }).join('\n'); // Single line break between bullet points
           
@@ -1565,8 +1586,11 @@ router.post('/download-slides', verifyToken, async (req, res) => {
         line: { color: 'E2E8F0', width: 1 }
       });
       
+      // Get bullet points from either 'content' or 'points' array
+      const pointsArray = slide.content || slide.points || [];
+      
       // Add bullet points as single text element with proper line spacing
-      const bulletPoints = slide.points.map((point, pointIndex) => {
+      const bulletPoints = pointsArray.map((point, pointIndex) => {
         return `• ${point}`;
       }).join('\n'); // Single line break between bullet points
       

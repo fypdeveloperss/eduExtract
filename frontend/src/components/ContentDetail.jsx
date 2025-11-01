@@ -76,8 +76,10 @@ const ContentDetail = ({ content, quizAttempt }) => {
             if (content.contentData && Array.isArray(content.contentData)) {
               let slidesText = `${content.title}\n\n`;
               content.contentData.forEach((slide, index) => {
+                // Support both 'content' and 'points'
+                const bulletPoints = slide.content || slide.points || [];
                 slidesText += `Slide ${index + 1}: ${slide.title}\n`;
-                slide.points.forEach((point, pointIndex) => {
+                bulletPoints.forEach((point, pointIndex) => {
                   slidesText += `  ${pointIndex + 1}. ${point}\n`;
                 });
                 slidesText += '\n';
@@ -149,16 +151,21 @@ const ContentDetail = ({ content, quizAttempt }) => {
       case 'slides':
         return (
           <div className="space-y-6">
-            {content.contentData.map((slide, index) => (
-              <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafacc]">{slide.title}</h3>
-                <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
-                  {slide.points.map((point, i) => (
-                    <li key={i}>{point}</li>
-                  ))}
-                </ul>
-              </div>
-            ))}
+            {content.contentData.map((slide, index) => {
+              // Support both 'content' and 'points' for backward compatibility
+              const bulletPoints = slide.content || slide.points || [];
+              
+              return (
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
+                  <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafacc]">{slide.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
+                    {bulletPoints.map((point, i) => (
+                      <li key={i}>{point}</li>
+                    ))}
+                  </ul>
+                </div>
+              );
+            })}
           </div>
         );
       case 'quiz':
@@ -166,7 +173,8 @@ const ContentDetail = ({ content, quizAttempt }) => {
           <div className="space-y-6">
             {content.contentData.map((q, index) => {
               const userAnswer = quizAttempt?.userAnswers?.[index];
-              const correctAnswer = q.answer;
+              // Support both 'answer' and 'correctAnswer' fields
+              const correctAnswer = q.correctAnswer || q.answer;
               const isCorrect = userAnswer === correctAnswer;
               
               return (
@@ -228,7 +236,10 @@ const ContentDetail = ({ content, quizAttempt }) => {
         );
       case 'summary':
         return (
-          <p className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg">{content.contentData}</p>
+          <div 
+            className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg prose dark:prose-invert max-w-none"
+            dangerouslySetInnerHTML={{ __html: content.contentData }}
+          />
         );
       case 'document':
       case 'personal':

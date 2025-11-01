@@ -8,8 +8,8 @@ const chatHistorySchema = new mongoose.Schema({
   },
   sessionId: {
     type: String,
-    required: true,
-    index: true // For faster queries by session
+    required: true
+    // Index defined in schema.index() below
   },
   messages: [{
     role: {

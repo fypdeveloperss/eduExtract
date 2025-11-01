@@ -12,8 +12,9 @@ const chatContextSchema = new mongoose.Schema({
   },
   createdAt: {
     type: Date,
-    default: Date.now,
-    expires: 1800 // Auto-delete after 30 minutes
+    default: Date.now
+    // TTL index defined in schema.index() below
+    // Note: 'expires' field is removed as TTL is handled by the index
   },
   sessionId: {
     type: String,

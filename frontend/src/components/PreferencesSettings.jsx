@@ -14,7 +14,9 @@ const PreferencesSettings = ({ embedded = false }) => {
     const defaultPrefs = {
       contentPreferences: {
         quizFormat: 'multiple-choice',
+        quizQuestions: 10,
         summaryLength: 'medium',
+        blogLength: 'medium',
         flashcardStyle: 'simple',
         presentationSlides: 10
       },
@@ -149,9 +151,28 @@ const PreferencesSettings = ({ embedded = false }) => {
             >
               <option value="multiple-choice">Multiple Choice</option>
               <option value="true-false">True/False</option>
-              <option value="fill-blank">Fill in the Blank</option>
-              <option value="mixed">Mixed Format</option>
             </select>
+          </div>
+
+          <div className="py-4 flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Quiz Questions</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Number of questions to generate</p>
+            </div>
+            <input
+              type="number"
+              min="5"
+              max="20"
+              value={localPreferences.contentPreferences.quizQuestions}
+              onChange={(e) => setLocalPreferences({
+                ...localPreferences,
+                contentPreferences: {
+                  ...localPreferences.contentPreferences,
+                  quizQuestions: parseInt(e.target.value) || 10
+                }
+              })}
+              className="w-20 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+            />
           </div>
 
           <div className="py-4 flex items-center justify-between">
@@ -169,9 +190,31 @@ const PreferencesSettings = ({ embedded = false }) => {
               })}
               className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
-              <option value="brief">Brief</option>
-              <option value="medium">Medium</option>
-              <option value="detailed">Detailed</option>
+              <option value="brief">Brief (200-300 words)</option>
+              <option value="medium">Medium (400-600 words)</option>
+              <option value="detailed">Detailed (800-1200 words)</option>
+            </select>
+          </div>
+
+          <div className="py-4 flex items-center justify-between">
+            <div>
+              <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Blog Length</label>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Controls blog post length</p>
+            </div>
+            <select
+              value={localPreferences.contentPreferences.blogLength}
+              onChange={(e) => setLocalPreferences({
+                ...localPreferences,
+                contentPreferences: {
+                  ...localPreferences.contentPreferences,
+                  blogLength: e.target.value
+                }
+              })}
+              className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
+            >
+              <option value="brief">Brief (800-1200 words)</option>
+              <option value="medium">Medium (1500-2000 words)</option>
+              <option value="detailed">Detailed (2500-3500 words)</option>
             </select>
           </div>
 
@@ -190,9 +233,9 @@ const PreferencesSettings = ({ embedded = false }) => {
               })}
               className="w-56 p-2 border border-gray-300 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#171717] text-gray-900 dark:text-white"
             >
-              <option value="simple">Simple</option>
-              <option value="detailed">Detailed</option>
-              <option value="visual">Visual</option>
+              <option value="simple">Simple (Short Q&A)</option>
+              <option value="detailed">Detailed (With explanations)</option>
+              <option value="visual">Visual (With emojis & metaphors)</option>
             </select>
           </div>
 
