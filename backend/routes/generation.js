@@ -138,6 +138,113 @@ async function getTranscriptText(url) {
   });
 }
 
+// ========== PLAYLIST HELPER FUNCTIONS (NEW) ==========
+
+/**
+ * Helper: Get playlist information using Python script
+ * Returns playlist metadata and list of video IDs
+ */
+async function getPlaylistInfo(playlistUrl) {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process');
+    const pythonProcess = spawn('python', [
+      path.join(__dirname, '../get_playlist.py'),
+      playlistUrl
+    ]);
+
+    let dataString = '';
+    let errorString = '';
+    
+    pythonProcess.stdout.on('data', (data) => {
+      dataString += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      errorString += data.toString();
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error('Python playlist script error:', errorString);
+        return reject(new Error(`Playlist extraction failed: ${errorString}`));
+      }
+
+      try {
+        const result = JSON.parse(dataString);
+        if (result.success) {
+          console.log(`Playlist info extracted: ${result.video_count} videos found`);
+          resolve(result);
+        } else {
+          reject(new Error(result.error || 'Failed to extract playlist info'));
+        }
+      } catch (error) {
+        console.error('Failed to parse playlist response:', dataString);
+        reject(new Error(`Failed to parse playlist data: ${error.message}`));
+      }
+    });
+  });
+}
+
+/**
+ * Helper: Get transcripts for multiple videos with delay
+ * Returns object with transcripts for each video ID
+ */
+async function getBatchTranscripts(videoIds, delaySeconds = 5) {
+  return new Promise((resolve, reject) => {
+    const { spawn } = require('child_process');
+    
+    // Prepare arguments: video IDs + delay parameter
+    const args = [
+      path.join(__dirname, '../get_batch_transcripts.py'),
+      `--delay=${delaySeconds}`,
+      ...videoIds
+    ];
+    
+    const pythonProcess = spawn('python', args);
+
+    let dataString = '';
+    let errorString = '';
+    
+    pythonProcess.stdout.on('data', (data) => {
+      dataString += data.toString();
+    });
+
+    pythonProcess.stderr.on('data', (data) => {
+      const message = data.toString();
+      errorString += message;
+      // Log progress messages for debugging
+      if (message.includes('Progress:')) {
+        console.log(message.trim());
+      }
+    });
+
+    pythonProcess.on('close', (code) => {
+      if (code !== 0) {
+        console.error('Python batch transcript script error:', errorString);
+        return reject(new Error(`Batch transcript fetching failed: ${errorString}`));
+      }
+
+      try {
+        const result = JSON.parse(dataString);
+        console.log(`Batch transcripts: ${result.successful} successful, ${result.failed} failed`);
+        resolve(result);
+      } catch (error) {
+        console.error('Failed to parse batch transcript response:', dataString);
+        reject(new Error(`Failed to parse batch transcript data: ${error.message}`));
+      }
+    });
+  });
+}
+
+/**
+ * Helper: Check if URL is a playlist or single video
+ */
+function isPlaylistUrl(url) {
+  return url.includes('list=') && (url.includes('playlist') || url.includes('watch'));
+}
+
+// ========== END OF PLAYLIST HELPER FUNCTIONS ==========
+
 
 /**
  * BLOG GENERATION
@@ -1933,6 +2040,142 @@ REMEMBER: You are restricted to ONLY the content provided above. Do not use any 
   } catch (error) {
     console.error("Restricted chat error:", error);
     res.status(500).json({ error: "Failed to get response from AI" });
+  }
+});
+
+/**
+ * PLAYLIST URL DETECTION (NEW)
+ * Check if a URL is a playlist and get playlist info
+ */
+router.post("/check-url-type", verifyToken, async (req, res) => {
+  try {
+    const { url } = req.body;
+
+    if (!url || !url.includes('youtube.com')) {
+      return res.status(400).json({ 
+        error: 'Invalid URL. Please provide a valid YouTube URL.' 
+      });
+    }
+
+    // Check if it's a playlist URL
+    if (isPlaylistUrl(url)) {
+      try {
+        const playlistInfo = await getPlaylistInfo(url);
+        
+        return res.json({
+          type: 'playlist',
+          playlist_title: playlistInfo.playlist_title,
+          playlist_id: playlistInfo.playlist_id,
+          video_count: playlistInfo.video_count,
+          uploader: playlistInfo.uploader,
+          videos: playlistInfo.videos.slice(0, 5) // Send only first 5 for preview
+        });
+      } catch (error) {
+        console.error('Failed to get playlist info:', error);
+        return res.status(400).json({ 
+          error: `Failed to extract playlist information: ${error.message}` 
+        });
+      }
+    } else {
+      // It's a single video
+      const videoId = new URL(url).searchParams.get("v");
+      if (!videoId) {
+        return res.status(400).json({ 
+          error: 'Invalid YouTube video URL' 
+        });
+      }
+
+      return res.json({
+        type: 'video',
+        video_id: videoId
+      });
+    }
+  } catch (error) {
+    console.error("URL type check error:", error);
+    res.status(500).json({ error: "Failed to check URL type" });
+  }
+});
+
+/**
+ * GENERATE FROM PLAYLIST (NEW)
+ * Generate content from all videos in a playlist
+ */
+router.post("/generate-from-playlist", verifyToken, async (req, res) => {
+  try {
+    const { url, contentType, selectedVideoIds } = req.body;
+    const userId = req.user.uid;
+
+    if (!url || !contentType) {
+      return res.status(400).json({ 
+        error: 'Missing required fields: url and contentType' 
+      });
+    }
+
+    // Get playlist information
+    const playlistInfo = await getPlaylistInfo(url);
+    
+    if (!playlistInfo.success) {
+      return res.status(400).json({ 
+        error: playlistInfo.error || 'Failed to get playlist information' 
+      });
+    }
+
+    // Determine which videos to process
+    let videoIdsToProcess;
+    if (selectedVideoIds && selectedVideoIds.length > 0) {
+      videoIdsToProcess = selectedVideoIds;
+    } else {
+      // Debug: log the first video structure
+      if (playlistInfo.videos && playlistInfo.videos.length > 0) {
+        console.log('First video structure:', JSON.stringify(playlistInfo.videos[0], null, 2));
+      }
+      videoIdsToProcess = playlistInfo.videos.map(v => v.id || v.video_id);
+    }
+
+    console.log(`Processing ${videoIdsToProcess.length} videos from playlist...`);
+    console.log('Video IDs:', videoIdsToProcess.slice(0, 5), '...');
+
+    // Fetch all transcripts with 5-second delay
+    const transcriptResults = await getBatchTranscripts(videoIdsToProcess, 5);
+
+    // Combine all successful transcripts
+    let combinedTranscript = '';
+    let processedCount = 0;
+    
+    for (const videoId of videoIdsToProcess) {
+      const result = transcriptResults.transcripts[videoId];
+      if (result && result.success) {
+        combinedTranscript += `\n\n--- Video ${processedCount + 1}: ${result.video_id} ---\n\n`;
+        combinedTranscript += result.text;
+        processedCount++;
+      }
+    }
+
+    if (processedCount === 0) {
+      return res.status(400).json({ 
+        error: 'Failed to fetch transcripts for any videos in the playlist' 
+      });
+    }
+
+    console.log(`Successfully combined transcripts from ${processedCount} videos`);
+    console.log(`Combined transcript length: ${combinedTranscript.length} characters`);
+
+    // Return the combined transcript for the frontend to process
+    // The frontend will call the appropriate generate endpoint
+    res.json({
+      success: true,
+      playlist_title: playlistInfo.playlist_title,
+      processed_videos: processedCount,
+      total_videos: videoIdsToProcess.length,
+      combined_transcript: combinedTranscript,
+      failed_videos: transcriptResults.failed
+    });
+
+  } catch (error) {
+    console.error("Playlist generation error:", error);
+    res.status(500).json({ 
+      error: `Failed to process playlist: ${error.message}` 
+    });
   }
 });
 

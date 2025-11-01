@@ -61,6 +61,16 @@ function Dashboard() {
   const videoContainerRef = useRef(null);
   const { user, toggleAuthModal } = useAuth();
   
+  // Playlist detection states
+  const [isPlaylist, setIsPlaylist] = useState(false);
+  const [playlistInfo, setPlaylistInfo] = useState(null);
+  const [isCheckingUrl, setIsCheckingUrl] = useState(false);
+  
+  // Playlist processing progress states
+  const [playlistProcessing, setPlaylistProcessing] = useState(false);
+  const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0, percentage: 0 });
+  const [playlistContentType, setPlaylistContentType] = useState('');
+  
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
@@ -83,6 +93,52 @@ function Dashboard() {
       console.log('Context after original source change:', context);
     }
   }, [originalSource, getContextForChat]);
+
+  // Detect playlist when URL changes
+  useEffect(() => {
+    const detectPlaylist = async () => {
+      if (!url || url.trim() === '') {
+        setIsPlaylist(false);
+        setPlaylistInfo(null);
+        return;
+      }
+
+      // Quick client-side check first
+      if (!url.includes('list=')) {
+        setIsPlaylist(false);
+        setPlaylistInfo(null);
+        return;
+      }
+
+      setIsCheckingUrl(true);
+      try {
+        const token = user ? await user.getIdToken() : null;
+        const response = await api.post('/check-url-type', 
+          { url },
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
+
+        if (response.data.type === 'playlist') {
+          setIsPlaylist(true);
+          setPlaylistInfo(response.data);
+          console.log('Playlist detected:', response.data);
+        } else {
+          setIsPlaylist(false);
+          setPlaylistInfo(null);
+        }
+      } catch (error) {
+        console.error('Error checking URL type:', error);
+        setIsPlaylist(false);
+        setPlaylistInfo(null);
+      } finally {
+        setIsCheckingUrl(false);
+      }
+    };
+
+    // Debounce the detection
+    const timeoutId = setTimeout(detectPlaylist, 500);
+    return () => clearTimeout(timeoutId);
+  }, [url, user]);
 
   // Function to create or update user record
   const createOrUpdateUser = async () => {
@@ -142,6 +198,52 @@ function Dashboard() {
       return;
     }
     
+    // Check if it's a playlist - if so, handle differently
+    if (isPlaylist && playlistInfo) {
+      // For playlists, don't extract video ID - use playlist handling
+      setError("");
+      setIsLoading(false); // Don't show loading yet
+      setBlog("");
+      setPptxBase64("");
+      setSlides([]);
+      setFlashcards([]);
+      setQuiz([]);
+      setSummary("");
+      setVideoId(""); // No single video ID for playlists
+      setShowVideo(false);
+      setActiveTab("");
+      
+      setLoadingStates({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
+      setErrors({
+        blog: "",
+        slides: "",
+        flashcards: "",
+        quiz: "",
+        summary: ""
+      });
+      setLoaded({
+        blog: false,
+        slides: false,
+        flashcards: false,
+        quiz: false,
+        summary: false
+      });
+      
+      // Create or update user record
+      await createOrUpdateUser();
+      
+      // Show playlist info and wait for user to select content type
+      setShowContentLayout(true);
+      return;
+    }
+    
+    // Original single video handling
     const extractedVideoId = extractVideoId(urlToProcess);
     if (!extractedVideoId) {
       setError("Please enter a valid YouTube URL");
@@ -579,6 +681,7 @@ function Dashboard() {
   const handleTabClick = async (tabId) => {
     console.log('Tab clicked:', tabId);
     console.log('Current state - videoId:', videoId, 'selectedFile:', selectedFile, 'originalSource:', originalSource);
+    console.log('Playlist state - isPlaylist:', isPlaylist, 'playlistInfo:', playlistInfo);
     
     // Check if user is authenticated
     if (!user) {
@@ -586,7 +689,11 @@ function Dashboard() {
       return;
     }
     
-    if (!videoId && !selectedFile && !originalSource?.content) return;
+    // Check if we have content to process (video, file, text, or playlist)
+    if (!videoId && !selectedFile && !originalSource?.content && !(isPlaylist && playlistInfo)) {
+      console.log('No content available to process');
+      return;
+    }
     
     setActiveTab(tabId);
     if (loaded[tabId]) return;
@@ -684,7 +791,12 @@ function Dashboard() {
         }
       
       let res;
+      console.log('Processing content - videoId:', videoId, 'isPlaylist:', isPlaylist, 'playlistInfo:', playlistInfo);
+      console.log('URL state variable:', url);
+      console.log('OriginalSource URL:', originalSource?.url);
+      
       if (videoId) {
+        console.log('Processing as single video');
         if (tabId === "blog") {
           res = await api.post("/generate-blog", { url });
           setBlog(res.data.blogPost || "");
@@ -732,6 +844,119 @@ function Dashboard() {
             source: 'youtube',
             url: url
           });
+        }
+      } else if (isPlaylist && playlistInfo) {
+        // Handle playlist content generation
+        console.log('Processing as playlist - Starting transcript fetch for', playlistInfo.video_count, 'videos');
+        const playlistUrl = url || originalSource?.url;
+        console.log('Playlist URL:', playlistUrl);
+        console.log('Content Type:', tabId);
+        
+        if (!playlistUrl) {
+          throw new Error('Playlist URL not found');
+        }
+        
+        // Show progress modal
+        setPlaylistProcessing(true);
+        setPlaylistContentType(tabId.charAt(0).toUpperCase() + tabId.slice(1));
+        setPlaylistProgress({ current: 0, total: playlistInfo.video_count, percentage: 0 });
+        
+        // Simulate progress (since backend processes all at once, we estimate based on 5 sec per video)
+        const progressInterval = setInterval(() => {
+          setPlaylistProgress(prev => {
+            if (prev.current < prev.total) {
+              const newCurrent = prev.current + 1;
+              const newPercentage = (newCurrent / prev.total) * 85; // Reserve 15% for content generation
+              return { current: newCurrent, total: prev.total, percentage: newPercentage };
+            }
+            return prev;
+          });
+        }, 5000); // Update every 5 seconds (matching backend delay)
+        
+        try {
+          // First, fetch the combined transcript from all videos in the playlist
+          const playlistRes = await api.post("/generate-from-playlist", { 
+            url: playlistUrl,
+            contentType: tabId
+          });
+          const combinedTranscript = playlistRes.data.combined_transcript;
+          
+          // Clear progress interval and update to show generation phase
+          clearInterval(progressInterval);
+          setPlaylistProgress({ 
+            current: playlistInfo.video_count, 
+            total: playlistInfo.video_count, 
+            percentage: 85 
+          });
+          
+          console.log(`Combined transcript from ${playlistRes.data.total_videos} videos (${playlistRes.data.processed_videos} successful)`);
+        
+          // Now use the combined transcript to generate the requested content type
+          // Update progress to 90% while generating
+          setPlaylistProgress(prev => ({ ...prev, percentage: 90 }));
+          
+          if (tabId === "blog") {
+            res = await api.post("/generate-blog", { textContent: combinedTranscript });
+            setBlog(res.data.blogPost || "");
+            updateCurrentSessionContent('blog', res.data.blogPost, {
+              contentId: res.data.contentId,
+              source: 'youtube-playlist',
+              url: playlistUrl,
+              playlistInfo: playlistInfo
+            });
+          } else if (tabId === "slides") {
+            res = await api.post("/generate-slides", { textContent: combinedTranscript });
+            setPptxBase64(res.data.pptxBase64 || "");
+            setSlides(res.data.slides || []);
+            updateCurrentSessionContent('slides', res.data.slides, {
+              contentId: res.data.contentId,
+              source: 'youtube-playlist',
+              url: playlistUrl,
+              playlistInfo: playlistInfo,
+              pptxBase64: res.data.pptxBase64
+            });
+          } else if (tabId === "flashcards") {
+            res = await api.post("/generate-flashcards", { textContent: combinedTranscript });
+            setFlashcards(res.data.flashcards || []);
+            updateCurrentSessionContent('flashcards', res.data.flashcards, {
+              contentId: res.data.contentId,
+              source: 'youtube-playlist',
+              url: playlistUrl,
+              playlistInfo: playlistInfo
+            });
+          } else if (tabId === "quiz") {
+            res = await api.post("/generate-quiz", { textContent: combinedTranscript });
+            setQuiz(res.data.quiz || []);
+            updateCurrentSessionContent('quiz', res.data.quiz, {
+              contentId: res.data.contentId,
+              source: 'youtube-playlist',
+              url: playlistUrl,
+              playlistInfo: playlistInfo
+            });
+          } else if (tabId === "summary") {
+            res = await api.post("/generate-summary", { textContent: combinedTranscript });
+            setSummary(res.data.summary || "");
+            updateCurrentSessionContent('summary', res.data.summary, {
+              contentId: res.data.contentId,
+              source: 'youtube-playlist',
+              url: playlistUrl,
+              playlistInfo: playlistInfo
+            });
+          }
+          
+          // Complete progress
+          setPlaylistProgress(prev => ({ ...prev, percentage: 100 }));
+          
+          // Close modal after a brief delay
+          setTimeout(() => {
+            setPlaylistProcessing(false);
+            setPlaylistProgress({ current: 0, total: 0, percentage: 0 });
+          }, 800);
+          
+        } catch (playlistError) {
+          clearInterval(progressInterval);
+          setPlaylistProcessing(false);
+          throw playlistError;
         }
       } else if (selectedFile) {
         const formData = new FormData();
@@ -876,7 +1101,7 @@ function Dashboard() {
   }, [showVideo]);
 
   // Update the hasContent check to properly handle both video and file modes
-  const hasContent = videoId || isFileValidated || originalSource?.content;
+  const hasContent = videoId || isFileValidated || originalSource?.content || (isPlaylist && playlistInfo);
 
   // Reset isFileValidated when switching modes
   const resetStates = () => {
@@ -1175,6 +1400,95 @@ function Dashboard() {
                           <BookOpen size={14} />
                           <span>Transcript</span>
                         </button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Playlist Info Display */}
+              {isPlaylist && playlistInfo && (
+                <div 
+                  className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full"
+                >
+                  {/* Playlist Header */}
+                  <div className="p-6 border-b border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E]">
+                    <div className="flex items-start space-x-4">
+                      <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
+                        <ListChecks className="w-6 h-6 text-white" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa] mb-1 truncate">
+                          {playlistInfo.playlist_title || 'YouTube Playlist'}
+                        </h3>
+                        <div className="flex items-center space-x-4 text-sm">
+                          <span className="px-3 py-1 bg-blue-600 text-white rounded-full font-medium">
+                            {playlistInfo.video_count} videos
+                          </span>
+                          <span className="text-gray-600 dark:text-[#fafafacc]">
+                            Ready to process entire playlist
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Playlist Description */}
+                  <div className="p-6 flex-1 overflow-y-auto">
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 p-4 rounded-lg">
+                        <p className="text-sm text-blue-900 dark:text-blue-300 font-medium mb-2">
+                          📚 Full Course Generation
+                        </p>
+                        <p className="text-sm text-blue-800 dark:text-blue-400">
+                          This playlist contains {playlistInfo.video_count} videos. 
+                          Click any content type button on the right to generate comprehensive learning materials 
+                          from all videos in this playlist.
+                        </p>
+                      </div>
+
+                      <div className="bg-gray-50 dark:bg-[#2E2E2E] border-l-4 border-gray-600 dark:border-gray-500 p-4 rounded-lg">
+                        <p className="text-sm text-gray-900 dark:text-[#fafafacc] font-medium mb-2">
+                          ⏱️ Processing Time
+                        </p>
+                        <p className="text-sm text-gray-700 dark:text-[#fafafacc]">
+                          Processing may take a few minutes as we fetch transcripts from all videos 
+                          with appropriate delays (5 seconds between each video) to ensure reliability.
+                        </p>
+                      </div>
+
+                      {/* Video List Preview */}
+                      <div className="mt-6">
+                        <h4 className="text-sm font-semibold text-gray-900 dark:text-[#fafafa] mb-3">
+                          Videos in this playlist:
+                        </h4>
+                        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+                          {playlistInfo.videos && playlistInfo.videos.slice(0, 10).map((video, index) => (
+                            <div 
+                              key={video.id || video.video_id || index}
+                              className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg hover:bg-gray-100 dark:hover:bg-[#3E3E3E] transition-colors"
+                            >
+                              <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
+                                {index + 1}
+                              </span>
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm text-gray-900 dark:text-[#fafafa] font-medium truncate">
+                                  {video.title || `Video ${index + 1}`}
+                                </p>
+                                {video.duration && (
+                                  <p className="text-xs text-gray-500 dark:text-[#fafafacc] mt-0.5">
+                                    Duration: {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+                          ))}
+                          {playlistInfo.videos && playlistInfo.videos.length > 10 && (
+                            <p className="text-xs text-gray-500 dark:text-[#fafafacc] text-center py-2">
+                              ... and {playlistInfo.videos.length - 10} more videos
+                            </p>
+                          )}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1618,6 +1932,87 @@ function Dashboard() {
         onClose={() => setShowPasteModal(false)} 
         onSubmit={handleModalSubmit}
       />
+      
+      {/* Playlist Processing Progress Modal */}
+      {playlistProcessing && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-[#2E2E2E]">
+            {/* Header */}
+            <div className="flex items-center space-x-3 mb-6">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
+                <ListChecks className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <div>
+                <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa]">
+                  Processing Playlist
+                </h3>
+                <p className="text-sm text-gray-600 dark:text-[#fafafacc]">
+                  Generating {playlistContentType}
+                </p>
+              </div>
+            </div>
+
+            {/* Progress Info */}
+            <div className="space-y-4">
+              {/* Progress Bar */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700 dark:text-[#fafafacc]">
+                    Fetching transcripts...
+                  </span>
+                  <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
+                    {Math.round(playlistProgress.percentage)}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 dark:bg-[#2E2E2E] rounded-full h-3 overflow-hidden">
+                  <div 
+                    className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-1"
+                    style={{ width: `${playlistProgress.percentage}%` }}
+                  >
+                    {playlistProgress.percentage > 10 && (
+                      <div className="w-2 h-2 bg-white rounded-full animate-pulse"></div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Video Count */}
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
+                <span className="text-sm text-gray-600 dark:text-[#fafafacc]">
+                  Videos processed
+                </span>
+                <span className="text-sm font-bold text-gray-900 dark:text-[#fafafa]">
+                  {playlistProgress.current} / {playlistProgress.total}
+                </span>
+              </div>
+
+              {/* Status Message */}
+              <div className="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border-l-4 border-blue-600">
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mt-0.5"></div>
+                <div className="flex-1">
+                  <p className="text-sm text-blue-900 dark:text-blue-300 font-medium">
+                    {playlistProgress.current === 0 ? 'Starting...' :
+                     playlistProgress.current === playlistProgress.total ? 'Generating content...' :
+                     `Processing video ${playlistProgress.current + 1}...`}
+                  </p>
+                  <p className="text-xs text-blue-700 dark:text-blue-400 mt-1">
+                    Please wait, this may take a few minutes
+                  </p>
+                </div>
+              </div>
+
+              {/* Estimated Time */}
+              {playlistProgress.total > 0 && (
+                <div className="text-center pt-2">
+                  <p className="text-xs text-gray-500 dark:text-[#fafafacc]">
+                    Estimated time: ~{Math.ceil(playlistProgress.total * 5 / 60)} minutes
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <ChatBot isOpen={chatOpen} setIsOpen={setChatOpen} />
     </div>
