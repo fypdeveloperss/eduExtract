@@ -20,6 +20,7 @@ const ChatContext = require('../models/ChatContext');
 
 // Import services
 const ChatContextService = require('../services/chatContextService');
+const RAGService = require('../services/ragService');
 
 // Import prompt builder utility
 const {
@@ -35,6 +36,7 @@ const {
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
 const transcriptCache = new NodeCache({ stdTTL: 600 }); // 600 seconds = 10 minutes
 const chatContextService = new ChatContextService();
+const ragService = new RAGService();
 
 // Enhanced retry utility function with better error handling
 async function withRetry(operation, maxRetries = 3, delay = 1000) {
@@ -310,6 +312,18 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
     await newContent.save();
     console.log(`Saved new blog post (ID: ${newContent._id}) to database.`);
 
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      newContent._id,
+      'blog',
+      blogPost,
+      { url: req.body.url || null, title }
+    ).catch(err => {
+      console.error('Error processing blog for RAG:', err);
+      // Don't fail the request if RAG processing fails
+    });
+
     res.json({ blogPost, contentId: newContent._id });
   } catch (error) {
     console.error("Blog error:", error.message);
@@ -376,6 +390,17 @@ router.post("/generate-flashcards", verifyToken, async (req, res) => {
     });
     await newContent.save();
     console.log(`Saved new flashcards (ID: ${newContent._id}) to database.`);
+
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      newContent._id,
+      'flashcards',
+      validFlashcards,
+      { url: req.body.url || null }
+    ).catch(err => {
+      console.error('Error processing flashcards for RAG:', err);
+    });
 
     res.json({ flashcards: validFlashcards, contentId: newContent._id });
     
@@ -602,6 +627,17 @@ router.post("/generate-slides", verifyToken, async (req, res) => {
     await newContent.save();
     console.log(`Saved new slides (ID: ${newContent._id}) to database.`);
 
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      newContent._id,
+      'slides',
+      validSlides,
+      { url: url || null }
+    ).catch(err => {
+      console.error('Error processing slides for RAG:', err);
+    });
+
     res.setHeader(
       "Content-Disposition",
       'attachment; filename="presentation.pptx"'
@@ -679,6 +715,17 @@ router.post("/generate-quiz", verifyToken, async (req, res) => {
     });
     await newContent.save();
     console.log(`Saved new quiz (ID: ${newContent._id}) to database.`);
+
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      newContent._id,
+      'quiz',
+      validQuiz,
+      { url: req.body.url || null }
+    ).catch(err => {
+      console.error('Error processing quiz for RAG:', err);
+    });
 
     res.json({ quiz: validQuiz, contentId: newContent._id });
   } catch (error) {
@@ -773,6 +820,17 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
     await newContent.save();
     console.log(`Saved new summary (ID: ${newContent._id}) to database.`);
 
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      newContent._id,
+      'summary',
+      summary,
+      { url: url || null }
+    ).catch(err => {
+      console.error('Error processing summary for RAG:', err);
+    });
+
     res.json({ summary, contentId: newContent._id });
   } catch (error) {
     console.error("Summary generation error:", error.message);
@@ -781,7 +839,7 @@ router.post("/generate-summary", verifyToken, async (req, res) => {
 });
 
 /**
- * ENHANCED CHATBOT ENDPOINT WITH CONTEXT AWARENESS
+ * ENHANCED CHATBOT ENDPOINT WITH RAG (RETRIEVAL-AUGMENTED GENERATION)
  */
 router.post("/api/chat", verifyToken, async (req, res) => {
   try {
@@ -803,27 +861,81 @@ router.post("/api/chat", verifyToken, async (req, res) => {
       console.log(`Created new chat session: ${newSessionId}`);
     }
 
-    // Build context if provided
+    // Get the user's latest message for RAG retrieval
+    const userMessage = messages && messages.length > 0 
+      ? messages[messages.length - 1].content 
+      : '';
+
+    // Build context using RAG
     let contextualPrompt = "You are a helpful educational assistant for EduExtract. You can help users with understanding content, navigating the app, and answering questions about educational materials. Be concise and friendly in your responses.";
     
-    if (contentContext) {
+    if (contentContext || userMessage) {
       try {
-        console.log('Building context for chat...');
-        const context = await chatContextService.buildUserContext(
-          userId,
-          contentContext.currentSession || {},
-          contentContext.originalSource || null
-        );
+        console.log('Building RAG context for chat...');
         
-        contextualPrompt = chatContextService.createContextualPrompt(context, userName);
+        // Retrieve relevant chunks using RAG
+        let relevantChunks = [];
+        if (userMessage) {
+          try {
+            relevantChunks = await ragService.retrieveRelevantChunks(userMessage, {
+              userId,
+              limit: 5,
+              minSimilarity: 0.7
+            });
+            console.log(`Retrieved ${relevantChunks.length} relevant chunks from RAG`);
+          } catch (ragError) {
+            console.error('Error retrieving RAG chunks:', ragError);
+            // Continue without RAG chunks if retrieval fails
+          }
+        }
+
+        // Build context from RAG chunks and current session
+        const currentSessionContent = contentContext?.currentSession || {};
+        const originalSource = contentContext?.originalSource || null;
+        
+        const ragContext = ragService.buildContextFromChunks(
+          relevantChunks,
+          currentSessionContent,
+          originalSource
+        );
+
+        if (ragContext) {
+          contextualPrompt = `You are an AI tutor for ${userName} using EduExtract, an educational content platform. You have access to their learning materials and can help them understand, revise, and create new educational content.
+
+IMPORTANT: Use the following context to provide accurate and relevant answers. Reference specific content when relevant.
+
+${ragContext}
+
+You can help the user by:
+- Explaining concepts from their generated content
+- Answering questions about their learning materials
+- Suggesting improvements to their content
+- Creating new educational materials based on their existing content
+- Connecting ideas between different pieces of content they've created
+
+Be helpful, educational, and reference their specific content when relevant.`;
+        } else {
+          // Fallback to simple context if RAG fails
+          const context = await chatContextService.buildUserContext(
+            userId,
+            currentSessionContent,
+            originalSource
+          );
+          contextualPrompt = chatContextService.createContextualPrompt(context, userName);
+        }
         
         // Update session with context snapshot
-        chatSession.contextSnapshot = context;
+        chatSession.contextSnapshot = {
+          ragEnabled: relevantChunks.length > 0,
+          chunksRetrieved: relevantChunks.length,
+          hasCurrentSession: Object.keys(currentSessionContent).length > 0,
+          hasOriginalSource: !!originalSource
+        };
         await chatSession.save();
         
-        console.log(`Context built successfully. Token estimate: ${chatContextService.estimateTokenCount(context)}`);
+        console.log(`RAG context built successfully. Chunks: ${relevantChunks.length}`);
       } catch (contextError) {
-        console.error('Error building context:', contextError);
+        console.error('Error building RAG context:', contextError);
         // Continue with basic prompt if context building fails
       }
     }
@@ -1496,6 +1608,17 @@ IMPORTANT:
 
     // Save generated content to MongoDB
     const savedContent = await saveUserContent(userId, contentTitle, type, fileContent, generatedContentData);
+
+    // Process content for RAG (async, don't wait)
+    ragService.processContent(
+      userId,
+      savedContent._id,
+      type,
+      generatedContentData,
+      { fileName: req.file.originalname }
+    ).catch(err => {
+      console.error(`Error processing ${type} for RAG:`, err);
+    });
 
     // Add contentId to the response
     result.contentId = savedContent._id;

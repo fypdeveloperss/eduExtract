@@ -82,9 +82,17 @@ A comprehensive learning platform that generates educational content from YouTub
    ```
 
 3. **Environment Variables**
-   - `GROQ_API_KEY`: Your Groq API key
+   - `GROQ_API_KEY`: Your Groq API key (for content generation)
+   - `EMBEDDING_PROVIDER`: Embedding provider - `'huggingface'` (free, default) or `'openai'`
+   - `HUGGINGFACE_API_KEY`: (Optional) Hugging Face API key for higher rate limits
+   - `OPENAI_API_KEY`: (Optional) OpenAI API key if using OpenAI embeddings
    - `MONGODB_URI`: MongoDB connection string
+   - `CHROMADB_URL`: (Optional) ChromaDB server URL (default: `http://localhost:8000`)
    - `PORT`: Server port (default: 5000)
+   
+   **Note:** 
+   - By default, the system uses Hugging Face embeddings (free, no API key required)
+   - ChromaDB server must be running (see `CHROMADB_SETUP.md` for setup instructions)
 
 ## Usage
 
@@ -131,6 +139,7 @@ The application uses a predefined admin list approach for security:
 - **Authentication**: Firebase Auth
 - **File Processing**: Multer, PDF-parse, Mammoth
 - **AI Integration**: Groq API for content generation
+- **RAG (Retrieval-Augmented Generation)**: ChromaDB for vector storage + Hugging Face/OpenAI Embeddings API for semantic search
 
 ## File Structure
 

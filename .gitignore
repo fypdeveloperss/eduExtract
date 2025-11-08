@@ -36,3 +36,6 @@ backend/build/
 # System files
 Thumbs.db
 ehthumbs.db
+
+# ChromaDB storage
+backend/chroma_db/
