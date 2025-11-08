@@ -114,7 +114,7 @@ const Layout = () => {
       )}
       
       {/* Sidebar */}
-      <aside className={`${sidebarCollapsed ? (isMobile ? 'w-0 p-0' : 'w-16 p-2') : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'} flex flex-col border-r border-gray-200 dark:border-[#171717]`}>
+      <aside className={`${sidebarCollapsed ? (isMobile ? 'w-0 p-0' : 'w-16 p-2') : 'w-64 p-5'} bg-[#FAFAFA] text-[#171717cc] dark:bg-[#171717] dark:text-[#fafafacc] fixed h-full left-0 top-0 transition-all duration-300 ease-in-out z-20 ${isMobile && !sidebarCollapsed ? 'translate-x-0' : isMobile ? '-translate-x-full' : 'translate-x-0'} flex flex-col border-r border-gray-200 dark:border-[#fafafa1a]`}>
         {/* Sidebar Header */}
         <div className={`flex items-center justify-between mb-4 ${isMobile && sidebarCollapsed ? 'hidden' : ''}`}>
           {!sidebarCollapsed && (

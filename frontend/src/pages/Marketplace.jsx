@@ -186,7 +186,7 @@ function Marketplace() {
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#171717] dark:border-[#fafafa] mx-auto mb-4"></div>
           <p className="text-[#171717cc] dark:text-[#fafafacc]">
             {activeTab === 'browse' ? 'Loading marketplace...' : 'Loading purchases...'}
           </p>
@@ -198,12 +198,12 @@ function Marketplace() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       {/* Hero Section */}
-      <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white py-16">
+      <div className="bg-[#171717] dark:bg-[#121212] text-white dark:text-[#fafafa] py-8">
         <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-4xl md:text-5xl font-bold mb-6">
+          <h1 className="text-2xl md:text-3xl font-bold mb-3">
             Discover Amazing Educational Content
           </h1>
-          <p className="text-xl md:text-2xl text-blue-100 mb-8 max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-[#fafafacc] dark:text-[#fafafacc] mb-6 max-w-3xl mx-auto">
             Access high-quality learning materials, study guides, and educational resources 
             created by experts and educators worldwide.
           </p>
@@ -216,11 +216,11 @@ function Marketplace() {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for courses, documents, study guides..."
-                className="flex-1 px-6 py-4 text-[#171717cc] dark:text-[#fafafacc] text-lg focus:outline-none bg-transparent placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                className="flex-1 px-4 py-2.5 text-[#171717cc] dark:text-[#fafafacc] text-base focus:outline-none bg-transparent placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
               />
               <button
                 type="submit"
-                className="bg-blue-600 hover:bg-blue-700 px-8 py-4 text-white font-semibold transition-colors"
+                className="bg-[#171717] dark:bg-[#fafafa] hover:opacity-90 dark:text-[#171717] px-6 py-2.5 text-white font-semibold transition-opacity"
               >
                 Search
               </button>
@@ -228,10 +228,10 @@ function Marketplace() {
           </form>
 
           {user && (
-            <div className="mt-8 flex flex-wrap justify-center gap-4">
+            <div className="mt-6 flex flex-wrap justify-center gap-3">
               <Link
                 to="/marketplace/upload"
-                className="inline-flex items-center bg-white text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                className="inline-flex items-center bg-white text-[#171717] dark:bg-[#171717] dark:text-[#fafafa] border border-gray-200 dark:border-[#fafafa1a] px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm"
               >
                 <span className="mr-2">🚀</span>
                 Upload New Content
@@ -239,7 +239,7 @@ function Marketplace() {
               
               <button
                 onClick={() => setShowPublishModal(true)}
-                className="inline-flex items-center bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+                className="inline-flex items-center bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-2 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm"
               >
                 <span className="mr-2">📚</span>
                 Publish My Content
@@ -249,16 +249,16 @@ function Marketplace() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className="max-w-7xl mx-auto px-4 py-4">
         {/* Tab Navigation */}
-        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex space-x-1 mb-6">
+        <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-4 mb-6">
+          <div className="flex space-x-1 mb-4">
             <button
               onClick={() => setActiveTab('browse')}
-              className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+              className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm ${
                 activeTab === 'browse'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E]'
+                  ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                  : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
               }`}
             >
               <span className="mr-2">🔍</span>
@@ -267,10 +267,10 @@ function Marketplace() {
             {user && (
               <button
                 onClick={() => setActiveTab('purchased')}
-                className={`px-6 py-3 rounded-lg font-semibold transition-colors duration-200 ${
+                className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm ${
                   activeTab === 'purchased'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E]'
+                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                    : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
                 }`}
               >
                 <span className="mr-2">🛒</span>
@@ -282,15 +282,15 @@ function Marketplace() {
 
         {/* Filters and Controls - Only show for browse tab */}
         {activeTab === 'browse' && (
-          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 mb-8">
-          <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-4 mb-6">
+          <div className="flex flex-wrap items-center justify-between gap-3">
             {/* Category Filter */}
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Category:</label>
+            <div className="flex items-center space-x-3">
+              <label className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Category:</label>
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
-                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                className="border border-gray-300 dark:border-[#fafafa1a] rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Categories</option>
                 {categories.map(cat => (
@@ -302,12 +302,12 @@ function Marketplace() {
             </div>
 
             {/* Difficulty Filter */}
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Difficulty:</label>
+            <div className="flex items-center space-x-3">
+              <label className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Difficulty:</label>
               <select
                 value={selectedDifficulty}
                 onChange={(e) => setSelectedDifficulty(e.target.value)}
-                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                className="border border-gray-300 dark:border-[#fafafa1a] rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Levels</option>
                 <option value="beginner">Beginner</option>
@@ -317,12 +317,12 @@ function Marketplace() {
             </div>
 
             {/* Content Type Filter */}
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Type:</label>
+            <div className="flex items-center space-x-3">
+              <label className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Type:</label>
               <select
                 value={selectedContentType}
                 onChange={(e) => setSelectedContentType(e.target.value)}
-                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                className="border border-gray-300 dark:border-[#fafafa1a] rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="">All Types</option>
                 <option value="document">Documents</option>
@@ -335,12 +335,12 @@ function Marketplace() {
             </div>
 
             {/* Price Range Filter */}
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Price:</label>
+            <div className="flex items-center space-x-3">
+              <label className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Price:</label>
               <select
                 value={priceRange}
                 onChange={(e) => setPriceRange(e.target.value)}
-                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                className="border border-gray-300 dark:border-[#fafafa1a] rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="all">All Prices</option>
                 <option value="free">Free</option>
@@ -352,12 +352,12 @@ function Marketplace() {
             </div>
 
             {/* Sort Options */}
-            <div className="flex items-center space-x-4">
-              <label className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Sort by:</label>
+            <div className="flex items-center space-x-3">
+              <label className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Sort by:</label>
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="border border-gray-300 dark:border-[#2E2E2E] rounded-lg px-3 py-2 focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                className="border border-gray-300 dark:border-[#fafafa1a] rounded-lg px-2.5 py-1.5 text-sm focus:ring-2 focus:ring-gray-400 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
               >
                 <option value="newest">Newest</option>
                 <option value="popular">Most Popular</option>
@@ -377,8 +377,8 @@ function Marketplace() {
         )}
 
         {/* Results Summary */}
-        <div className="flex items-center justify-between mb-6">
-          <div className="text-[#171717cc] dark:text-[#fafafacc]">
+        <div className="flex items-center justify-between mb-4">
+          <div className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
             {activeTab === 'browse' ? (
               <>
                 Showing {content.length} of {totalItems} results
@@ -392,9 +392,9 @@ function Marketplace() {
           </div>
           
           {!user && activeTab === 'browse' && (
-            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg px-4 py-2">
-              <p className="text-sm text-blue-800 dark:text-blue-200">
-                💡 <Link to="/login" className="font-medium underline">Sign in</Link> to upload content and access premium features
+            <div className="bg-gray-50 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#fafafa1a] rounded-lg px-3 py-1.5">
+              <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                💡 <Link to="/login" className="font-medium underline hover:text-[#171717] dark:hover:text-[#fafafa]">Sign in</Link> to upload content and access premium features
               </p>
             </div>
           )}
@@ -402,24 +402,24 @@ function Marketplace() {
 
         {/* Content Grid */}
         {error ? (
-          <div className="bg-red-50 border border-red-200 rounded-lg p-6 text-center">
-            <p className="text-red-700">{error}</p>
+          <div className="bg-red-50 border border-red-200 rounded-lg p-4 text-center">
+            <p className="text-sm text-red-700">{error}</p>
             <button
               onClick={activeTab === 'browse' ? fetchContent : fetchPurchasedContent}
-              className="mt-4 bg-red-600 text-white px-4 py-2 rounded-lg hover:bg-red-700 transition-colors"
+              className="mt-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-4 py-1.5 text-sm rounded-lg hover:opacity-90 transition-opacity"
             >
               Try Again
             </button>
           </div>
         ) : (activeTab === 'browse' ? content.length === 0 : purchasedContent.length === 0) ? (
-          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-12 text-center">
-            <div className="w-24 h-24 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-6">
-              <span className="text-4xl">{activeTab === 'browse' ? '🔍' : '🛒'}</span>
+          <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-md p-8 text-center">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto mb-4">
+              <span className="text-3xl">{activeTab === 'browse' ? '🔍' : '🛒'}</span>
             </div>
-            <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
+            <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
               {activeTab === 'browse' ? 'No content found' : 'No purchases yet'}
             </h3>
-            <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">
+            <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-4">
               {activeTab === 'browse' 
                 ? 'Try adjusting your filters or search terms to find what you\'re looking for.'
                 : 'Start exploring the marketplace to find amazing educational content to purchase.'
@@ -428,21 +428,21 @@ function Marketplace() {
             {activeTab === 'browse' ? (
               <button
                 onClick={clearFilters}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-2 text-sm rounded-lg hover:opacity-90 transition-opacity"
               >
                 Clear Filters
               </button>
             ) : (
               <button
                 onClick={() => setActiveTab('browse')}
-                className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+                className="bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-2 text-sm rounded-lg hover:opacity-90 transition-opacity"
               >
                 Browse Content
               </button>
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {(activeTab === 'browse' ? content : purchasedContent).map((item) => {
               const contentItem = activeTab === 'browse' ? item : item.contentId;
               const purchaseInfo = activeTab === 'purchased' ? item : null;
@@ -457,25 +457,25 @@ function Marketplace() {
               <Link
                 key={contentItem._id}
                 to={`/marketplace/content/${contentItem._id}`}
-                className="bg-white dark:bg-[#171717] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
+                className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg shadow-sm hover:shadow-md transition-all duration-300 transform hover:-translate-y-1 overflow-hidden group"
               >
                 {/* Content Preview */}
-                <div className="h-48 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900/20 dark:to-indigo-900/20 flex items-center justify-center relative overflow-hidden">
-                  <div className="text-6xl opacity-60 group-hover:scale-110 transition-transform duration-300">
+                <div className="h-32 bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#1E1E1E] dark:to-[#2E2E2E] flex items-center justify-center relative overflow-hidden">
+                  <div className="text-4xl opacity-60 group-hover:scale-110 transition-transform duration-300">
                     {getCategoryIcon(contentItem.category)}
                   </div>
                   
                   {/* Price Badge */}
-                  <div className="absolute top-3 right-3">
+                  <div className="absolute top-2 right-2">
                     {activeTab === 'purchased' ? (
-                      <span className="px-3 py-1 rounded-full text-sm font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
+                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
                         ✅ Purchased
                       </span>
                     ) : (
-                      <span className={`px-3 py-1 rounded-full text-sm font-semibold ${
+                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
                         contentItem.price === 0 
                           ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
-                          : 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-200'
+                          : 'bg-gray-100 dark:bg-[#1E1E1E] text-[#171717cc] dark:text-[#fafafacc]'
                       }`}>
                         {formatPrice(contentItem.price, contentItem.currency)}
                       </span>
@@ -483,9 +483,9 @@ function Marketplace() {
                   </div>
 
                   {/* Content Type Badge */}
-                  <div className="absolute bottom-3 left-3">
+                  <div className="absolute bottom-2 left-2">
                     {contentItem?.contentType && (
-                      <span className="bg-white dark:bg-[#171717] bg-opacity-90 px-2 py-1 rounded text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">
+                      <span className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] bg-opacity-90 px-1.5 py-0.5 rounded text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">
                         {contentItem.contentType}
                       </span>
                     )}
@@ -493,31 +493,31 @@ function Marketplace() {
                 </div>
 
                 {/* Content Info */}
-                <div className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <h3 className="font-semibold text-[#171717cc] dark:text-[#fafafacc] text-lg leading-tight group-hover:text-blue-600 transition-colors">
+                <div className="p-3">
+                  <div className="flex items-start justify-between mb-1.5">
+                    <h3 className="font-semibold text-[#171717cc] dark:text-[#fafafacc] text-base leading-tight group-hover:text-[#171717] dark:group-hover:text-[#fafafa] transition-colors">
                       {contentItem.title}
                     </h3>
                   </div>
                   
-                  <p className="text-[#171717cc] dark:text-[#fafafacc] text-sm mb-3 line-clamp-2">
+                  <p className="text-[#171717cc] dark:text-[#fafafacc] text-xs mb-2 line-clamp-2">
                     {contentItem.description}
                   </p>
                   
-                  <div className="flex items-center justify-between text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                  <div className="flex items-center justify-between text-xs text-[#171717cc] dark:text-[#fafafacc]">
                     <span className="flex items-center">
                       <span className="mr-1">📚</span>
                       {contentItem?.subject || 'N/A'}
                     </span>
                     {contentItem?.difficulty && (
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${getDifficultyColor(contentItem.difficulty)}`}>
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(contentItem.difficulty)}`}>
                         {contentItem.difficulty}
                       </span>
                     )}
                   </div>
                   
                   {/* Stats */}
-                  <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 dark:border-[#2E2E2E] text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                  <div className="flex items-center justify-between mt-2 pt-2 border-t border-gray-100 dark:border-[#fafafa1a] text-xs text-[#171717cc] dark:text-[#fafafacc]">
                     {activeTab === 'purchased' ? (
                       <>
                         <span className="flex items-center">
@@ -555,12 +555,12 @@ function Marketplace() {
 
         {/* Pagination - Only for browse tab */}
         {activeTab === 'browse' && totalPages > 1 && (
-          <div className="flex items-center justify-center mt-12">
-            <nav className="flex items-center space-x-2">
+          <div className="flex items-center justify-center mt-6">
+            <nav className="flex items-center space-x-1.5">
               <button
                 onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                 disabled={currentPage === 1}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-[#fafafa1a] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1E1E1E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Previous
               </button>
@@ -569,10 +569,10 @@ function Marketplace() {
                 <button
                   key={page}
                   onClick={() => setCurrentPage(page)}
-                  className={`px-3 py-2 border rounded-lg ${
+                  className={`px-3 py-1.5 text-sm border rounded-lg transition-colors ${
                     currentPage === page
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                      ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] border-transparent'
+                      : 'border-gray-300 dark:border-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
                   }`}
                 >
                   {page}
@@ -582,7 +582,7 @@ function Marketplace() {
               <button
                 onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                 disabled={currentPage === totalPages}
-                className="px-3 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="px-3 py-1.5 text-sm border border-gray-300 dark:border-[#fafafa1a] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1E1E1E] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Next
               </button>

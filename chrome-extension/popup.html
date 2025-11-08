@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduExtract</title>
+  <link rel="stylesheet" href="popup.css">
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <div class="logo">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3B82F6" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h1>EduExtract</h1>
+      </div>
+    </div>
+
+    <!-- Current Page Info -->
+    <div id="pageInfo" class="page-info">
+      <div class="info-icon">📺</div>
+      <div class="info-content">
+        <p class="info-title" id="pageTitle">Loading...</p>
+        <p class="info-url" id="pageUrl">...</p>
+      </div>
+    </div>
+
+    <!-- Quick Actions -->
+    <div class="actions">
+      <h3>Quick Generate</h3>
+      <div class="action-grid">
+        <button class="action-btn" id="generateSummary">
+          <span class="icon">📝</span>
+          <span>Summary</span>
+        </button>
+        <button class="action-btn" id="generateBlog">
+          <span class="icon">📰</span>
+          <span>Blog</span>
+        </button>
+        <button class="action-btn" id="generateSlides">
+          <span class="icon">📊</span>
+          <span>Slides</span>
+        </button>
+        <button class="action-btn" id="generateQuiz">
+          <span class="icon">❓</span>
+          <span>Quiz</span>
+        </button>
+        <button class="action-btn" id="generateFlashcards">
+          <span class="icon">🃏</span>
+          <span>Flashcards</span>
+        </button>
+        <button class="action-btn" id="openDashboard">
+          <span class="icon">🏠</span>
+          <span>Dashboard</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Status -->
+    <div id="status" class="status hidden">
+      <div class="status-icon">⏳</div>
+      <p id="statusMessage">Processing...</p>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <a href="#" id="openFullApp">Open Full App →</a>
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>
