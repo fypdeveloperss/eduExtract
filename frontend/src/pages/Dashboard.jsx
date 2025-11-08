@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../utils/axios";
 import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
@@ -17,6 +18,7 @@ import { useAuth } from "../context/FirebaseAuthContext";
 import AuthModal from "../components/AuthModal";
 
 function Dashboard() {
+  const [searchParams] = useSearchParams();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -93,6 +95,37 @@ function Dashboard() {
       console.log('Context after original source change:', context);
     }
   }, [originalSource, getContextForChat]);
+
+
+  // Handle URL parameters from Chrome Extension (set url and tab, then trigger generation only after both are set)
+  const [extensionAutoGen, setExtensionAutoGen] = useState(false);
+  useEffect(() => {
+    const urlParam = searchParams.get('url');
+    const typeParam = searchParams.get('type');
+    if (urlParam && typeParam) {
+      const decodedUrl = decodeURIComponent(urlParam);
+      // Extract video ID immediately
+      const videoIdMatch = decodedUrl.match(/(?:youtu\.be\/|youtube\.com(?:\/embed\/|\/v\/|\/watch\?v=|\/watch\?.+&v=))([\w-]{11})/);
+      if (videoIdMatch) {
+        const extractedVideoId = videoIdMatch[1];
+        setVideoId(extractedVideoId);
+        setShowVideo(true);
+        setShowContentLayout(true);
+      }
+      setUrl(decodedUrl);
+      setUploadMode('youtube');
+      setActiveTab(typeParam.toLowerCase());
+      setExtensionAutoGen(true);
+    }
+  }, [searchParams]);
+
+  // Trigger content generation only after both url and activeTab are set from extension
+  useEffect(() => {
+    if (extensionAutoGen && url && activeTab) {
+      handleTabClick(activeTab);
+      setExtensionAutoGen(false); // Prevent repeat
+    }
+  }, [extensionAutoGen, url, activeTab]);
 
   // Detect playlist when URL changes
   useEffect(() => {

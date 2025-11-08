@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EduExtract Icon Generator</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #3B82F6;
+      text-align: center;
+    }
+    .icons {
+      display: flex;
+      gap: 20px;
+      justify-content: center;
+      margin: 30px 0;
+      flex-wrap: wrap;
+    }
+    .icon-wrapper {
+      text-align: center;
+    }
+    canvas {
+      border: 2px solid #e5e7eb;
+      border-radius: 8px;
+      display: block;
+      margin: 10px auto;
+    }
+    button {
+      background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+      color: white;
+      border: none;
+      padding: 15px 30px;
+      font-size: 16px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      display: block;
+      margin: 20px auto;
+      transition: transform 0.2s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+    }
+    button:active {
+      transform: translateY(0);
+    }
+    .instructions {
+      background: #eff6ff;
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid #3B82F6;
+      margin-top: 20px;
+    }
+    .instructions h3 {
+      margin-top: 0;
+      color: #1e40af;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🎨 EduExtract Icon Generator</h1>
+    <p style="text-align: center; color: #6b7280;">Generate extension icons with one click!</p>
+    
+    <div class="icons">
+      <div class="icon-wrapper">
+        <p><strong>128 x 128</strong></p>
+        <canvas id="canvas128" width="128" height="128"></canvas>
+      </div>
+      <div class="icon-wrapper">
+        <p><strong>48 x 48</strong></p>
+        <canvas id="canvas48" width="48" height="48"></canvas>
+      </div>
+      <div class="icon-wrapper">
+        <p><strong>16 x 16</strong></p>
+        <canvas id="canvas16" width="16" height="16" style="image-rendering: pixelated;"></canvas>
+      </div>
+    </div>
+    
+    <button onclick="downloadIcons()">📥 Download All Icons</button>
+    
+    <div class="instructions">
+      <h3>Instructions:</h3>
+      <ol>
+        <li>Click the "Download All Icons" button above</li>
+        <li>Three PNG files will download (icon16.png, icon48.png, icon128.png)</li>
+        <li>Move these files to the <code>chrome-extension/icons/</code> folder</li>
+        <li>Load the extension in Chrome (see README.md for details)</li>
+      </ol>
+    </div>
+  </div>
+
+  <script>
+    function drawIcon(canvas, size) {
+      const ctx = canvas.getContext('2d');
+      
+      // Gradient background
+      const gradient = ctx.createLinearGradient(0, 0, size, size);
+      gradient.addColorStop(0, '#3B82F6');
+      gradient.addColorStop(1, '#2563EB');
+      
+      ctx.fillStyle = gradient;
+      ctx.fillRect(0, 0, size, size);
+      
+      // Add subtle shadow effect
+      if (size >= 48) {
+        ctx.shadowColor = 'rgba(0, 0, 0, 0.1)';
+        ctx.shadowBlur = size * 0.05;
+        ctx.shadowOffsetY = size * 0.02;
+      }
+      
+      // White border/frame
+      ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+      ctx.lineWidth = size * 0.02;
+      ctx.strokeRect(size * 0.05, size * 0.05, size * 0.9, size * 0.9);
+      
+      // Reset shadow
+      ctx.shadowColor = 'transparent';
+      
+      // Education icon (graduation cap or book)
+      ctx.fillStyle = 'white';
+      
+      if (size >= 48) {
+        // Draw a simple book icon for larger sizes
+        const bookWidth = size * 0.5;
+        const bookHeight = size * 0.4;
+        const bookX = (size - bookWidth) / 2;
+        const bookY = (size - bookHeight) / 2;
+        
+        // Book cover
+        ctx.fillRect(bookX, bookY, bookWidth, bookHeight);
+        
+        // Book pages
+        ctx.fillStyle = '#f0f0f0';
+        ctx.fillRect(bookX + size * 0.05, bookY + size * 0.05, bookWidth - size * 0.1, bookHeight - size * 0.1);
+        
+        // Book spine
+        ctx.fillStyle = '#1e40af';
+        ctx.fillRect(bookX, bookY, size * 0.08, bookHeight);
+      } else {
+        // Simple shape for tiny icon
+        ctx.beginPath();
+        ctx.arc(size / 2, size / 2, size * 0.3, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+    
+    // Draw all icons on page load
+    drawIcon(document.getElementById('canvas128'), 128);
+    drawIcon(document.getElementById('canvas48'), 48);
+    drawIcon(document.getElementById('canvas16'), 16);
+    
+    function downloadIcons() {
+      const sizes = [128, 48, 16];
+      let downloaded = 0;
+      
+      sizes.forEach((size, index) => {
+        setTimeout(() => {
+          const canvas = document.getElementById(`canvas${size}`);
+          const link = document.createElement('a');
+          link.download = `icon${size}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+          
+          downloaded++;
+          if (downloaded === sizes.length) {
+            setTimeout(() => {
+              alert('✅ All 3 icons downloaded!\n\nNext steps:\n1. Move them to chrome-extension/icons/ folder\n2. Load extension in Chrome\n3. Enjoy!');
+            }, 500);
+          }
+        }, index * 300); // Stagger downloads
+      });
+    }
+  </script>
+</body>
+</html>

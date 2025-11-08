@@ -1,0 +1,42 @@
+/* EduExtract button on YouTube */
+#eduextract-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 16px;
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+  color: white;
+  border: none;
+  border-radius: 18px;
+  font-family: "Roboto", "Arial", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 8px rgba(59, 130, 246, 0.3);
+  margin-right: 8px;
+}
+
+#eduextract-btn:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+}
+
+#eduextract-btn:active {
+  transform: translateY(0);
+}
+
+#eduextract-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Dark mode support */
+html[dark] #eduextract-btn {
+  background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+}
+
+html[dark] #eduextract-btn:hover {
+  background: linear-gradient(135deg, #2563EB 0%, #1D4ED8 100%);
+}
