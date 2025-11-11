@@ -268,6 +268,18 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
 
     // Build personalized prompt
     const systemPrompt = buildBlogPrompt(userPreferences);
+    
+    // Get word count requirement for user message reminder
+    const blogLength = userPreferences?.contentPreferences?.blogLength || 'medium';
+    const wordCounts = {
+      brief: { min: 800, max: 1200, target: 1000 },
+      medium: { min: 1500, max: 2000, target: 1750 },
+      detailed: { min: 2500, max: 3500, target: 3000 }
+    };
+    const wordCount = wordCounts[blogLength] || wordCounts.medium;
+    
+    // Add word count reminder to user message
+    const userMessage = `${transcriptText}\n\n⚠️ REMINDER: Generate a blog post with ${wordCount.min}-${wordCount.max} words (target: ${wordCount.target} words). Ensure you meet the minimum word count requirement.`;
 
     const completion = await withRetry(async () => {
       const result = await groq.chat.completions.create({
@@ -279,7 +291,7 @@ router.post("/generate-blog", verifyToken, async (req, res) => {
             role: "system",
             content: systemPrompt
           },
-          { role: "user", content: transcriptText },
+          { role: "user", content: userMessage },
         ],
       });
 

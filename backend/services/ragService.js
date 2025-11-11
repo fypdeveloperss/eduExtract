@@ -98,18 +98,15 @@ class RAGService {
       
       console.log(`Successfully generated ${validEmbeddings.length}/${chunks.length} embeddings`);
       
-      // Use valid chunks and embeddings
-      chunks = validChunks;
-      embeddings = validEmbeddings;
-
+      // Use valid chunks and embeddings directly
       // Prepare chunks with embeddings for ChromaDB
-      const chunksWithEmbeddings = chunks.map((chunk, index) => ({
+      const chunksWithEmbeddings = validChunks.map((chunk, index) => ({
         userId,
         contentId,
         contentType,
         chunkIndex: chunk.chunkIndex,
         text: chunk.text,
-        embedding: embeddings[index],
+        embedding: validEmbeddings[index],
         metadata: {
           ...chunk,
           embeddingGenerated: new Date()

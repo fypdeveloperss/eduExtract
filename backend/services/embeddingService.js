@@ -19,12 +19,26 @@ class EmbeddingService {
       this.model = 'text-embedding-3-small';
       this.dimensions = 1536;
     } else {
-      // Hugging Face configuration (free alternative)
-      this.hfApiKey = process.env.HUGGINGFACE_API_KEY || null; // Optional, works without key for public models
-      this.model = 'sentence-transformers/all-MiniLM-L6-v2'; // Free, fast, 384 dimensions
-      this.dimensions = 384;
-      // Use the correct Hugging Face Inference API endpoint
-      this.hfApiUrl = `https://api-inference.huggingface.co/models/${this.model}`;
+      // Hugging Face configuration using official Inference library
+      try {
+        const { HfInference } = require('@huggingface/inference');
+        this.hfApiKey = process.env.HUGGINGFACE_API_KEY || null;
+        this.hf = this.hfApiKey ? new HfInference(this.hfApiKey) : new HfInference();
+        this.model = 'sentence-transformers/all-MiniLM-L6-v2'; // Free, fast, 384 dimensions
+        this.dimensions = 384;
+        this.useOfficialLibrary = true;
+        console.log('[EmbeddingService] Using official @huggingface/inference library');
+      } catch (error) {
+        // Fallback to manual API calls if library not available
+        console.warn('[EmbeddingService] @huggingface/inference not available, falling back to manual API calls');
+        this.hfApiKey = process.env.HUGGINGFACE_API_KEY || null;
+        this.model = 'sentence-transformers/all-MiniLM-L6-v2';
+        this.dimensions = 384;
+        this.useOfficialLibrary = false;
+        // Try old API format as fallback
+        this.hfBaseUrl = 'https://api-inference.huggingface.co/models';
+        this.ensureFeatureExtractionEndpoint();
+      }
     }
     
     // Cache for embeddings to avoid redundant API calls
@@ -64,69 +78,130 @@ class EmbeddingService {
         embedding = response.data[0].embedding;
       } else {
         // Use Hugging Face embeddings (free alternative)
-        // Retry logic for Hugging Face (model might be loading)
-        let embedding = null;
-        let lastError = null;
-        const maxRetries = 3;
-        
-        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+        if (this.useOfficialLibrary) {
+          // Use official @huggingface/inference library
           try {
-            const response = await axios.post(
-              this.hfApiUrl,
-              { inputs: normalizedText },
-              {
-                headers: {
-                  ...(this.hfApiKey && { Authorization: `Bearer ${this.hfApiKey}` }),
-                  'Content-Type': 'application/json'
-                },
-                timeout: 60000 // 60 second timeout (model loading can take time)
-              }
-            );
-
-            // Handle different response formats from Hugging Face
-            if (Array.isArray(response.data)) {
-              // If response is array of arrays, take first element
-              embedding = Array.isArray(response.data[0]) ? response.data[0] : response.data;
-            } else if (response.data && Array.isArray(response.data[0])) {
-              embedding = response.data[0];
-            } else if (Array.isArray(response.data)) {
-              embedding = response.data;
-            } else {
-              throw new Error('Unexpected response format from Hugging Face');
-            }
+            const result = await this.hf.featureExtraction({
+              model: this.model,
+              inputs: normalizedText
+            });
+            
+            // The library returns embeddings directly
+            embedding = Array.isArray(result) ? result : (Array.isArray(result[0]) ? result[0] : result);
             
             // Ensure it's a flat array
             if (!Array.isArray(embedding) || embedding.length === 0) {
               throw new Error('Invalid embedding format from Hugging Face');
             }
-            
-            // Success - break out of retry loop
-            break;
           } catch (error) {
-            lastError = error;
-            
-            // If it's a 503 (model loading) or 410 (deprecated), wait and retry
-            if (error.response) {
-              const status = error.response.status;
-              if (status === 503 || status === 410) {
-                if (attempt < maxRetries) {
-                  const waitTime = attempt * 2000; // 2s, 4s, 6s
-                  console.log(`Hugging Face model loading (${status}), waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
-                  await new Promise(resolve => setTimeout(resolve, waitTime));
-                  continue;
+            console.error('[EmbeddingService] Error with official library:', error.message);
+            throw new Error(`Failed to generate embedding: ${error.message}`);
+          }
+        } else {
+          // Fallback to manual API calls
+          // Retry logic for Hugging Face (model might be loading)
+          let embedding = null;
+          let lastError = null;
+          const maxRetries = 3;
+          
+          for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            try {
+              const response = await axios.post(
+                this.hfApiUrl,
+                { inputs: normalizedText },
+                {
+                  headers: {
+                    ...(this.hfApiKey && { Authorization: `Bearer ${this.hfApiKey}` }),
+                    'Content-Type': 'application/json'
+                  },
+                  timeout: 60000 // 60 second timeout (model loading can take time)
+                }
+              );
+
+              // Handle different response formats from Hugging Face
+              if (Array.isArray(response.data)) {
+                // If response is array of arrays, take first element
+                embedding = Array.isArray(response.data[0]) ? response.data[0] : response.data;
+              } else if (response.data && Array.isArray(response.data[0])) {
+                embedding = response.data[0];
+              } else if (Array.isArray(response.data)) {
+                embedding = response.data;
+              } else {
+                throw new Error('Unexpected response format from Hugging Face');
+              }
+              
+              // Ensure it's a flat array
+              if (!Array.isArray(embedding) || embedding.length === 0) {
+                throw new Error('Invalid embedding format from Hugging Face');
+              }
+              
+              // Success - break out of retry loop
+              break;
+            } catch (error) {
+              lastError = error;
+
+              if (error.response) {
+                const status = error.response.status;
+                const data = error.response.data;
+
+                if (
+                  status === 400 &&
+                  data &&
+                  typeof data.error === 'string' &&
+                  data.error.includes("SentenceSimilarityPipeline.__call__")
+                ) {
+                  this.ensureFeatureExtractionEndpoint();
+                  if (attempt < maxRetries) {
+                    continue;
+                  }
+                }
+
+                // Handle 410 (deprecated) or 404 (not found) - try alternative endpoints
+                if (status === 410 || status === 404) {
+                  if (this.hfApiUrl.includes('api-inference.huggingface.co')) {
+                    // Old API failed, try router API with explicit pipeline
+                    console.log(`[EmbeddingService] Old API returned ${status}, switching to router API...`);
+                    this.hfBaseUrl = 'https://router.huggingface.co/hf-inference/pipeline/feature-extraction';
+                    this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                    console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                  } else if (this.hfApiUrl.includes('router.huggingface.co/hf-inference/pipeline/feature-extraction')) {
+                    // Router with pipeline failed, try router without pipeline (auto-detect)
+                    console.log(`[EmbeddingService] Router API with pipeline returned ${status}, trying auto-detect format...`);
+                    this.hfBaseUrl = 'https://router.huggingface.co/hf-inference';
+                    this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                    console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                  } else if (this.hfApiUrl.includes('router.huggingface.co/hf-inference') && !this.hfApiUrl.includes('/pipeline/')) {
+                    // Router auto-detect failed, try old API as last resort
+                    console.log(`[EmbeddingService] Router API returned ${status}, trying old API format as fallback...`);
+                    this.hfBaseUrl = 'https://api-inference.huggingface.co/models';
+                    this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                    console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                  }
+                  if (attempt < maxRetries) {
+                    continue; // Retry immediately with new endpoint
+                  }
+                }
+                
+                // Handle 503 (model loading) - wait and retry
+                if (status === 503) {
+                  if (attempt < maxRetries) {
+                    const waitTime = attempt * 2000; // 2s, 4s, 6s
+                    console.log(`Hugging Face model loading (${status}), waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+                    await new Promise(resolve => setTimeout(resolve, waitTime));
+                    continue;
+                  }
                 }
               }
-            }
-            
-            // For other errors or max retries reached, throw
-            if (attempt === maxRetries) {
-              throw error;
+
+              if (attempt === maxRetries) {
+                throw error;
+              }
             }
           }
-        }
-        
-        if (!embedding) {
-          throw lastError || new Error('Failed to get embedding after retries');
+          
+          if (!embedding) {
+            throw lastError || new Error('Failed to get embedding after retries');
+          }
         }
       }
 
@@ -208,88 +283,162 @@ class EmbeddingService {
             });
           }
         } else {
-          // Hugging Face batch processing (process one at a time to avoid rate limits)
-          // Hugging Face free tier has rate limits, so we process sequentially
-          for (let i = 0; i < textsToEmbed.length; i++) {
-            const text = textsToEmbed[i];
-            const originalIndex = textIndices[i];
-            
-            let embedding = null;
-            let lastError = null;
-            const maxRetries = 3;
-            
-            // Retry logic for each text
-            for (let attempt = 1; attempt <= maxRetries; attempt++) {
+          // Hugging Face batch processing
+          if (this.useOfficialLibrary) {
+            // Use official library - process sequentially to respect rate limits
+            for (let i = 0; i < textsToEmbed.length; i++) {
+              const text = textsToEmbed[i];
+              const originalIndex = textIndices[i];
+              
               try {
-                const response = await axios.post(
-                  this.hfApiUrl,
-                  { inputs: text },
-                  {
-                    headers: {
-                      ...(this.hfApiKey && { Authorization: `Bearer ${this.hfApiKey}` }),
-                      'Content-Type': 'application/json'
-                    },
-                    timeout: 60000 // 60 second timeout
-                  }
-                );
-
-                // Handle different response formats
-                if (Array.isArray(response.data)) {
-                  embedding = Array.isArray(response.data[0]) ? response.data[0] : response.data;
-                } else if (response.data && Array.isArray(response.data[0])) {
-                  embedding = response.data[0];
-                } else if (Array.isArray(response.data)) {
-                  embedding = response.data;
-                } else {
-                  throw new Error('Unexpected response format');
-                }
-
+                const result = await this.hf.featureExtraction({
+                  model: this.model,
+                  inputs: text
+                });
+                
+                const embedding = Array.isArray(result) ? result : (Array.isArray(result[0]) ? result[0] : result);
+                
                 if (!Array.isArray(embedding) || embedding.length === 0) {
                   throw new Error('Invalid embedding format');
                 }
-
-                // Success - break out of retry loop
-                break;
+                
+                results[originalIndex] = embedding;
+                
+                // Cache the embedding
+                const cacheKey = this.getCacheKey(text);
+                this.cacheEmbedding(cacheKey, embedding);
+                
+                // Small delay to respect rate limits
+                if (i < textsToEmbed.length - 1) {
+                  await new Promise(resolve => setTimeout(resolve, 200));
+                }
               } catch (error) {
-                lastError = error;
-                
-                // Handle 503 (model loading) or 410 (deprecated endpoint)
-                if (error.response) {
-                  const status = error.response.status;
-                  if (status === 503 || status === 410) {
-                    if (attempt < maxRetries) {
-                      const waitTime = attempt * 2000; // 2s, 4s, 6s
-                      console.log(`Hugging Face error (${status}) for text ${i}, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
-                      await new Promise(resolve => setTimeout(resolve, waitTime));
-                      continue;
-                    }
-                  }
-                }
-                
-                // For other errors or max retries, log and continue to next text
-                if (attempt === maxRetries) {
-                  console.error(`Error embedding text ${i} after ${maxRetries} attempts:`, error.message);
-                  if (error.response) {
-                    console.error(`Status: ${error.response.status}, Data:`, error.response.data);
-                  }
-                  break; // Move to next text
-                }
+                console.error(`Error embedding text ${i} with official library:`, error.message);
+                // Continue to next text
               }
             }
-            
-            if (embedding) {
-              results[originalIndex] = embedding;
+          } else {
+            // Fallback to manual API calls - process one at a time to avoid rate limits
+            for (let i = 0; i < textsToEmbed.length; i++) {
+              const text = textsToEmbed[i];
+              const originalIndex = textIndices[i];
               
-              // Cache the embedding
-              const cacheKey = this.getCacheKey(text);
-              this.cacheEmbedding(cacheKey, embedding);
-            } else {
-              console.warn(`Failed to embed text ${i} after all retries, skipping...`);
-            }
+              let embedding = null;
+              let lastError = null;
+              const maxRetries = 3;
+              
+              // Retry logic for each text
+              for (let attempt = 1; attempt <= maxRetries; attempt++) {
+                try {
+                  const response = await axios.post(
+                    this.hfApiUrl,
+                    { inputs: text },
+                    {
+                      headers: {
+                        ...(this.hfApiKey && { Authorization: `Bearer ${this.hfApiKey}` }),
+                        'Content-Type': 'application/json'
+                      },
+                      timeout: 60000 // 60 second timeout
+                    }
+                  );
 
-            // Small delay to respect rate limits (free tier)
-            if (i < textsToEmbed.length - 1) {
-              await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+                  // Handle different response formats
+                  if (Array.isArray(response.data)) {
+                    embedding = Array.isArray(response.data[0]) ? response.data[0] : response.data;
+                  } else if (response.data && Array.isArray(response.data[0])) {
+                    embedding = response.data[0];
+                  } else if (Array.isArray(response.data)) {
+                    embedding = response.data;
+                  } else {
+                    throw new Error('Unexpected response format');
+                  }
+
+                  if (!Array.isArray(embedding) || embedding.length === 0) {
+                    throw new Error('Invalid embedding format');
+                  }
+
+                  // Success - break out of retry loop
+                  break;
+                } catch (error) {
+                  lastError = error;
+
+                  if (error.response) {
+                    const status = error.response.status;
+                    const data = error.response.data;
+
+                    if (
+                      status === 400 &&
+                      data &&
+                      typeof data.error === 'string' &&
+                      data.error.includes("SentenceSimilarityPipeline.__call__")
+                    ) {
+                      this.ensureFeatureExtractionEndpoint();
+                      if (attempt < maxRetries) {
+                        continue;
+                      }
+                    }
+
+                    // Handle 410 (deprecated) or 404 (not found) - try alternative endpoints
+                    if (status === 410 || status === 404) {
+                      if (this.hfApiUrl.includes('api-inference.huggingface.co')) {
+                        // Old API failed, try router API with explicit pipeline
+                        console.log(`[EmbeddingService] Old API returned ${status}, switching to router API...`);
+                        this.hfBaseUrl = 'https://router.huggingface.co/hf-inference/pipeline/feature-extraction';
+                        this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                        console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                      } else if (this.hfApiUrl.includes('router.huggingface.co/hf-inference/pipeline/feature-extraction')) {
+                        // Router with pipeline failed, try router without pipeline (auto-detect)
+                        console.log(`[EmbeddingService] Router API with pipeline returned ${status}, trying auto-detect format...`);
+                        this.hfBaseUrl = 'https://router.huggingface.co/hf-inference';
+                        this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                        console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                      } else if (this.hfApiUrl.includes('router.huggingface.co/hf-inference') && !this.hfApiUrl.includes('/pipeline/')) {
+                        // Router auto-detect failed, try old API as last resort
+                        console.log(`[EmbeddingService] Router API returned ${status}, trying old API format as fallback...`);
+                        this.hfBaseUrl = 'https://api-inference.huggingface.co/models';
+                        this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+                        console.log(`[EmbeddingService] Switched to: ${this.hfApiUrl}`);
+                      }
+                      if (attempt < maxRetries) {
+                        continue; // Retry immediately with new endpoint
+                      }
+                    }
+                    
+                    // Handle 503 (model loading) - wait and retry
+                    if (status === 503) {
+                      if (attempt < maxRetries) {
+                        const waitTime = attempt * 2000; // 2s, 4s, 6s
+                        console.log(`Hugging Face error (${status}) for text ${i}, waiting ${waitTime}ms before retry ${attempt + 1}/${maxRetries}...`);
+                        await new Promise(resolve => setTimeout(resolve, waitTime));
+                        continue;
+                      }
+                    }
+                  }
+
+                  if (attempt === maxRetries) {
+                    console.error(`Error embedding text ${i} after ${maxRetries} attempts:`, error.message);
+                    if (error.response) {
+                      console.error(`Status: ${error.response.status}, Data:`, error.response.data);
+                    }
+                    break; // Move to next text
+                  }
+                }
+              }
+              
+              if (embedding) {
+                results[originalIndex] = embedding;
+                
+                // Cache the embedding
+                const cacheKey = this.getCacheKey(text);
+                this.cacheEmbedding(cacheKey, embedding);
+              } else {
+                console.warn(`Failed to embed text ${i} after all retries, skipping...`);
+              }
+
+              // Small delay to respect rate limits (free tier)
+              if (i < textsToEmbed.length - 1) {
+                await new Promise(resolve => setTimeout(resolve, 200)); // 200ms delay
+              }
             }
           }
         }
@@ -300,6 +449,45 @@ class EmbeddingService {
     }
 
     return results;
+  }
+
+  /**
+   * Normalize Hugging Face endpoint so we always hit the feature-extraction pipeline.
+   * @param {boolean} forceRouterSwitch - If true, force switch to router base.
+   */
+  ensureFeatureExtractionEndpoint(forceRouterSwitch = false) {
+    const defaultBase = 'https://router.huggingface.co/hf-inference/pipeline/feature-extraction';
+
+    if (forceRouterSwitch) {
+      this.hfBaseUrl = defaultBase;
+    } else if (!this.hfBaseUrl) {
+      this.hfBaseUrl = defaultBase;
+    }
+
+    // For old API, add feature-extraction if not already present
+    if (this.hfBaseUrl.includes('api-inference.huggingface.co') && 
+        !this.hfBaseUrl.includes('feature-extraction') && 
+        !this.hfBaseUrl.includes('/models/')) {
+      const trimmed = this.hfBaseUrl.replace(/\/+$/, '');
+      this.hfBaseUrl = `${trimmed}/feature-extraction`;
+    }
+
+    // Build the endpoint URL with model
+    this.hfApiUrl = this.buildHfEndpoint(this.hfBaseUrl);
+    console.log(`[EmbeddingService] Using Hugging Face endpoint: ${this.hfApiUrl}`);
+  }
+
+  /**
+   * Build full Hugging Face endpoint for the current model.
+   * @param {string} baseUrl
+   * @returns {string}
+   */
+  buildHfEndpoint(baseUrl) {
+    if (!baseUrl) {
+      return '';
+    }
+    const trimmed = baseUrl.replace(/\/+$/, '');
+    return `${trimmed}/${this.model}`;
   }
 
   /**

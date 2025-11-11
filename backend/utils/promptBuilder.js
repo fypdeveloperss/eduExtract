@@ -9,9 +9,9 @@
 function getTokenCount(contentType, userPreferences) {
   const tokenConfig = {
     blog: {
-      brief: 1800,     // ~1200 words * 1.5 = enough for HTML tags
-      medium: 3000,    // ~2000 words * 1.5 = 3000 tokens
-      detailed: 5500   // ~3500 words * 1.5 = 5250 tokens + buffer
+      brief: 2000,     // ~1200 words * 1.5 = 1800 tokens + buffer
+      medium: 3500,    // ~2000 words * 1.5 = 3000 tokens + buffer
+      detailed: 6500   // ~3500 words * 1.5 = 5250 tokens + buffer for HTML tags and comprehensive content
     },
     summary: {
       brief: 400,      // Increased from 300 to avoid cutoffs
@@ -216,32 +216,55 @@ function buildBlogPrompt(userPreferences) {
   };
   
   const lengthInstructions = {
-    brief: `
-LENGTH REQUIREMENT: 800-1200 words (STRICT)
+    brief: {
+      minWords: 800,
+      maxWords: 1200,
+      instruction: `
+LENGTH REQUIREMENT: 800-1200 words (MANDATORY - STRICTLY ENFORCED)
 - Write 4-6 main sections with 2-3 paragraphs each
 - Each paragraph should be 100-150 words
 - Focus on core concepts only
-- Keep examples concise`,
-    medium: `
-LENGTH REQUIREMENT: 1500-2000 words (STRICT)
+- Keep examples concise
+- MINIMUM: 800 words, TARGET: 1000 words, MAXIMUM: 1200 words`
+    },
+    medium: {
+      minWords: 1500,
+      maxWords: 2000,
+      instruction: `
+LENGTH REQUIREMENT: 1500-2000 words (MANDATORY - STRICTLY ENFORCED)
 - Write 6-8 main sections with 3-4 paragraphs each
 - Each paragraph should be 150-200 words
 - Include detailed explanations and examples
-- Provide good depth without being exhaustive`,
-    detailed: `
-LENGTH REQUIREMENT: 2500-3500 words (STRICT)
+- Provide good depth without being exhaustive
+- MINIMUM: 1500 words, TARGET: 1750 words, MAXIMUM: 2000 words`
+    },
+    detailed: {
+      minWords: 2500,
+      maxWords: 3500,
+      instruction: `
+LENGTH REQUIREMENT: 2500-3500 words (MANDATORY - STRICTLY ENFORCED)
 - Write 8-12 main sections with 4-5 paragraphs each
 - Each paragraph should be 200-250 words
 - Include comprehensive analysis and multiple examples
 - Provide in-depth coverage of all aspects
-- Add case studies, statistics, and detailed explanations`
+- Add case studies, statistics, and detailed explanations
+- Expand on every point with thorough detail
+- MINIMUM: 2500 words, TARGET: 3000 words, MAXIMUM: 3500 words`
+    }
   };
+  
+  const selectedLength = lengthInstructions[blogLength] || lengthInstructions.medium;
+  const targetWordCount = Math.round((selectedLength.minWords + selectedLength.maxWords) / 2);
   
   let prompt = `Generate a professional, well-structured HTML blog post based on the transcript.
 
-${lengthInstructions[blogLength]}
+${selectedLength.instruction}
 
-CRITICAL: You MUST meet the minimum word count. Write comprehensive content with sufficient detail and examples to reach the target length.
+⚠️ CRITICAL WORD COUNT REQUIREMENT ⚠️
+You MUST generate a blog post with AT LEAST ${selectedLength.minWords} words and aim for ${targetWordCount} words.
+The blog post MUST be between ${selectedLength.minWords}-${selectedLength.maxWords} words.
+DO NOT stop writing until you have reached the minimum word count.
+If you are below ${selectedLength.minWords} words, you MUST continue writing and add more content, examples, and details.
 
 STRUCTURE REQUIREMENTS:
 - Use <h1> for the main title
@@ -260,7 +283,12 @@ STRUCTURE REQUIREMENTS:
   prompt += buildToneInstructions(tonePrefs);
   prompt += buildCustomizationInstructions(customization, studyProfile);
   
-  prompt += '\n\nIMPORTANT: Ensure the blog post meets the minimum word count requirement by providing thorough explanations, multiple examples, and comprehensive coverage of the topic.';
+  prompt += `\n\n⚠️ FINAL REMINDER: WORD COUNT REQUIREMENT ⚠️
+The blog post MUST be ${selectedLength.minWords}-${selectedLength.maxWords} words.
+Target word count: ${targetWordCount} words.
+Count your words and ensure you meet the minimum requirement.
+If the content is too short, add more sections, examples, case studies, or detailed explanations.
+DO NOT submit a blog post that is shorter than ${selectedLength.minWords} words.`;
   
   return prompt;
 }
