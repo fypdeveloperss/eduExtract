@@ -131,7 +131,33 @@ class TextChunker {
         // For quiz, chunk each question separately
         if (Array.isArray(content)) {
           content.forEach((item, index) => {
-            const questionText = `Question: ${item.question}\nOptions: ${item.options?.join(', ') || 'N/A'}\nAnswer: ${item.answer || 'N/A'}`;
+            if (!item || typeof item !== 'object') {
+              return; // Skip invalid items
+            }
+            
+            // Handle options - could be array, object, or missing
+            let optionsText = 'N/A';
+            if (item.options) {
+              if (Array.isArray(item.options)) {
+                optionsText = item.options.join(', ');
+              } else if (typeof item.options === 'object') {
+                // Convert object to string representation
+                optionsText = Object.entries(item.options)
+                  .map(([key, value]) => `${key}: ${value}`)
+                  .join(', ');
+              } else {
+                optionsText = String(item.options);
+              }
+            }
+            
+            // Handle answer - could be 'answer', 'correctAnswer', or 'correct'
+            const answer = item.answer || item.correctAnswer || item.correct || 'N/A';
+            
+            // Handle explanation if present
+            const explanation = item.explanation ? `\nExplanation: ${item.explanation}` : '';
+            
+            const questionText = `Question: ${item.question || 'N/A'}\nOptions: ${optionsText}\nAnswer: ${answer}${explanation}`;
+            
             chunks.push({
               text: questionText,
               chunkIndex: index,

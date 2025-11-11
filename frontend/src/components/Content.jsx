@@ -134,9 +134,9 @@ function Content() {
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {content.contentData.map((card, index) => (
-              <div key={index} className="bg-white dark:bg-zinc-800 p-4 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                <h3 className="font-semibold text-lg mb-2">{card.question}</h3>
-                <p className="text-gray-700 dark:text-gray-300">{card.answer}</p>
+              <div key={index} className="bg-white dark:bg-[#171717] p-4 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-[#fafafa]">{card.question}</h3>
+                <p className="text-gray-700 dark:text-[#fafafacc]">{card.answer}</p>
               </div>
             ))}
           </div>
@@ -149,9 +149,9 @@ function Content() {
               const bulletPoints = slide.content || slide.points || [];
               
               return (
-                <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                  <h3 className="font-bold text-xl mb-3">{slide.title}</h3>
-                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-gray-300">
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                  <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafa]">{slide.title}</h3>
+                  <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
                     {bulletPoints.map((point, i) => (
                       <li key={i}>{point}</li>
                     ))}
@@ -171,25 +171,25 @@ function Content() {
               const isCorrect = userAnswer === correctAnswer;
               
               return (
-                <div key={index} className="bg-white dark:bg-zinc-800 p-6 rounded-lg shadow-md border border-gray-200 dark:border-zinc-700">
-                  <h3 className="font-bold text-lg mb-3">{q.question}</h3>
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                  <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafa]">{q.question}</h3>
                   
                   {/* Show user's answer and result if quiz attempt exists */}
                   {quizAttempt && (
-                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className="mb-4 p-3 rounded-lg bg-gray-100 dark:bg-[#fafafa1a] border border-gray-200 dark:border-[#fafafa1a]">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-blue-800 dark:text-blue-200">Your Answer:</span>
+                        <span className="font-semibold text-gray-900 dark:text-[#fafafa]">Your Answer:</span>
                         <span className={`px-2 py-1 rounded text-sm font-medium ${
                           isCorrect 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                            ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]' 
+                            : 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]'
                         }`}>
                           {userAnswer || 'No answer provided'}
                         </span>
                         <span className={`text-sm font-medium ${
                           isCorrect 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : 'text-red-600 dark:text-red-400'
+                            ? 'text-gray-700 dark:text-[#fafafacc]' 
+                            : 'text-gray-700 dark:text-[#fafafacc]'
                         }`}>
                           {isCorrect ? '✓ Correct' : '✗ Incorrect'}
                         </span>
@@ -197,22 +197,22 @@ function Content() {
                     </div>
                   )}
                   
-                  <ul className="space-y-1 text-gray-700 dark:text-gray-300">
+                  <ul className="space-y-2 text-gray-700 dark:text-[#fafafacc]">
                     {q.options.map((option, i) => {
                       const isUserAnswer = quizAttempt && userAnswer === option;
                       const isCorrectAnswer = option === correctAnswer;
                       
                       return (
-                        <li key={i} className={`p-2 rounded ${
+                        <li key={i} className={`p-3 rounded-lg border ${
                           isCorrectAnswer 
-                            ? 'bg-green-100 dark:bg-green-900/30 font-semibold text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700' 
+                            ? 'bg-gray-100 dark:bg-[#fafafa1a] font-semibold text-gray-900 dark:text-[#fafafa] border-gray-300 dark:border-[#fafafa2a]' 
                             : isUserAnswer 
-                              ? 'bg-red-100 dark:bg-red-900/30 font-semibold text-red-700 dark:text-red-400 border border-red-300 dark:border-red-700'
-                              : 'bg-gray-50 dark:bg-gray-700'
+                              ? 'bg-gray-50 dark:bg-[#1E1E1E] font-semibold text-gray-700 dark:text-[#fafafacc] border-gray-200 dark:border-[#fafafa1a]'
+                              : 'bg-gray-50 dark:bg-[#1E1E1E] border-gray-200 dark:border-[#fafafa1a]'
                         }`}>
                           {option}
-                          {isCorrectAnswer && <span className="ml-2 text-sm text-green-600 dark:text-green-400">(Correct Answer)</span>}
-                          {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-red-600 dark:text-red-400">(Your Answer)</span>}
+                          {isCorrectAnswer && <span className="ml-2 text-sm text-gray-600 dark:text-[#fafafa99]">(Correct Answer)</span>}
+                          {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-gray-600 dark:text-[#fafafa99]">(Your Answer)</span>}
                         </li>
                       );
                     })}
@@ -225,7 +225,7 @@ function Content() {
       case 'summary':
         return (
           <div 
-            className="text-gray-800 dark:text-gray-200 leading-relaxed text-lg prose dark:prose-invert max-w-none"
+            className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg prose dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-[#fafafa]"
             dangerouslySetInnerHTML={{ __html: content.contentData }}
           />
         );
@@ -242,9 +242,9 @@ function Content() {
         <div className="bg-white dark:bg-[#171717] rounded-lg shadow-xl p-6 sm:p-8">
           {renderContentData()}
         </div>
-        <div className="mt-8 text-center text-sm text-gray-500 dark:text-gray-400">
+        <div className="mt-8 text-center text-sm text-gray-500 dark:text-[#fafafa99]">
           Generated on: {new Date(content.createdAt).toLocaleDateString()}
-          {content.url && <p>Source: <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline dark:text-blue-400">{content.url}</a></p>}
+          {content.url && <p>Source: <a href={content.url} target="_blank" rel="noopener noreferrer" className="text-gray-600 dark:text-[#fafafa99] hover:text-gray-900 dark:hover:text-[#fafafa] hover:underline transition-colors">{content.url}</a></p>}
           {content.filePath && <p>Original File: {content.filePath.split('/').pop()}</p>}
         </div>
       </div>

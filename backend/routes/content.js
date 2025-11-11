@@ -200,15 +200,26 @@ router.post('/quiz-attempt', verifyToken, async (req, res) => {
     const totalQuestions = quizData.length;
     let correctCount = 0;
 
-    // Calculate score
-    const correctAnswers = quizData.map(q => q.answer);
+    // Calculate score - handle both 'answer' and 'correctAnswer' fields
+    const correctAnswers = quizData.map(q => {
+      // Try multiple possible field names for the correct answer
+      return q.answer || q.correctAnswer || q.correct || null;
+    });
+    
     userAnswers.forEach((answer, index) => {
-      if (answer === correctAnswers[index]) {
+      const correctAnswer = correctAnswers[index];
+      // Compare answers (case-insensitive and trimmed for better matching)
+      if (correctAnswer && answer && 
+          String(answer).trim().toLowerCase() === String(correctAnswer).trim().toLowerCase()) {
         correctCount++;
+      } else {
+        console.log(`Question ${index + 1} mismatch: User answer="${answer}", Correct answer="${correctAnswer}"`);
       }
     });
 
     const score = Math.round((correctCount / totalQuestions) * 100);
+    
+    console.log(`Quiz score calculation: ${correctCount}/${totalQuestions} = ${score}%`);
 
     // Save quiz attempt
     const quizAttempt = new QuizAttempt({

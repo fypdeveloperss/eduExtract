@@ -124,18 +124,20 @@ function QuizView({ quiz, quizId }) {
   };
 
   if (!quiz || quiz.length === 0) {
-    return <p className="text-black">No quiz available for this video.</p>;
+    return <p className="text-gray-900 dark:text-[#fafafa]">No quiz available for this video.</p>;
   }
 
   if (showResults) {
     const score = getScore();
     return (
-      <div className="max-w-2xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#171717]">
-        <h2 className="text-xl font-bold mb-4">Quiz Results</h2>
-        <p className="mb-2">
-          Your Score: {getScore()} / {quiz.length}
-        </p>
-        <p className="mb-4">Time Taken: {formatTime(elapsedTime)}</p>
+      <div className="max-w-2xl mx-auto p-4 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717]">
+        <h2 className="text-xl font-bold mb-4 text-gray-900 dark:text-[#fafafa]">Quiz Results</h2>
+        <div className="mb-6 p-4 bg-gray-100 dark:bg-[#fafafa1a] rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+          <p className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-1">
+            Your Score: {getScore()} / {quiz.length}
+          </p>
+          <p className="text-sm text-gray-600 dark:text-[#fafafa99]">Time Taken: {formatTime(elapsedTime)}</p>
+        </div>
 
         <ul className="space-y-4">
           {quiz.map((q, idx) => {
@@ -145,23 +147,30 @@ function QuizView({ quiz, quizId }) {
             return (
               <li
                 key={idx}
-                className="p-4 border rounded border-gray-300 dark:border-[#171717] bg-gray-50 dark:bg-[#141414]"
+                className="p-4 border rounded-lg border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]"
               >
-                <p className="font-medium">{q.question}</p>
-                <p>
+                <p className="font-medium text-gray-900 dark:text-[#fafafa] mb-2">{q.question}</p>
+                <p className="text-sm text-gray-600 dark:text-[#fafafa99] mb-1">
                   Your answer:{" "}
                   <span
-                    className={isCorrect ? "text-green-500" : "text-red-500"}
+                    className={`font-semibold ${isCorrect ? "text-gray-700 dark:text-[#fafafacc]" : "text-gray-700 dark:text-[#fafafacc]"}`}
                   >
                     {selectedAnswers[idx]}
                   </span>
                 </p>
                 {!isCorrect && (
-                  <p>
+                  <p className="text-sm text-gray-600 dark:text-[#fafafa99]">
                     Correct answer:{" "}
-                    <span className="text-green-500">{correctAnswer}</span>
+                    <span className="font-semibold text-gray-900 dark:text-[#fafafa]">{correctAnswer}</span>
                   </p>
                 )}
+                <div className={`mt-2 inline-block px-2 py-1 rounded text-xs font-medium ${
+                  isCorrect 
+                    ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]' 
+                    : 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]'
+                }`}>
+                  {isCorrect ? '✓ Correct' : '✗ Incorrect'}
+                </div>
               </li>
             );
           })}
@@ -170,14 +179,14 @@ function QuizView({ quiz, quizId }) {
         <div className="flex gap-4 mt-6">
           <button
             onClick={handleRestart}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition"
+            className="px-4 py-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#1a1a1a] dark:hover:bg-[#fafafacc] transition-colors font-medium"
           >
             Restart Quiz
           </button>
           <button
             onClick={handleDownload}
             disabled={isDownloading}
-            className="flex items-center gap-2 px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed transition"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             <Download size={16} />
             {isDownloading ? 'Downloading...' : 'Download PDF'}
@@ -190,37 +199,37 @@ function QuizView({ quiz, quizId }) {
   const question = quiz[currentQuestion];
 
   return (
-    <div className="max-w-xl mx-auto p-4 rounded shadow text-black dark:text-white bg-white dark:bg-[#171717]">
+    <div className="max-w-xl mx-auto p-4 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717]">
       {/* Top Bar: Progress + Timer */}
-      <div className="flex justify-between items-center mb-4">
-        <div className="w-3/4 bg-gray-200 dark:bg-[#141414] rounded-full h-2">
+      <div className="flex justify-between items-center mb-6">
+        <div className="flex-1 bg-gray-200 dark:bg-[#fafafa1a] rounded-full h-2 mr-4">
           <div
-            className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+            className="bg-[#171717] dark:bg-[#fafafa] h-2 rounded-full transition-all duration-300"
             style={{
               width: `${((currentQuestion + 1) / quiz.length) * 100}%`,
             }}
           ></div>
         </div>
-        <span className="text-sm font-medium text-gray-600 dark:text-gray-400 ml-4">
+        <span className="text-sm font-medium text-gray-600 dark:text-[#fafafa99] whitespace-nowrap">
           Time: {formatTime(elapsedTime)}
         </span>
       </div>
 
-      <h2 className="text-lg font-semibold mb-2">
+      <h2 className="text-lg font-semibold mb-2 text-gray-900 dark:text-[#fafafa]">
         Question {currentQuestion + 1} of {quiz.length}
       </h2>
-      <p className="mb-4">{question.question}</p>
+      <p className="mb-6 text-gray-700 dark:text-[#fafafacc]">{question.question}</p>
 
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {question.options.map((option, index) => (
           <li
             key={index}
             onClick={() => handleOptionClick(option)}
-            className={`px-4 py-2 border rounded cursor-pointer transition-all duration-200
+            className={`px-4 py-3 border rounded-lg cursor-pointer transition-all duration-200 text-gray-900 dark:text-[#fafafa]
             ${
               selectedAnswers[currentQuestion] === option
-                ? "bg-blue-100 dark:bg-[#141414] border-blue-500"
-                : "hover:bg-[#EEEEEE] dark:hover:bg-[#171717] border-gray-300 dark:border-[#141414]"
+                ? "bg-gray-100 dark:bg-[#fafafa1a] border-gray-300 dark:border-[#fafafa2a] font-medium"
+                : "hover:bg-gray-50 dark:hover:bg-[#1E1E1E] border-gray-200 dark:border-[#fafafa1a]"
             }`}
           >
             {option}
@@ -228,11 +237,11 @@ function QuizView({ quiz, quizId }) {
         ))}
       </ul>
 
-      <div className="flex justify-between items-center mt-4">
+      <div className="flex justify-between items-center mt-6">
         <button
           onClick={handleBack}
           disabled={currentQuestion === 0}
-          className="px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 disabled:opacity-50"
+          className="px-4 py-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
         >
           Back
         </button>
@@ -241,7 +250,7 @@ function QuizView({ quiz, quizId }) {
           <button
             onClick={handleNext}
             disabled={selectedAnswers[currentQuestion] == null}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#1a1a1a] dark:hover:bg-[#fafafacc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             Next
           </button>
@@ -249,7 +258,7 @@ function QuizView({ quiz, quizId }) {
           <button
             onClick={handleSubmit}
             disabled={selectedAnswers[currentQuestion] == null}
-            className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:opacity-50"
+            className="px-4 py-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:bg-[#1a1a1a] dark:hover:bg-[#fafafacc] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             Submit
           </button>

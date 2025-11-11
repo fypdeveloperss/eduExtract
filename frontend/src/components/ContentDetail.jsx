@@ -133,7 +133,7 @@ const ContentDetail = ({ content, quizAttempt }) => {
         // For HTML content, use dangerouslySetInnerHTML
         return (
           <div 
-            className="blog-content max-w-none bg-white dark:bg-[#171717] p-6 rounded-lg" 
+            className="blog-content max-w-none bg-white dark:bg-[#171717] p-6 rounded-lg prose dark:prose-invert prose-headings:text-gray-900 dark:prose-headings:text-[#fafafa] prose-p:text-gray-800 dark:prose-p:text-[#fafafacc]" 
             dangerouslySetInnerHTML={{ __html: content.contentData }} 
           />
         );
@@ -141,8 +141,8 @@ const ContentDetail = ({ content, quizAttempt }) => {
         return (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {content.contentData.map((card, index) => (
-              <div key={index} className="bg-white dark:bg-[#171717] p-4 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-[#fafafacc]">{card.question}</h3>
+              <div key={index} className="bg-white dark:bg-[#171717] p-4 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                <h3 className="font-semibold text-lg mb-2 text-gray-900 dark:text-[#fafafa]">{card.question}</h3>
                 <p className="text-gray-700 dark:text-[#fafafacc]">{card.answer}</p>
               </div>
             ))}
@@ -156,8 +156,8 @@ const ContentDetail = ({ content, quizAttempt }) => {
               const bulletPoints = slide.content || slide.points || [];
               
               return (
-                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafacc]">{slide.title}</h3>
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                  <h3 className="font-bold text-xl mb-3 text-gray-900 dark:text-[#fafafa]">{slide.title}</h3>
                   <ul className="list-disc list-inside space-y-1 text-gray-700 dark:text-[#fafafacc]">
                     {bulletPoints.map((point, i) => (
                       <li key={i}>{point}</li>
@@ -178,27 +178,27 @@ const ContentDetail = ({ content, quizAttempt }) => {
               const isCorrect = userAnswer === correctAnswer;
               
               return (
-                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg shadow-md border border-gray-200 dark:border-gray-700">
-                  <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafacc]">
+                <div key={index} className="bg-white dark:bg-[#171717] p-6 rounded-lg border border-gray-200 dark:border-[#fafafa1a]">
+                  <h3 className="font-bold text-lg mb-3 text-gray-900 dark:text-[#fafafa]">
                     Question {index + 1}: {q.question}
                   </h3>
                   
                   {/* Show user's answer and result if quiz attempt exists */}
                   {quizAttempt && (
-                    <div className="mb-4 p-3 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                    <div className="mb-4 p-3 rounded-lg bg-gray-100 dark:bg-[#fafafa1a] border border-gray-200 dark:border-[#fafafa1a]">
                       <div className="flex items-center gap-2 mb-2">
-                        <span className="font-semibold text-blue-800 dark:text-blue-200">Your Answer:</span>
+                        <span className="font-semibold text-gray-900 dark:text-[#fafafa]">Your Answer:</span>
                         <span className={`px-2 py-1 rounded text-sm font-medium ${
                           isCorrect 
-                            ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-300' 
-                            : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-300'
+                            ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]' 
+                            : 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc]'
                         }`}>
                           {userAnswer || 'No answer provided'}
                         </span>
                         <span className={`text-sm font-medium ${
                           isCorrect 
-                            ? 'text-green-600 dark:text-green-400' 
-                            : 'text-red-600 dark:text-red-400'
+                            ? 'text-gray-700 dark:text-[#fafafacc]' 
+                            : 'text-gray-700 dark:text-[#fafafacc]'
                         }`}>
                           {isCorrect ? '✓ Correct' : '✗ Incorrect'}
                         </span>
@@ -210,21 +210,22 @@ const ContentDetail = ({ content, quizAttempt }) => {
                     {q.options.map((option, i) => {
                       const isUserAnswer = quizAttempt && userAnswer === option;
                       const isCorrectAnswer = option === correctAnswer;
+                      const showCorrectAnswer = quizAttempt; // Only show correct answer if quiz has been attempted
                       
                       return (
                         <li 
                           key={i} 
-                          className={`p-2 rounded ${
-                            isCorrectAnswer 
-                              ? 'bg-green-100 dark:bg-green-900/30 font-semibold text-green-700 dark:text-green-400 border border-green-300 dark:border-green-700' 
-                              : isUserAnswer 
-                                ? 'bg-red-100 dark:bg-red-900/30 font-semibold text-red-700 dark:text-red-400 border border-red-300 dark:border-red-700'
-                                : 'bg-gray-50 dark:bg-gray-700'
+                          className={`p-3 rounded-lg border ${
+                            showCorrectAnswer && isCorrectAnswer 
+                              ? 'bg-gray-100 dark:bg-[#fafafa1a] font-semibold text-gray-900 dark:text-[#fafafa] border-gray-300 dark:border-[#fafafa2a]' 
+                              : showCorrectAnswer && isUserAnswer && !isCorrectAnswer
+                                ? 'bg-gray-50 dark:bg-[#1E1E1E] font-semibold text-gray-700 dark:text-[#fafafacc] border-gray-200 dark:border-[#fafafa1a]'
+                                : 'bg-gray-50 dark:bg-[#1E1E1E] border-gray-200 dark:border-[#fafafa1a]'
                           }`}
                         >
                           {option}
-                          {isCorrectAnswer && <span className="ml-2 text-sm text-green-600 dark:text-green-400">(Correct Answer)</span>}
-                          {isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-red-600 dark:text-red-400">(Your Answer)</span>}
+                          {showCorrectAnswer && isCorrectAnswer && <span className="ml-2 text-sm text-gray-600 dark:text-[#fafafa99]">(Correct Answer)</span>}
+                          {showCorrectAnswer && isUserAnswer && !isCorrectAnswer && <span className="ml-2 text-sm text-gray-600 dark:text-[#fafafa99]">(Your Answer)</span>}
                         </li>
                       );
                     })}
@@ -237,7 +238,7 @@ const ContentDetail = ({ content, quizAttempt }) => {
       case 'summary':
         return (
           <div 
-            className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg prose dark:prose-invert max-w-none"
+            className="text-gray-800 dark:text-[#fafafacc] leading-relaxed text-lg prose dark:prose-invert max-w-none prose-headings:text-gray-900 dark:prose-headings:text-[#fafafa]"
             dangerouslySetInnerHTML={{ __html: content.contentData }}
           />
         );
@@ -298,22 +299,22 @@ const ContentDetail = ({ content, quizAttempt }) => {
   };
 
   return (
-    <div className="bg-white dark:bg-[#171717] rounded-lg shadow p-6">
-      <div className="mb-4">
-        <div className="flex items-center justify-between mb-2">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-[#fafafacc]">
+    <div className="bg-white dark:bg-[#171717] rounded-lg border border-gray-200 dark:border-[#fafafa1a] p-6">
+      <div className="mb-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-[#fafafa]">
             {content.title}
           </h2>
           <button
             onClick={handleDownload}
             disabled={isDownloading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="flex items-center gap-2 px-4 py-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors font-medium"
           >
             <Download size={16} />
             {isDownloading ? 'Downloading...' : 'Download PDF'}
           </button>
         </div>
-        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-[#fafafacc]">
+        <div className="flex items-center space-x-4 text-sm text-gray-500 dark:text-[#fafafa99]">
           <span className="capitalize">{contentType}</span>
           <span>•</span>
           <span>{new Date(content.createdAt).toLocaleDateString()}</span>
@@ -324,7 +325,7 @@ const ContentDetail = ({ content, quizAttempt }) => {
                 href={content.url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-blue-500 hover:text-blue-600"
+                className="text-gray-600 dark:text-[#fafafa99] hover:text-gray-900 dark:hover:text-[#fafafa] transition-colors"
               >
                 View Source
               </a>
@@ -332,7 +333,7 @@ const ContentDetail = ({ content, quizAttempt }) => {
           )}
         </div>
       </div>
-      <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+      <div className="border-t border-gray-200 dark:border-[#fafafa1a] pt-6">
         {renderContent()}
       </div>
     </div>
