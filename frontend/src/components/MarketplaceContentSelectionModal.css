@@ -9,15 +9,16 @@
   background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   justify-content: center;
-  align-items: center;
+  align-items: flex-start;
   z-index: 1000;
-  padding: 1rem;
+  padding: 4rem 1rem 1.5rem;
+  overflow-y: auto;
 }
 
 .marketplace-content-selection-modal {
   width: 100%;
   max-width: 900px;
-  max-height: 95vh;
+  max-height: calc(100vh - 6rem);
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -90,11 +91,11 @@
 /* Responsive design */
 @media (max-width: 768px) {
   .modal-overlay {
-    padding: 0.5rem;
+    padding: 3.5rem 0.75rem 1rem;
   }
 
   .marketplace-content-selection-modal {
-    max-height: 98vh;
+    max-height: calc(100vh - 5rem);
   }
 
   .modal-header {

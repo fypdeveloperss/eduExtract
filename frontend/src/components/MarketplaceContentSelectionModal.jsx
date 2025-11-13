@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { authenticatedFetch } from '../utils/auth';
+import LoaderSpinner from './LoaderSpinner';
 import './MarketplaceContentSelectionModal.css';
 
 const MarketplaceContentSelectionModal = ({ 
@@ -221,7 +222,7 @@ const MarketplaceContentSelectionModal = ({
       <div className="marketplace-content-selection-modal bg-white dark:bg-[#171717] rounded-2xl shadow-xl">
         <div className="modal-header border-b border-gray-200 dark:border-[#2E2E2E]">
           <h2 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] flex items-center">
-            <span className="w-8 h-8 bg-blue-100 dark:bg-blue-900/20 rounded-full flex items-center justify-center mr-3">
+            <span className="w-8 h-8 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-3">
               📚
             </span>
             Publish Content to Marketplace
@@ -239,7 +240,7 @@ const MarketplaceContentSelectionModal = ({
           {/* Content Selection Section */}
           <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6 mb-6">
             <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-              <span className="w-8 h-8 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mr-3">
+              <span className="w-8 h-8 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-3">
                 📝
               </span>
               Select Content to Publish
@@ -256,7 +257,7 @@ const MarketplaceContentSelectionModal = ({
                     placeholder="Search your content..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-gray-500 dark:placeholder-gray-400"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-gray-500 dark:placeholder-gray-400"
                   />
                 </div>
                 
@@ -267,7 +268,7 @@ const MarketplaceContentSelectionModal = ({
                   <select
                     value={filterType}
                     onChange={(e) => setFilterType(e.target.value)}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
                   >
                     <option value="all">All Types</option>
                     {contentTypes.map(type => (
@@ -277,9 +278,9 @@ const MarketplaceContentSelectionModal = ({
                 </div>
               </div>
 
-              <div className="flex items-center justify-between bg-gray-50 dark:bg-[#2E2E2E] rounded-lg p-3">
+              <div className="flex items-center justify-between bg-gray-50 dark:bg-[#1E1E1E] rounded-lg p-3 border border-gray-200 dark:border-[#2E2E2E]">
                 <button 
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
+                  className="text-sm text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] font-medium"
                   onClick={handleSelectAll}
                   disabled={filteredContent.length === 0}
                 >
@@ -297,9 +298,9 @@ const MarketplaceContentSelectionModal = ({
 
           <div className="content-list max-h-96 overflow-y-auto">
             {loading ? (
-              <div className="flex flex-col items-center justify-center py-12">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mb-4"></div>
-                <p className="text-gray-600 dark:text-gray-400">Loading your content...</p>
+              <div className="flex flex-col items-center justify-center py-12 space-y-3 text-[#171717cc] dark:text-[#fafafacc]">
+                <LoaderSpinner size="md" />
+                <p>Loading your content...</p>
               </div>
             ) : filteredContent.length === 0 ? (
               <div className="text-center py-12">
@@ -319,9 +320,9 @@ const MarketplaceContentSelectionModal = ({
                 {filteredContent.map(content => (
                   <div key={content._id} className="content-item-container">
                     <div 
-                      className={`content-item bg-white dark:bg-[#2E2E2E] border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
+                      className={`content-item bg-white dark:bg-[#1E1E1E] border rounded-lg p-4 cursor-pointer transition-all hover:shadow-md ${
                         selectedContent.includes(content._id) 
-                          ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                          ? 'border-[#171717] dark:border-[#fafafa] bg-gray-100 dark:bg-[#171717]' 
                           : 'border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500'
                       }`}
                       onClick={() => handleContentToggle(content._id)}
@@ -331,7 +332,7 @@ const MarketplaceContentSelectionModal = ({
                           type="checkbox"
                           checked={selectedContent.includes(content._id)}
                           onChange={() => handleContentToggle(content._id)}
-                          className="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                          className="mt-1 h-4 w-4 border-gray-300 rounded accent-[#171717] dark:accent-[#fafafa] focus:ring-1 focus:ring-[#171717] dark:focus:ring-[#fafafa]"
                         />
                         
                         <div className="flex-1 min-w-0">
@@ -359,7 +360,7 @@ const MarketplaceContentSelectionModal = ({
                     {selectedContent.includes(content._id) && (
                       <div className="mt-4 bg-gray-50 dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] rounded-lg p-6">
                         <h4 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-                          <span className="w-6 h-6 bg-yellow-100 dark:bg-yellow-900/20 rounded-full flex items-center justify-center mr-2 text-sm">
+                          <span className="w-6 h-6 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-2 text-sm">
                             💰
                           </span>
                           Marketplace Details
@@ -374,7 +375,7 @@ const MarketplaceContentSelectionModal = ({
                             value={contentMetadata[content._id]?.title || ''}
                             onChange={(e) => handleMetadataChange(content._id, 'title', e.target.value)}
                             placeholder="e.g., Complete Introduction to Calculus Quiz"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                           />
                           <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Give your content an attractive, descriptive title for the marketplace</p>
                         </div>
@@ -391,7 +392,7 @@ const MarketplaceContentSelectionModal = ({
                               value={contentMetadata[content._id]?.price || 0}
                               onChange={(e) => handleMetadataChange(content._id, 'price', parseFloat(e.target.value) || 0)}
                               placeholder="0.00"
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                             />
                             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Set to 0 for free content</p>
                           </div>
@@ -403,7 +404,7 @@ const MarketplaceContentSelectionModal = ({
                             <select
                               value={contentMetadata[content._id]?.category || 'other'}
                               onChange={(e) => handleMetadataChange(content._id, 'category', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                             >
                               {categories.map(cat => (
                                 <option key={cat.value} value={cat.value}>{cat.label}</option>
@@ -418,7 +419,7 @@ const MarketplaceContentSelectionModal = ({
                             <select
                               value={contentMetadata[content._id]?.difficulty || 'beginner'}
                               onChange={(e) => handleMetadataChange(content._id, 'difficulty', e.target.value)}
-                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                              className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                             >
                               {difficulties.map(diff => (
                                 <option key={diff.value} value={diff.value}>{diff.label}</option>
@@ -436,7 +437,7 @@ const MarketplaceContentSelectionModal = ({
                             value={contentMetadata[content._id]?.subject || ''}
                             onChange={(e) => handleMetadataChange(content._id, 'subject', e.target.value)}
                             placeholder="e.g., Calculus, World History, English Literature"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                           />
                         </div>
 
@@ -449,7 +450,7 @@ const MarketplaceContentSelectionModal = ({
                             onChange={(e) => handleMetadataChange(content._id, 'description', e.target.value)}
                             placeholder="Describe what this content covers and why it's valuable..."
                             rows="3"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm resize-vertical"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm resize-vertical"
                           />
                         </div>
 
@@ -465,7 +466,7 @@ const MarketplaceContentSelectionModal = ({
                               handleMetadataChange(content._id, 'tags', tags);
                             }}
                             placeholder="e.g., calculus, derivatives, math"
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
+                            className="w-full px-3 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm"
                           />
                         </div>
                       </div>
@@ -477,29 +478,26 @@ const MarketplaceContentSelectionModal = ({
           </div>
         </div>
 
-        <div className="modal-footer bg-gray-50 dark:bg-[#2E2E2E] border-t border-gray-200 dark:border-[#2E2E2E] px-6 py-4 flex justify-end space-x-3">
-          <button 
-            className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-gray-700 dark:text-gray-300 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        <div className="modal-footer bg-gray-50 dark:bg-[#1E1E1E] border-t border-gray-200 dark:border-[#2E2E2E] px-6 py-4 flex justify-end space-x-3">
+          <button
+            className="px-6 py-2 border border-gray-300 dark:border-gray-600 text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
             onClick={onClose}
             disabled={publishing}
           >
             Cancel
           </button>
-          <button 
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+          <button
+            className="px-6 py-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
             onClick={handleConfirm}
             disabled={publishing || selectedContent.length === 0}
           >
             {publishing ? (
               <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                <LoaderSpinner size="sm" />
                 Publishing...
               </>
             ) : (
-              <>
-                <span className="mr-2">🚀</span>
-                Publish Selected Content ({selectedContent.length})
-              </>
+              "Publish Selected Content"
             )}
           </button>
         </div>

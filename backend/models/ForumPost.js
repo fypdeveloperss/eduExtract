@@ -39,7 +39,20 @@ const forumPostSchema = new mongoose.Schema({
   editedAt: {
     type: Date,
     default: null
-  }
+  },
+  upvoteCount: {
+    type: Number,
+    default: 0
+  },
+  downvoteCount: {
+    type: Number,
+    default: 0
+  },
+  voters: {
+    type: Map,
+    of: Number,
+    default: {}
+  },
 }, {
   timestamps: true
 });

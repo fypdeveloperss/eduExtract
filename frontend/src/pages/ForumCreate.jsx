@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
+import PageLoader from '../components/PageLoader';
+import LoaderSpinner from '../components/LoaderSpinner';
 
 function ForumCreate() {
   const { user } = useAuth();
@@ -90,70 +92,63 @@ function ForumCreate() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
-      <div className="max-w-4xl mx-auto px-4">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8">
         {/* Breadcrumb */}
-        <nav className="mb-6">
-          <ol className="flex items-center space-x-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+        <nav>
+          <ol className="flex items-center gap-2 text-xs md:text-sm text-[#171717cc] dark:text-[#fafafacc]">
             <li>
               <button
                 onClick={() => navigate('/forum')}
-                className="hover:text-blue-600 transition-colors"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"
               >
                 Forum
               </button>
             </li>
-            <li className="text-[#171717cc] dark:text-[#fafafacc]">/</li>
+            <li className="text-[#17171733] dark:text-[#fafafa22]">/</li>
             <li className="text-[#171717cc] dark:text-[#fafafacc] font-medium">
               Create Topic
             </li>
           </ol>
         </nav>
-
+ 
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">
+        <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl shadow-lg px-6 py-8 text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
             Create New Topic
           </h1>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">
-            Start a new discussion in the community forum
+          <p className="text-sm md:text-base text-[#171717cc] dark:text-[#fafafacc] max-w-2xl mx-auto">
+            Share your question, idea, or insight with the community. Keep it focused and provide enough detail to spark a great discussion.
           </p>
         </div>
-
+ 
         {/* Form */}
-        <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-8">
+        <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6 md:p-8">
           <form onSubmit={handleSubmit} className="space-y-6">
             {error && (
-              <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-                <p className="text-red-700 dark:text-red-300">{error}</p>
+              <div className="border border-gray-200 dark:border-[#2E2E2E] rounded-lg p-4 bg-white dark:bg-[#171717] text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                {error}
               </div>
             )}
-
+ 
             {/* Category Selection */}
             <div>
-              <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
+              <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                 Category *
               </label>
               {categories.length === 0 ? (
-                <div className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg bg-gray-50 dark:bg-[#2E2E2E] text-center">
-                  <p className="text-[#171717cc] dark:text-[#fafafacc] mb-2">
+                <div className="w-full px-4 py-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg bg-gray-50 dark:bg-[#1E1E1E] text-center">
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-3">
                     No categories available yet.
                   </p>
                   <button
                     type="button"
                     onClick={initializeCategories}
-                    className="text-blue-600 hover:text-blue-700 text-sm underline"
+                    className="text-sm text-[#171717] dark:text-[#fafafa] underline hover:text-[#171717cc] dark:hover:text-[#fafafacc]"
                   >
                     Initialize Default Categories
                   </button>
@@ -163,7 +158,7 @@ function ForumCreate() {
                   name="categoryId"
                   value={formData.categoryId}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                  className="w-full px-4 py-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa]"
                   required
                 >
                   <option value="">Select a category</option>
@@ -174,14 +169,14 @@ function ForumCreate() {
                   ))}
                 </select>
               )}
-              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
+              <p className="text-sm text-[#17171799] dark:text-[#fafafa99] mt-1">
                 Choose the most appropriate category for your topic
               </p>
             </div>
-
+ 
             {/* Topic Title */}
             <div>
-              <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
+              <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                 Topic Title *
               </label>
               <input
@@ -190,18 +185,18 @@ function ForumCreate() {
                 value={formData.title}
                 onChange={handleInputChange}
                 placeholder="Enter a descriptive title for your topic"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] placeholder-[#17171799] dark:placeholder-[#fafafa66]"
                 required
                 maxLength={200}
               />
-              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
+              <p className="text-xs text-[#17171799] dark:text-[#fafafa99] mt-1">
                 {formData.title.length}/200 characters
               </p>
             </div>
-
+ 
             {/* Topic Content */}
             <div>
-              <label className="block text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
+              <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                 Content *
               </label>
               <textarea
@@ -210,44 +205,51 @@ function ForumCreate() {
                 onChange={handleInputChange}
                 placeholder="Write your topic content here. Be clear and descriptive to help others understand your discussion."
                 rows={8}
-                className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                className="w-full px-4 py-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] placeholder-[#17171799] dark:placeholder-[#fafafa66]"
                 required
                 maxLength={5000}
               />
-              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
+              <p className="text-xs text-[#17171799] dark:text-[#fafafa99] mt-1">
                 {formData.content.length}/5000 characters
               </p>
             </div>
-
+ 
             {/* Guidelines */}
-            <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
-              <h4 className="font-medium text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                📝 Posting Guidelines
+            <div className="border border-gray-200 dark:border-[#2E2E2E] rounded-lg p-4 bg-gray-50 dark:bg-[#1E1E1E]">
+              <h4 className="font-medium text-[#171717] dark:text-[#fafafa] mb-3 flex items-center gap-2">
+                <span className="text-lg">📝</span> Posting Guidelines
               </h4>
-              <ul className="text-sm text-[#171717cc] dark:text-[#fafafacc] space-y-1">
-                <li>• Be respectful and constructive in your discussions</li>
-                <li>• Use clear and descriptive titles</li>
-                <li>• Provide context and details in your posts</li>
-                <li>• Search for similar topics before creating new ones</li>
-                <li>• Follow the community guidelines</li>
+              <ul className="text-sm text-[#17171799] dark:text-[#fafafa99] space-y-2 text-left">
+                <li>• Be respectful and constructive in your discussions.</li>
+                <li>• Use clear, descriptive titles that capture your topic.</li>
+                <li>• Provide context and details to help others understand.</li>
+                <li>• Search for similar discussions before starting a new one.</li>
+                <li>• Follow the community standards and keep things on topic.</li>
               </ul>
             </div>
-
+ 
             {/* Submit Buttons */}
-            <div className="flex justify-end space-x-4">
+            <div className="flex flex-col-reverse sm:flex-row sm:justify-end sm:space-x-3 gap-3">
               <button
                 type="button"
                 onClick={() => navigate('/forum')}
-                className="px-6 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
+                className="px-6 py-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg text-[#171717] dark:text-[#fafafa] hover:bg-gray-100 dark:hover:bg-[#1E1E1E] transition-colors text-sm font-medium"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={submitting || !formData.title.trim() || !formData.content.trim() || !formData.categoryId}
-                className="bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white px-8 py-3 rounded-lg transition-colors"
+                className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed text-sm font-semibold"
               >
-                {submitting ? 'Creating...' : 'Create Topic'}
+                {submitting ? (
+                  <>
+                    <LoaderSpinner size="sm" />
+                    Creating...
+                  </>
+                ) : (
+                  'Create Topic'
+                )}
               </button>
             </div>
           </form>

@@ -5,6 +5,8 @@ import api from '../utils/axios';
 import PaymentModal from '../components/PaymentModal';
 import ContentDetail from '../components/ContentDetail';
 import ReviewSection from '../components/ReviewSection';
+import PageLoader from '../components/PageLoader';
+import LoaderSpinner from '../components/LoaderSpinner';
 
 function MarketplaceDetail() {
   const { id } = useParams();
@@ -238,14 +240,8 @@ function MarketplaceDetail() {
     return `${symbols[currency] || '$'}${price}`;
   };
 
-  const getDifficultyColor = (difficulty) => {
-    const colors = {
-      beginner: 'bg-green-100 text-green-800',
-      intermediate: 'bg-yellow-100 text-yellow-800',
-      advanced: 'bg-red-100 text-red-800'
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
-  };
+  const getDifficultyClass = () =>
+    'bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#fafafacc1a] text-[#171717cc] dark:text-[#fafafacc]';
 
   const getCategoryIcon = (category) => {
     const icons = {
@@ -265,10 +261,10 @@ function MarketplaceDetail() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading content...</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center space-y-3 text-center text-[#171717cc] dark:text-[#fafafacc]">
+          <LoaderSpinner size="xl" />
+          <p>Loading content...</p>
         </div>
       </div>
     );
@@ -285,7 +281,7 @@ function MarketplaceDetail() {
           <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">{error || 'The content you are looking for does not exist.'}</p>
           <button
             onClick={() => navigate('/marketplace')}
-            className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
           >
             Back to Marketplace
           </button>
@@ -297,15 +293,15 @@ function MarketplaceDetail() {
   const canAccessContent = accessInfo?.hasAccess || content.price === 0;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] py-8">
-      <div className="max-w-6xl mx-auto px-4">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-6 md:py-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-6">
         {/* Breadcrumb */}
         <nav className="mb-6">
           <ol className="flex items-center space-x-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
             <li>
               <button
                 onClick={() => navigate('/marketplace')}
-                className="hover:text-blue-600 transition-colors"
+                className="hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"
               >
                 Marketplace
               </button>
@@ -316,60 +312,60 @@ function MarketplaceDetail() {
         </nav>
 
         {/* Main Content */}
-        <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden">
+        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-gray-200 dark:border-[#fafafa1a] shadow-xl overflow-hidden">
           {/* Header Section */}
-          <div className="bg-gradient-to-r from-blue-600 to-indigo-700 text-white p-8">
-            <div className="flex items-start justify-between">
+          <div className="p-6 md:p-8 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
+            <div className="flex flex-col lg:flex-row gap-6">
               <div className="flex-1">
-                <div className="flex items-center space-x-3 mb-4">
-                  <span className="text-4xl">{getCategoryIcon(content.category)}</span>
-                  <div>
-                    <span className="bg-white dark:bg-[#171717] bg-opacity-20 dark:bg-opacity-40 px-3 py-1 rounded-full text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                      {content.category}
-                    </span>
-                    <span className={`ml-2 px-3 py-1 rounded-full text-sm ${getDifficultyColor(content.difficulty)}`}>
+                <div className="flex flex-wrap items-center gap-2 mb-4">
+                  <span className="text-3xl">{getCategoryIcon(content.category)}</span>
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-xs font-medium text-[#171717cc] dark:text-[#fafafacc] capitalize">
+                    {content.category || 'Uncategorized'}
+                  </span>
+                  {content.difficulty && (
+                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getDifficultyClass()}`}>
                       {content.difficulty}
                     </span>
-                  </div>
+                  )}
                 </div>
-                
-                <h1 className="text-3xl md:text-4xl font-bold mb-4 text-white">{content.title}</h1>
-                <p className="text-xl text-blue-100 mb-6">{content.description}</p>
-                
-                <div className="flex items-center space-x-6 text-blue-100">
-                  <span className="flex items-center">
-                    <span className="mr-2">📚</span>
-                    {content.subject}
+
+                <h1 className="text-3xl md:text-4xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">{content.title}</h1>
+                <p className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] mb-6">{content.description}</p>
+
+                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                  <span className="flex items-center gap-2">
+                    <span>📚</span>
+                    {content.subject || 'No subject listed'}
                   </span>
-                  <span className="flex items-center">
-                    <span className="mr-2">👁️</span>
+                  <span className="flex items-center gap-2">
+                    <span>👁️</span>
                     {content.views || 0} views
                   </span>
-                  <span className="flex items-center">
-                    <span className="mr-2">❤️</span>
+                  <span className="flex items-center gap-2">
+                    <span>❤️</span>
                     {content.likes || 0} likes
                   </span>
-                  <span className="flex items-center">
-                    <span className="mr-2">⭐</span>
+                  <span className="flex items-center gap-2">
+                    <span>⭐</span>
                     {content.averageRating ? `${content.averageRating}/5` : 'No ratings'}
                   </span>
                 </div>
               </div>
-              
+
               {/* Price and Action */}
-              <div className="text-center ml-8">
-                <div className="bg-white dark:bg-[#171717] bg-opacity-20 dark:bg-opacity-40 rounded-2xl p-6 backdrop-blur-sm">
-                  <div className="text-3xl font-bold mb-2 text-[#171717cc] dark:text-[#fafafacc]">
+              <div className="w-full lg:max-w-sm">
+                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm">
+                  <div className="text-3xl font-bold mb-1 text-[#171717] dark:text-[#fafafa]">
                     {formatPrice(content.price, content.currency)}
                   </div>
-                  <div className="text-[#171717cc] dark:text-[#fafafacc] text-sm mb-4">
+                  <div className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-4">
                     {content.price === 0 ? 'Free for everyone' : 'One-time purchase'}
                   </div>
-                  
+
                   {!user ? (
                     <button
                       onClick={() => navigate('/login')}
-                      className="w-full bg-white text-blue-600 py-3 px-6 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                      className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
                     >
                       Sign in to Access
                     </button>
@@ -377,20 +373,20 @@ function MarketplaceDetail() {
                     <button
                       onClick={handleDownload}
                       disabled={downloading}
-                      className="w-full bg-green-500 hover:bg-green-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors disabled:opacity-50 flex items-center justify-center"
+                      className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                     >
                       {downloading ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <LoaderSpinner size="sm" />
                           Downloading...
                         </>
                       ) : (
                         <>
-                          <span className="mr-2">📄</span>
-                          {['blog', 'summary', 'quiz', 'flashcards'].includes(content.contentType) 
-                            ? 'Download PDF' 
-                            : content.contentType === 'slides' 
-                              ? 'Download PPTX' 
+                          <span>📄</span>
+                          {['blog', 'summary', 'quiz', 'flashcards'].includes(content.contentType)
+                            ? 'Download PDF'
+                            : content.contentType === 'slides'
+                              ? 'Download PPTX'
                               : 'Download Content'}
                         </>
                       )}
@@ -398,9 +394,9 @@ function MarketplaceDetail() {
                   ) : (
                     <button
                       onClick={() => setShowPaymentModal(true)}
-                      className="w-full bg-yellow-500 hover:bg-yellow-600 text-white py-3 px-6 rounded-lg font-semibold transition-colors"
+                      className="w-full px-6 py-3 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-semibold flex items-center justify-center gap-2"
                     >
-                      <span className="mr-2">💳</span>
+                      <span>💳</span>
                       Purchase Now
                     </button>
                   )}
@@ -410,16 +406,16 @@ function MarketplaceDetail() {
                     <button
                       onClick={handleDelete}
                       disabled={deleting}
-                      className="w-full mt-3 bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-lg font-medium transition-colors disabled:opacity-50 flex items-center justify-center"
+                      className="w-full mt-3 px-6 py-2 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {deleting ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <LoaderSpinner size="sm" />
                           Deleting...
                         </>
                       ) : (
                         <>
-                          <span className="mr-2">🗑️</span>
+                          <span>🗑️</span>
                           Delete Content
                         </>
                       )}
@@ -431,11 +427,11 @@ function MarketplaceDetail() {
           </div>
 
           {/* Content Body */}
-          <div className="p-8">
+          <div className="p-6 md:p-8 space-y-8">
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               {/* Main Content */}
               <div className="lg:col-span-2">
-                <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6 mb-8">
+                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 shadow-sm">
                   <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                     <span className="mr-2">📄</span>
                     Content Preview
@@ -477,9 +473,9 @@ function MarketplaceDetail() {
                       </p>
                       <button
                         onClick={() => setShowPaymentModal(true)}
-                        className="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition-colors font-medium"
+                        className="px-6 py-3 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-medium flex items-center gap-2 justify-center"
                       >
-                        <span className="mr-2">💳</span>
+                        <span>💳</span>
                         Purchase for {formatPrice(content.price, content.currency)}
                       </button>
                     </div>
@@ -488,13 +484,13 @@ function MarketplaceDetail() {
 
                 {/* Tags */}
                 {content.tags && content.tags.length > 0 && (
-                  <div className="mb-8">
+                  <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6">
                     <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">Tags</h3>
                     <div className="flex flex-wrap gap-2">
                       {content.tags.map((tag, index) => (
                         <span
                           key={index}
-                          className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-200 px-3 py-1 rounded-full text-sm"
+                          className="px-3 py-1 rounded-full text-sm border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
                         >
                           #{tag}
                         </span>
@@ -515,13 +511,13 @@ function MarketplaceDetail() {
               <div className="space-y-6">
                 {/* Creator Info */}
                 {creator && (
-                  <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6">
+                  <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 shadow-sm">
                     <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                       <span className="mr-2">👤</span>
                       Creator
                     </h3>
                     <div className="text-center">
-                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <div className="w-16 h-16 border border-gray-200 dark:border-[#2E2E2E] bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto mb-3">
                         <span className="text-2xl">👤</span>
                       </div>
                       <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{creator.name || 'Anonymous'}</div>
@@ -548,7 +544,7 @@ function MarketplaceDetail() {
                 )}
 
                 {/* Content Stats */}
-                <div className="bg-gray-50 dark:bg-[#2E2E2E] rounded-xl p-6">
+                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 shadow-sm">
                   <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
                     <span className="mr-2">📊</span>
                     Content Stats
@@ -566,20 +562,14 @@ function MarketplaceDetail() {
                     </div>
                     <div className="flex justify-between">
                       <span className="text-[#171717cc] dark:text-[#fafafacc]">Status:</span>
-                      <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                        content.status === 'approved' ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' : 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200'
-                      }`}>
+                      <span className="px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] capitalize">
                         {content.status}
                       </span>
                     </div>
                     {content.plagiarismScore !== undefined && (
                       <div className="flex justify-between">
                         <span className="text-[#171717cc] dark:text-[#fafafacc]">Originality:</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          content.plagiarismScore < 30 ? 'bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-200' :
-                          content.plagiarismScore < 70 ? 'bg-yellow-100 dark:bg-yellow-900/20 text-yellow-800 dark:text-yellow-200' :
-                          'bg-red-100 dark:bg-red-900/20 text-red-800 dark:text-red-200'
-                        }`}>
+                        <span className="px-2 py-1 rounded-full text-xs font-medium border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]">
                           {100 - content.plagiarismScore}% Original
                         </span>
                       </div>
@@ -589,8 +579,8 @@ function MarketplaceDetail() {
 
                 {/* Purchase Success Message */}
                 {purchaseSuccess && (
-                  <div className="bg-green-50 border border-green-200 rounded-xl p-4">
-                    <p className="text-green-700 text-sm">{purchaseSuccess}</p>
+                  <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                    {purchaseSuccess}
                   </div>
                 )}
               </div>

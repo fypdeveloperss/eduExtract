@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import api from '../utils/axios';
+import LoaderSpinner from './LoaderSpinner';
 
 function PaymentModal({ content, isOpen, onClose, onSuccess }) {
   const [paymentMethod, setPaymentMethod] = useState('credit_card');
@@ -66,10 +67,16 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 dark:bg-black dark:bg-opacity-70 flex items-center justify-center z-50 transition-colors duration-300">
-      <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 w-full max-w-md mx-4 shadow-2xl border border-gray-200 dark:border-gray-700 transition-colors duration-300">
-        <div className="flex justify-between items-center mb-6">
-          <h2 className="text-2xl font-bold text-[#171717] dark:text-[#fafafacc]">Purchase Content</h2>
+    <div
+      className="fixed inset-0 flex items-start justify-center z-50 overflow-y-auto py-12 px-4"
+      style={{ backgroundColor: 'rgba(0, 0, 0, 0.45)' }}
+    >
+      <div className="bg-white dark:bg-[#171717] rounded-2xl p-6 md:p-6 md:mt-6 w-full max-w-3xl shadow-2xl border border-gray-200 dark:border-gray-700 transition-colors duration-300">
+        <div className="flex justify-between items-start mb-6">
+          <div>
+            <h2 className="text-2xl font-bold text-[#171717] dark:text-[#fafafacc]">Purchase Content</h2>
+            <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">Secure checkout to unlock this resource</p>
+          </div>
           <button
             onClick={onClose}
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 text-2xl transition-colors duration-200"
@@ -79,26 +86,30 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
         </div>
 
         {/* Content Summary */}
-        <div className="bg-gray-50 dark:bg-[#121212] p-4 rounded-xl mb-6 border border-gray-200 dark:border-gray-700">
-          <h3 className="font-semibold text-lg text-[#171717] dark:text-[#fafafacc] mb-2">{content.title}</h3>
-          <p className="text-gray-600 dark:text-gray-300 text-sm mb-3 line-clamp-2">{content.description}</p>
-          <div className="flex justify-between items-center">
-            <span className="text-sm text-gray-500 dark:text-gray-400">
-              {content.category} • {content.difficulty}
-            </span>
-            <span className="text-xl font-bold text-green-600 dark:text-green-400">
+        <div className="bg-gray-50 dark:bg-[#121212] p-4 md:p-5 rounded-xl mb-6 border border-gray-200 dark:border-gray-700 grid md:grid-cols-[2fr_1fr] gap-4 items-start">
+          <div>
+            <h3 className="font-semibold text-lg text-[#171717] dark:text-[#fafafacc] mb-2">{content.title}</h3>
+            <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-3 line-clamp-3">{content.description}</p>
+            <div className="flex flex-wrap gap-3 text-xs text-[#171717cc] dark:text-[#fafafacc]">
+              <span className="px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#171717] capitalize">{content.category || 'General'}</span>
+              <span className="px-2 py-1 rounded-full border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#171717] capitalize">{content.difficulty}</span>
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-2">
+            <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Amount Due</span>
+            <span className="text-2xl font-bold text-[#171717] dark:text-[#fafafacc]">
               {content.currency} {content.price}
             </span>
           </div>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-5">
+        <form onSubmit={handleSubmit} className="space-y-6">
           {/* Payment Method Selection */}
           <div>
             <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafacc] mb-3">
               Payment Method
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               <label className="flex items-center p-3 border border-gray-300 dark:border-gray-600 rounded-xl cursor-pointer hover:bg-gray-50 dark:hover:bg-[#121212] transition-colors duration-200">
                 <input
                   type="radio"
@@ -106,7 +117,7 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                   value="credit_card"
                   checked={paymentMethod === 'credit_card'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mr-3 text-blue-600 focus:ring-blue-500"
+                  className="mr-3 accent-[#171717] dark:accent-[#fafafa] focus:ring-1 focus:ring-[#171717] dark:focus:ring-[#fafafa]"
                 />
                 <span className="text-[#171717] dark:text-[#fafafacc] font-medium">Credit Card</span>
               </label>
@@ -117,9 +128,12 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                   value="debit_card"
                   checked={paymentMethod === 'debit_card'}
                   onChange={(e) => setPaymentMethod(e.target.value)}
-                  className="mr-3 text-blue-600 focus:ring-blue-500"
+                  className="mr-3 accent-[#171717] dark:accent-[#fafafa] focus:ring-1 focus:ring-[#171717] dark:focus:ring-[#fafafa]"
                 />
                 <span className="text-[#171717] dark:text-[#fafafacc] font-medium">Debit Card</span>
+              </label>
+              <label className="flex items-center p-3 border border-dashed border-gray-300 dark:border-gray-600 rounded-xl text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                <span>More payment methods coming soon</span>
               </label>
             </div>
           </div>
@@ -136,7 +150,7 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                 onChange={(e) => setCardNumber(formatCardNumber(e.target.value))}
                 placeholder="1234 5678 9012 3456"
                 maxLength="19"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
                 required
               />
             </div>
@@ -152,7 +166,7 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                   onChange={(e) => setExpiryDate(formatExpiryDate(e.target.value))}
                   placeholder="MM/YY"
                   maxLength="5"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
                   required
                 />
               </div>
@@ -166,7 +180,7 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                   onChange={(e) => setCvv(e.target.value.replace(/\D/g, ''))}
                   placeholder="123"
                   maxLength="4"
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
                   required
                 />
               </div>
@@ -181,7 +195,7 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
                 value={cardholderName}
                 onChange={(e) => setCardholderName(e.target.value)}
                 placeholder="John Doe"
-                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
+                className="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#121212] text-[#171717] dark:text-[#fafafacc] transition-colors duration-200"
                 required
               />
             </div>
@@ -189,8 +203,8 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
-              <p className="text-red-700 dark:text-red-300 text-sm font-medium">{error}</p>
+            <div className="border border-gray-200 dark:border-gray-700 rounded-xl p-4 bg-white dark:bg-[#121212]">
+              <p className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">{error}</p>
             </div>
           )}
 
@@ -206,11 +220,11 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
             <button
               type="submit"
               disabled={processing}
-              className="flex-1 px-6 py-3 bg-blue-600 dark:bg-blue-500 text-white rounded-xl hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors duration-200 disabled:opacity-50 font-semibold flex items-center justify-center"
+              className="flex-1 px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-xl hover:opacity-90 transition-opacity duration-200 disabled:opacity-50 font-semibold flex items-center justify-center gap-2"
             >
               {processing ? (
                 <>
-                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                  <LoaderSpinner size="sm" />
                   Processing...
                 </>
               ) : (
@@ -218,15 +232,15 @@ function PaymentModal({ content, isOpen, onClose, onSuccess }) {
               )}
             </button>
           </div>
-        </form>
 
-        {/* Security Notice */}
-        <div className="mt-6 text-center">
-          <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center">
-            <span className="mr-2">🔒</span>
-            Your payment information is secure and encrypted
-          </p>
-        </div>
+          {/* Security Notice */}
+          <div className="mt-6 text-center">
+            <p className="text-xs text-gray-500 dark:text-gray-400 flex items-center justify-center gap-2">
+              <span>🔒</span>
+              Your payment information is secure and encrypted
+            </p>
+          </div>
+        </form>
       </div>
     </div>
   );

@@ -203,7 +203,7 @@ const About = () => {
                 To democratize education by making high-quality learning resources accessible to everyone. 
                 We strive to break down barriers to education through innovative technology and personalized 
                   learning experiences that adapt to each learner's unique needs.
-                </p>
+              </p>
               </motion.div>
 
               <motion.div
@@ -323,7 +323,7 @@ const About = () => {
                   <h3 className="text-xl font-bold mb-2">{member.name}</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-3 font-medium">
                     {member.role}
-                  </p>
+          </p>
                   <p className="text-[#171717cc] dark:text-[#fafafacc] text-sm leading-relaxed">
                     {member.description}
                   </p>
@@ -434,7 +434,7 @@ const About = () => {
               <p className="text-xl text-white mb-10 max-w-2xl mx-auto">
                 Join millions of learners who are already using EduExtract to master new subjects 
                 faster and more effectively.
-              </p>
+          </p>
               
               <motion.a
                 href="/dashboard"

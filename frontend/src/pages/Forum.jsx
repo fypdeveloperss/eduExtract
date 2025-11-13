@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
+import PageLoader from '../components/PageLoader';
 
 function Forum() {
   const { user } = useAuth();
@@ -62,128 +63,116 @@ function Forum() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">Loading forum...</p>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   return (
-    <div className="min-h-screen bg-[#F3F4F6] dark:bg-[#121212] py-8">
-      <div className="max-w-6xl mx-auto px-4">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8">
+        <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl shadow-lg px-6 py-8 text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
             Community Forum
           </h1>
-          <p className="text-xl text-[#171717cc] dark:text-[#fafafacc] max-w-3xl mx-auto">
-            Connect with fellow learners, ask questions, and share knowledge in our community forum.
+          <p className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-3xl mx-auto">
+            Connect with fellow learners, ask questions, and share knowledge across a growing learning community.
           </p>
+
+          {user && (
+            <div className="mt-6">
+              <Link
+                to="/forum/create"
+                className="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 transition-opacity text-sm font-semibold"
+              >
+                ✏️ Start New Discussion
+              </Link>
+            </div>
+          )}
         </div>
 
         {error && (
-          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-700 dark:text-red-300">{error}</p>
+          <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+            {error}
           </div>
         )}
 
-        {/* Create Topic Button */}
-        {user && (
-          <div className="mb-8 text-center">
-            <Link
-              to="/forum/create"
-              className="inline-flex items-center bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition-colors"
-            >
-              <span className="mr-2">✏️</span>
-              Start New Discussion
-            </Link>
-          </div>
-        )}
-
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Categories */}
-          <div className="lg:col-span-2">
-            <h2 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-6">
-              Categories
-            </h2>
+          <div className="lg:col-span-2 space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-lg md:text-xl font-semibold text-[#171717] dark:text-[#fafafa]">Categories</h2>
+              <span className="text-xs text-[#171717cc] dark:text-[#fafafacc]">{categories.length} available</span>
+            </div>
+
             <div className="space-y-4">
               {categories.length === 0 ? (
-                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-8 text-center">
-                  <div className="text-6xl mb-4">📚</div>
-                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                    No Categories Available
-                  </h3>
-                  <p className="text-[#171717cc] dark:text-[#fafafacc] mb-4">
-                    Forum categories are being set up. Please try refreshing the page.
+                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 text-center">
+                  <div className="w-16 h-16 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mx-auto mb-4 text-3xl">
+                    📚
+                  </div>
+                  <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">No Categories Yet</h3>
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-4">
+                    Forum categories are being set up. Try refreshing or initialize default categories.
                   </p>
                   <button
                     onClick={initializeCategories}
-                    className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                    className="px-5 py-2 border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-[#171717] dark:text-[#fafafa] hover:bg-gray-100 dark:hover:bg-[#1E1E1E] transition-colors text-sm font-medium"
                   >
                     Initialize Categories
                   </button>
                 </div>
               ) : (
                 categories.map((category) => (
-                <Link
-                  key={category._id}
-                  to={`/forum/category/${category._id}`}
-                  className="block bg-white dark:bg-[#171717] rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 p-6"
-                >
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-2">
-                        {category.name}
-                      </h3>
-                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
-                        {category.description}
-                      </p>
-                      <div className="flex items-center text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                        <span className="mr-4">📝 {category.topicCount} topics</span>
-                        {category.lastTopic && (
-                          <span>Last: {formatDate(category.lastTopic.createdAt)}</span>
-                        )}
+                  <Link
+                    key={category._id}
+                    to={`/forum/category/${category._id}`}
+                    className="block border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-5 shadow-sm hover:shadow-md transition-shadow duration-200"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="w-12 h-12 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-xl flex items-center justify-center text-2xl">
+                        {category.name === 'General Discussion' && '💬'}
+                        {category.name === 'Questions & Help' && '❓'}
+                        {category.name === 'Study Groups' && '👥'}
+                        {category.name === 'Announcements' && '📢'}
+                        {!['General Discussion','Questions & Help','Study Groups','Announcements'].includes(category.name) && '📚'}
+                      </div>
+                      <div className="flex-1">
+                        <div className="flex items-center justify-between mb-2">
+                          <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa]">{category.name}</h3>
+                          <span className="text-xs px-2 py-0.5 border border-gray-200 dark:border-[#2E2E2E] rounded-full text-[#171717cc] dark:text-[#fafafacc]">
+                            {category.topicCount} topics
+                          </span>
+                        </div>
+                        <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-3 line-clamp-2">{category.description}</p>
+                        <div className="flex items-center justify-between text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                          <span>Created {formatDate(category.createdAt)}</span>
+                          {category.lastTopic && <span>Last activity {formatDate(category.lastTopic.createdAt)}</span>}
+                        </div>
                       </div>
                     </div>
-                    <div className="text-4xl opacity-60">
-                      {category.name === 'General Discussion' && '💬'}
-                      {category.name === 'Questions & Help' && '❓'}
-                      {category.name === 'Study Groups' && '👥'}
-                      {category.name === 'Announcements' && '📢'}
-                    </div>
-                  </div>
-                </Link>
+                  </Link>
                 ))
               )}
             </div>
           </div>
 
           {/* Recent Topics Sidebar */}
-          <div className="lg:col-span-1">
-            <h2 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-6">
-              Recent Topics
-            </h2>
-            <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-6">
+          <div className="space-y-4">
+            <h2 className="text-lg md:text-xl font-semibold text-[#171717] dark:text-[#fafafa]">Recent Topics</h2>
+            <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-5 shadow-sm">
               {recentTopics.length === 0 ? (
-                <p className="text-[#171717cc] dark:text-[#fafafacc] text-center">
+                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] text-center">
                   No topics yet. Be the first to start a discussion!
                 </p>
               ) : (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   {recentTopics.map((topic) => (
                     <Link
                       key={topic._id}
                       to={`/forum/topic/${topic._id}`}
-                      className="block p-3 rounded-lg hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
+                      className="block p-3 rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E1E1E] transition-colors"
                     >
-                      <h4 className="font-medium text-[#171717cc] dark:text-[#fafafacc] mb-1 line-clamp-2">
-                        {topic.title}
-                      </h4>
-                      <div className="flex items-center justify-between text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                      <h4 className="font-medium text-sm text-[#171717] dark:text-[#fafafa] mb-1 line-clamp-2">{topic.title}</h4>
+                      <div className="flex items-center justify-between text-xs text-[#171717cc] dark:text-[#fafafacc]">
                         <span>by {topic.authorName}</span>
                         <span>{topic.replyCount} replies</span>
                       </div>

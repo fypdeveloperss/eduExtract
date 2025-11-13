@@ -306,6 +306,76 @@ router.put('/posts/:id', verifyToken, async (req, res) => {
   }
 });
 
+// Vote on a post
+router.post('/posts/:id/vote', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    let { vote } = req.body;
+    const { uid } = req.user;
+
+    if (vote === undefined) {
+      return res.status(400).json({ success: false, error: 'Vote value is required' });
+    }
+
+    // Normalize vote input to integer -1, 0, 1
+    vote = parseInt(vote, 10);
+    if (![1, 0, -1].includes(vote)) {
+      return res.status(400).json({ success: false, error: 'Invalid vote value. Must be 1, 0, or -1.' });
+    }
+
+    const post = await ForumPost.findById(id);
+    if (!post) {
+      return res.status(404).json({ success: false, error: 'Post not found' });
+    }
+
+    if (!post.voters) {
+      post.voters = new Map();
+    }
+
+    const previousVote = post.voters.get(uid) || 0;
+
+    if (vote === 0) {
+      post.voters.delete(uid);
+    } else {
+      post.voters.set(uid, vote);
+    }
+
+    let upvotes = 0;
+    let downvotes = 0;
+
+    for (const value of post.voters.values()) {
+      if (value === 1) {
+        upvotes += 1;
+      } else if (value === -1) {
+        downvotes += 1;
+      }
+    }
+
+    post.upvoteCount = upvotes;
+    post.downvoteCount = downvotes;
+
+    await post.save();
+
+    const votersObject = Object.fromEntries(post.voters ?? []);
+    const userVote = post.voters.get(uid) || 0;
+
+    res.json({
+      success: true,
+      post: {
+        _id: post._id,
+        upvoteCount: post.upvoteCount,
+        downvoteCount: post.downvoteCount,
+        score: post.upvoteCount - post.downvoteCount,
+        voters: votersObject,
+        userVote
+      }
+    });
+  } catch (error) {
+    console.error('Error voting on post:', error);
+    res.status(500).json({ success: false, error: 'Failed to register vote' });
+  }
+});
+
 // Delete post
 router.delete('/posts/:id', verifyToken, async (req, res) => {
   try {

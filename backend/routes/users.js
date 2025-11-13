@@ -236,8 +236,11 @@ router.get('/preferences', verifyToken, async (req, res) => {
 // Update user preferences
 router.put('/preferences', verifyToken, async (req, res) => {
   try {
+    console.log('Updating preferences with:', JSON.stringify(req.body, null, 2));
     const user = await UserService.updatePreferences(req.user.uid, req.body);
-    res.json(user);
+    const savedPrefs = user.preferences || {};
+    console.log('Saved preferences:', JSON.stringify(savedPrefs, null, 2));
+    res.json(savedPrefs);
   } catch (error) {
     console.error('Error updating preferences:', error);
     res.status(500).json({ error: 'Failed to update preferences' });

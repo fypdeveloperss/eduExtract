@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import PageLoader from './PageLoader';
 import { 
   Download, 
   FileText, 
@@ -312,61 +313,52 @@ const MyContent = () => {
   };
 
   if (loading) {
-    return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="flex items-center justify-center min-h-[400px]">
-          <div className="text-center">
-            <div className="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-gray-900 dark:border-[#fafafa] mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Loading your content...</p>
-          </div>
-        </div>
-      </div>
-    );
+    return <PageLoader />;
   }
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-6 text-center">
-          <p className="text-gray-900 dark:text-[#fafafa]">{error}</p>
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg p-6 text-center">
+          <p className="text-sm text-[#171717] dark:text-[#fafafa]">{error}</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div className="max-w-7xl mx-auto px-4 py-4">
       {/* Header Section */}
-      <div className="mb-8">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
+      <div className="mb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
           <div>
-            <h1 className="text-4xl font-bold text-gray-900 dark:text-[#fafafa] mb-2 flex items-center gap-3">
-              <Sparkles className="w-8 h-8 text-gray-700 dark:text-[#fafafacc]" />
+            <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3 flex items-center gap-3">
+              <Sparkles className="w-6 h-6 text-[#171717cc] dark:text-[#fafafacc]" />
               My Content
             </h1>
-            <p className="text-gray-600 dark:text-[#fafafa99] text-lg">
+            <p className="text-[#171717cc] dark:text-[#fafafacc] text-base md:text-lg">
               Manage and organize your generated educational content
             </p>
           </div>
           {contentList.length > 0 && (
             <button
               onClick={() => setShowPublishModal(true)}
-              className="inline-flex items-center justify-center gap-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-3 rounded-xl font-semibold hover:bg-[#1a1a1a] dark:hover:bg-[#fafafacc] transition-all duration-200 shadow-lg hover:shadow-xl"
+              className="inline-flex items-center justify-center gap-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm"
             >
-              <Rocket className="w-5 h-5" />
+              <Rocket className="w-4 h-4" />
               Publish to Marketplace
             </button>
           )}
         </div>
 
         {/* Statistics Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-8">
-          <div className="bg-white dark:bg-[#171717] rounded-xl p-5 border border-gray-200 dark:border-[#fafafa1a] shadow-sm hover:shadow-md transition-all duration-200">
+        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
+          <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-200 dark:border-[#fafafa1a] shadow-sm hover:shadow-md transition-all duration-200">
             <div className="flex items-center justify-between mb-2">
-              <p className="text-sm font-medium text-gray-600 dark:text-[#fafafa99]">Total</p>
-              <TrendingUp className="w-4 h-4 text-gray-400 dark:text-[#fafafa66]" />
+              <p className="text-xs font-medium text-[#171717cc] dark:text-[#fafafacc]">Total</p>
+              <TrendingUp className="w-4 h-4 text-[#171717cc] dark:text-[#fafafa66]" />
             </div>
-            <p className="text-3xl font-bold text-gray-900 dark:text-[#fafafa]">{contentList.length}</p>
+            <p className="text-2xl font-bold text-[#171717] dark:text-[#fafafa]">{contentList.length}</p>
           </div>
           {Object.entries(groupedContent).map(([type, items]) => {
             const config = contentTypeConfig[type] || contentTypeConfig.other;
@@ -374,32 +366,32 @@ const MyContent = () => {
             return (
               <div 
                 key={type} 
-                className="bg-white dark:bg-[#171717] rounded-xl p-5 border border-gray-200 dark:border-[#fafafa1a] shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer"
+                className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-200 dark:border-[#fafafa1a] shadow-sm hover:shadow-md transition-all duration-200 group cursor-pointer"
                 onClick={() => setActiveTab(type)}
               >
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">{config.title}</p>
-                  <Icon className="w-4 h-4 text-gray-600 dark:text-gray-400 group-hover:scale-110 transition-transform" />
+                  <p className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc]">{config.title}</p>
+                  <Icon className="w-4 h-4 text-[#171717cc] dark:text-[#fafafa66] group-hover:scale-110 transition-transform" />
                 </div>
-                <p className="text-3xl font-bold text-gray-900 dark:text-white">{items.length}</p>
+                <p className="text-2xl font-bold text-[#171717] dark:text-[#fafafa]">{items.length}</p>
               </div>
             );
           })}
         </div>
 
         {/* Search and View Controls */}
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
+        <div className="flex flex-col sm:flex-row gap-4 mb-4">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400 dark:text-[#fafafa66]" />
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#171717cc] dark:text-[#fafafa66]" />
             <input
               type="text"
               placeholder="Search content..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-3 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl text-gray-900 dark:text-[#fafafa] placeholder-gray-400 dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a] focus:border-transparent transition-all"
+              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-[#171717] dark:text-[#fafafa] placeholder-[#171717cc] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a] focus:border-transparent transition-all text-sm"
             />
           </div>
-          <div className="flex items-center gap-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-1">
+          <div className="flex items-center gap-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg p-1">
             <button
               onClick={() => setViewMode('grid')}
               className={`p-2 rounded-lg transition-colors ${
@@ -424,13 +416,13 @@ const MyContent = () => {
         </div>
 
         {/* Tabs */}
-        <div className="flex flex-wrap gap-2 mb-6 border-b border-gray-200 dark:border-[#fafafa1a] pb-2">
+        <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200 dark:border-[#fafafa1a] pb-2">
           <button
             onClick={() => setActiveTab('all')}
-            className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+            className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm flex items-center gap-2 ${
               activeTab === 'all'
-                ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] shadow-md'
-                : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-[#fafafa99] hover:bg-gray-50 dark:hover:bg-[#1E1E1E] hover:text-gray-900 dark:hover:text-[#fafafa]'
+                ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
             }`}
           >
             <Folder className="w-4 h-4" />
@@ -443,10 +435,10 @@ const MyContent = () => {
               <button
                 key={type}
                 onClick={() => setActiveTab(type)}
-                className={`px-5 py-2.5 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+                className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm flex items-center gap-2 ${
                   activeTab === type
-                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] shadow-md'
-                    : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-[#fafafa99] hover:bg-gray-50 dark:hover:bg-[#1E1E1E] hover:text-gray-900 dark:hover:text-[#fafafa]'
+                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                    : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
                 }`}
               >
                 <Icon className="w-4 h-4" />
@@ -458,13 +450,13 @@ const MyContent = () => {
 
         {/* Quiz Filter */}
         {activeTab === 'quiz' && (
-          <div className="flex gap-3 mb-6">
+          <div className="flex gap-3 mb-4">
             <button
               onClick={() => setQuizFilter('unsolved')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm flex items-center gap-2 ${
                 quizFilter === 'unsolved'
-                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-white border-2 border-gray-300 dark:border-[#fafafa2a]'
-                  : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-[#fafafa99] border border-gray-200 dark:border-[#fafafa1a] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
+                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-[#171717] dark:text-[#fafafa] border-2 border-gray-300 dark:border-[#fafafa2a]'
+                  : 'bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] border border-gray-200 dark:border-[#fafafa1a] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
               }`}
             >
               <Clock className="w-4 h-4" />
@@ -472,10 +464,10 @@ const MyContent = () => {
             </button>
             <button
               onClick={() => setQuizFilter('solved')}
-              className={`px-4 py-2 rounded-lg font-medium transition-all duration-200 flex items-center gap-2 ${
+              className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm flex items-center gap-2 ${
                 quizFilter === 'solved'
-                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-white border-2 border-gray-300 dark:border-[#fafafa2a]'
-                  : 'bg-white dark:bg-[#171717] text-gray-600 dark:text-[#fafafa99] border border-gray-200 dark:border-[#fafafa1a] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
+                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-[#171717] dark:text-[#fafafa] border-2 border-gray-300 dark:border-[#fafafa2a]'
+                  : 'bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] border border-gray-200 dark:border-[#fafafa1a] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
               }`}
             >
               <CheckCircle2 className="w-4 h-4" />
@@ -487,18 +479,18 @@ const MyContent = () => {
 
       {/* Content Display */}
       {filteredContent.length === 0 ? (
-        <div className="text-center py-16 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a]">
-          <Folder className="w-16 h-16 text-gray-400 dark:text-[#fafafa66] mx-auto mb-4" />
-          <h3 className="text-xl font-semibold text-gray-900 dark:text-[#fafafa] mb-2">
+        <div className="text-center py-12 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] shadow-lg p-8">
+          <Folder className="w-12 h-12 text-[#171717cc] dark:text-[#fafafa66] mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">
             {searchQuery ? 'No results found' : 'No content found'}
           </h3>
-          <p className="text-gray-600 dark:text-[#fafafa99]">
+          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
             {searchQuery ? 'Try adjusting your search query' : 'Start creating content to see it here'}
           </p>
         </div>
       ) : (
         <div className={viewMode === 'grid' 
-          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6' 
+          ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4' 
           : 'space-y-4'
         }>
           {filteredContent.map(item => {
@@ -511,15 +503,15 @@ const MyContent = () => {
               return (
                 <div 
                   key={item._id} 
-                  className="group bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] p-6 hover:shadow-xl transition-all duration-300 hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+                  className="group bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] p-4 hover:shadow-lg transition-all duration-200 hover:border-gray-300 dark:hover:border-[#fafafa2a]"
                 >
-                  <div className="flex items-start justify-between mb-4">
-                    <div className={`p-3 rounded-xl ${config.iconBg} border border-gray-200 dark:border-[#fafafa1a]`}>
-                      <Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                  <div className="flex items-start justify-between mb-3">
+                    <div className={`p-2.5 rounded-lg ${config.iconBg} border border-gray-200 dark:border-[#fafafa1a]`}>
+                      <Icon className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
                     </div>
                     {isSolved && (
-                      <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold border border-gray-200 dark:border-[#fafafa1a]">
-                        <CheckCircle2 className="w-4 h-4" />
+                      <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] rounded-lg text-xs font-semibold border border-gray-200 dark:border-[#fafafa1a]">
+                        <CheckCircle2 className="w-3.5 h-3.5" />
                         {quizAttempt?.score}%
                       </div>
                     )}
@@ -527,16 +519,16 @@ const MyContent = () => {
 
                   <button
                     onClick={() => handleViewContent(item._id)}
-                    className="block mb-3 w-full text-left group-hover:text-gray-700 dark:group-hover:text-[#fafafacc] transition-colors"
+                    className="block mb-3 w-full text-left group-hover:text-[#171717cc] dark:group-hover:text-[#fafafacc] transition-colors"
                   >
-                    <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa] line-clamp-2 mb-2">
+                    <h3 className="text-base font-bold text-[#171717] dark:text-[#fafafa] line-clamp-2 mb-2">
                       {item.title}
                     </h3>
                   </button>
 
-                  <div className="flex items-center gap-3 text-sm text-gray-500 dark:text-[#fafafa99] mb-4">
+                  <div className="flex items-center gap-3 text-xs text-[#171717cc] dark:text-[#fafafacc] mb-3">
                     <div className="flex items-center gap-1.5">
-                      <Calendar className="w-4 h-4" />
+                      <Calendar className="w-3.5 h-3.5" />
                       {formatDate(item.createdAt)}
                     </div>
                     {item.url && (
@@ -544,37 +536,37 @@ const MyContent = () => {
                         href={item.url}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-[#fafafacc] transition-colors"
+                        className="flex items-center gap-1.5 hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <ExternalLink className="w-4 h-4" />
+                        <ExternalLink className="w-3.5 h-3.5" />
                         Source
                       </a>
                     )}
                   </div>
 
-                  <div className="flex items-center gap-2 pt-4 border-t border-gray-200 dark:border-[#fafafa1a]">
+                  <div className="flex items-center gap-2 pt-3 border-t border-gray-200 dark:border-[#fafafa1a]">
                     <button
                       onClick={() => handleViewContent(item._id)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
                     >
-                      <Eye className="w-4 h-4" />
+                      <Eye className="w-3.5 h-3.5" />
                       View
                     </button>
                     <button
                       onClick={() => handleDownload(item)}
                       disabled={downloadingItems.has(item._id)}
-                      className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                      className="flex-1 inline-flex items-center justify-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                     >
-                      <Download className="w-4 h-4" />
+                      <Download className="w-3.5 h-3.5" />
                       {downloadingItems.has(item._id) ? '...' : 'Download'}
                     </button>
                     <button
                       onClick={() => handlePublishToMarketplace(item)}
-                      className="p-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                      className="p-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
                       title="Publish to Marketplace"
                     >
-                      <Rocket className="w-4 h-4" />
+                      <Rocket className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 </div>
@@ -583,36 +575,36 @@ const MyContent = () => {
               return (
                 <div 
                   key={item._id} 
-                  className="group bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] p-6 hover:shadow-lg transition-all duration-200"
+                  className="group bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] p-4 hover:shadow-lg transition-all duration-200"
                 >
                   <div className="flex items-center gap-4">
-                    <div className={`p-3 rounded-xl ${config.iconBg} border border-gray-200 dark:border-[#fafafa1a] flex-shrink-0`}>
-                      <Icon className="w-6 h-6 text-gray-700 dark:text-gray-300" />
+                    <div className={`p-2.5 rounded-lg ${config.iconBg} border border-gray-200 dark:border-[#fafafa1a] flex-shrink-0`}>
+                      <Icon className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
                     </div>
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-start justify-between gap-4 mb-2">
                         <button
                           onClick={() => handleViewContent(item._id)}
-                          className="flex-1 text-left group-hover:text-gray-700 dark:group-hover:text-[#fafafacc] transition-colors"
+                          className="flex-1 text-left group-hover:text-[#171717cc] dark:group-hover:text-[#fafafacc] transition-colors"
                         >
-                          <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa] mb-1">
+                          <h3 className="text-base font-bold text-[#171717] dark:text-[#fafafa] mb-1">
                             {item.title}
                           </h3>
                         </button>
                         {isSolved && (
-                          <div className="flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-gray-300 rounded-lg text-sm font-semibold flex-shrink-0 border border-gray-200 dark:border-[#fafafa1a]">
-                            <CheckCircle2 className="w-4 h-4" />
+                          <div className="flex items-center gap-1.5 px-2.5 py-1 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] rounded-lg text-xs font-semibold flex-shrink-0 border border-gray-200 dark:border-[#fafafa1a]">
+                            <CheckCircle2 className="w-3.5 h-3.5" />
                             {quizAttempt?.score}%
                           </div>
                         )}
                       </div>
 
-                      <div className="flex items-center gap-4 text-sm text-gray-500 dark:text-[#fafafa99] mb-3">
+                      <div className="flex items-center gap-4 text-xs text-[#171717cc] dark:text-[#fafafacc] mb-3">
                         <span className="capitalize font-medium">{config.title}</span>
                         <span>•</span>
                         <div className="flex items-center gap-1.5">
-                          <Calendar className="w-4 h-4" />
+                          <Calendar className="w-3.5 h-3.5" />
                           {formatDate(item.createdAt)}
                         </div>
                         {item.url && (
@@ -622,9 +614,9 @@ const MyContent = () => {
                               href={item.url}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1.5 hover:text-gray-700 dark:hover:text-[#fafafacc] transition-colors"
+                              className="flex items-center gap-1.5 hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"
                             >
-                              <ExternalLink className="w-4 h-4" />
+                              <ExternalLink className="w-3.5 h-3.5" />
                               View Source
                             </a>
                           </>
@@ -634,24 +626,24 @@ const MyContent = () => {
                       <div className="flex items-center gap-2">
                         <button
                           onClick={() => handleViewContent(item._id)}
-                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
                         >
-                          <Eye className="w-4 h-4" />
+                          <Eye className="w-3.5 h-3.5" />
                           View
                         </button>
                         <button
                           onClick={() => handleDownload(item)}
                           disabled={downloadingItems.has(item._id)}
-                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                          <Download className="w-4 h-4" />
+                          <Download className="w-3.5 h-3.5" />
                           {downloadingItems.has(item._id) ? 'Downloading...' : 'Download'}
                         </button>
                         <button
                           onClick={() => handlePublishToMarketplace(item)}
-                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-gray-700 dark:text-[#fafafacc] px-4 py-2 rounded-lg text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
                         >
-                          <Rocket className="w-4 h-4" />
+                          <Rocket className="w-3.5 h-3.5" />
                           Publish
                         </button>
                       </div>

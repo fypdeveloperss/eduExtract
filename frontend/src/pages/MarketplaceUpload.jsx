@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
+import LoaderSpinner from '../components/LoaderSpinner';
 
 function MarketplaceUpload() {
   const { user } = useAuth();
@@ -39,9 +40,9 @@ function MarketplaceUpload() {
   ];
 
   const difficulties = [
-    { value: 'beginner', label: 'Beginner', color: 'text-green-600' },
-    { value: 'intermediate', label: 'Intermediate', color: 'text-yellow-600' },
-    { value: 'advanced', label: 'Advanced', color: 'text-red-600' }
+    { value: 'beginner', label: 'Beginner' },
+    { value: 'intermediate', label: 'Intermediate' },
+    { value: 'advanced', label: 'Advanced' }
   ];
 
 
@@ -180,28 +181,28 @@ function MarketplaceUpload() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
-        <div className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full mx-4">
-          <div className="text-center">
-            <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-              <span className="text-2xl">🔒</span>
-            </div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Access Required</h2>
-            <p className="text-gray-600 mb-6">Please log in to upload content to the marketplace.</p>
-            <button
-              onClick={() => navigate('/login')}
-              className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Go to Login
-            </button>
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 border border-gray-200 dark:border-[#2E2E2E] bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto">
+            <span className="text-2xl">🔒</span>
           </div>
+          <h2 className="text-2xl font-bold text-[#171717] dark:text-[#fafafa]">Access Required</h2>
+          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+            Please sign in to upload content to the marketplace.
+          </p>
+          <button
+            onClick={() => navigate('/login')}
+            className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
+          >
+            Go to Login
+          </button>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] py-8">
+    <div className="min-h-screen bg-white dark:bg-[#171717] py-8">
       <div className="max-w-4xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
@@ -220,7 +221,7 @@ function MarketplaceUpload() {
             {/* Basic Information Section */}
             <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
               <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-                <span className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center mr-3">
+                <span className="w-8 h-8 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-3">
                   📝
                 </span>
                 Basic Information
@@ -236,7 +237,7 @@ function MarketplaceUpload() {
                     name="title"
                     value={formData.title}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
                     placeholder="Enter a descriptive title"
                     required
                   />
@@ -250,7 +251,7 @@ function MarketplaceUpload() {
                     name="category"
                     value={formData.category}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
                   
                     required
                   >
@@ -272,7 +273,7 @@ function MarketplaceUpload() {
                     name="subject"
                     value={formData.subject}
                     onChange={handleInputChange}
-                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                    className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
                     placeholder="e.g., Algebra, Physics, World War II"
                     required
                   />
@@ -284,16 +285,23 @@ function MarketplaceUpload() {
                   </label>
                   <div className="grid grid-cols-3 gap-2">
                     {difficulties.map(diff => (
-                      <label key={diff.value} className="flex items-center p-3 border border-gray-200 dark:border-[#2E2E2E] rounded-lg cursor-pointer hover:bg-gray-50 dark:hover:bg-[#2E2E2E]">
+                      <label
+                        key={diff.value}
+                        className={`flex items-center p-3 border rounded-lg cursor-pointer transition-colors ${
+                          formData.difficulty === diff.value
+                            ? 'border-[#171717] dark:border-[#fafafa] bg-gray-100 dark:bg-[#1E1E1E]'
+                            : 'border-gray-200 dark:border-[#2E2E2E] hover:bg-gray-50 dark:hover:bg-[#2E2E2E]'
+                        }`}
+                      >
                         <input
                           type="radio"
                           name="difficulty"
                           value={diff.value}
                           checked={formData.difficulty === diff.value}
                           onChange={handleInputChange}
-                          className="mr-2"
+                          className="mr-2 accent-[#171717] dark:accent-[#fafafa]"
                         />
-                        <span className={`text-sm font-medium ${diff.color} dark:text-[#fafafacc]`}>
+                        <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">
                           {diff.label}
                         </span>
                       </label>
@@ -311,7 +319,7 @@ function MarketplaceUpload() {
                   value={formData.description}
                   onChange={handleInputChange}
                   rows={4}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
                   placeholder="Describe your content, what learners will gain, and any prerequisites..."
                   required
                 />
@@ -326,7 +334,7 @@ function MarketplaceUpload() {
                   name="tags"
                   value={formData.tags}
                   onChange={handleInputChange}
-                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                  className="w-full px-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
                   placeholder="Enter tags separated by commas (e.g., calculus, derivatives, math)"
                 />
                 <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
@@ -338,7 +346,7 @@ function MarketplaceUpload() {
             {/* File Upload Section */}
             <div className="border-b border-gray-200 dark:border-[#2E2E2E] pb-6">
               <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-                <span className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center mr-3">
+                <span className="w-8 h-8 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-3">
                   📁
                 </span>
                 File Upload
@@ -349,7 +357,7 @@ function MarketplaceUpload() {
                   Upload File *
                 </label>
                 
-                <div className="border-2 border-dashed border-gray-300 dark:border-[#2E2E2E] rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+                <div className="border-2 border-dashed border-gray-300 dark:border-[#2E2E2E] rounded-lg p-6 text-center transition-colors hover:border-[#171717] dark:hover:border-[#fafafa]">
                   <input
                     ref={fileInputRef}
                     type="file"
@@ -367,7 +375,7 @@ function MarketplaceUpload() {
                         <button
                           type="button"
                           onClick={() => fileInputRef.current?.click()}
-                          className="text-blue-600 hover:text-blue-700 font-medium"
+                          className="text-[#171717] dark:text-[#fafafa] hover:opacity-90 font-medium"
                         >
                           Click to upload
                         </button>
@@ -386,7 +394,7 @@ function MarketplaceUpload() {
                         <button
                           type="button"
                           onClick={() => setSelectedFile(null)}
-                          className="text-red-500 hover:text-red-700"
+                          className="text-[#171717cc] dark:text-[#fafafacc] hover:opacity-80"
                         >
                           ✕
                         </button>
@@ -437,7 +445,7 @@ function MarketplaceUpload() {
                       onChange={handleInputChange}
                       min="0"
                       step="0.01"
-                      className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                      className="w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-[#2E2E2E] rounded-lg focus:ring-2 focus:ring-gray-400 dark:focus:ring-[#fafafa33] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
                       placeholder="0.00"
                     />
                   </div>
@@ -447,9 +455,9 @@ function MarketplaceUpload() {
                 </div>
 
                 <div className="flex items-end">
-                  <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4 w-full">
-                    <p className="text-sm text-blue-800 dark:text-blue-200">
-                      💡 <strong>Pricing Tip:</strong> Consider the value and complexity of your content when setting a price. 
+                  <div className="border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] rounded-lg p-4 w-full">
+                    <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                      💡 <strong>Pricing Tip:</strong> Consider the value and complexity of your content when setting a price.
                       High-quality, comprehensive resources typically command higher prices.
                     </p>
                   </div>
@@ -459,14 +467,14 @@ function MarketplaceUpload() {
 
             {/* Upload Progress */}
             {isUploading && (
-              <div className="bg-blue-50 rounded-lg p-4">
+              <div className="border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-medium text-blue-800">Uploading...</span>
-                  <span className="text-sm text-blue-600">{uploadProgress}%</span>
+                  <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">Uploading...</span>
+                  <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">{uploadProgress}%</span>
                 </div>
-                <div className="w-full bg-blue-200 rounded-full h-2">
-                  <div 
-                    className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                <div className="w-full bg-gray-200 dark:bg-[#2E2E2E] rounded-full h-2">
+                  <div
+                    className="bg-[#171717] dark:bg-[#fafafa] h-2 rounded-full transition-all duration-300"
                     style={{ width: `${uploadProgress}%` }}
                   ></div>
                 </div>
@@ -475,14 +483,14 @@ function MarketplaceUpload() {
 
             {/* Error & Success Messages */}
             {error && (
-              <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                <p className="text-red-700 text-sm">{error}</p>
+              <div className="border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] rounded-lg p-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                {error}
               </div>
             )}
 
             {success && (
-              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
-                <p className="text-green-700 text-sm">{success}</p>
+              <div className="border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] rounded-lg p-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                {success}
               </div>
             )}
 
@@ -498,11 +506,11 @@ function MarketplaceUpload() {
               <button
                 type="submit"
                 disabled={isUploading}
-                className="px-8 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center"
+                className="px-8 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
               >
                 {isUploading ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <LoaderSpinner size="sm" />
                     Uploading...
                   </>
                 ) : (
@@ -519,7 +527,7 @@ function MarketplaceUpload() {
         {/* Help Section */}
         <div className="mt-8 bg-white dark:bg-[#171717] rounded-2xl shadow-lg p-6">
           <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-            <span className="w-8 h-8 bg-purple-100 rounded-full flex items-center justify-center mr-3">
+            <span className="w-8 h-8 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mr-3">
               ❓
             </span>
             Need Help?

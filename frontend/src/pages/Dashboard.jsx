@@ -1,13 +1,13 @@
 import React, { useState, useRef, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import api from "../utils/axios";
 import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
 import FlashCardGallery from "../components/FlashCardGallery";
 import QuizView from "../components/QuizView";
 import SummaryView from "../components/SummaryView";
-import Spinner from "../components/Spinner";
 import PDFViewer from "../components/PDFViewer";
+import LoaderSpinner from "../components/LoaderSpinner";
 import ChatBot from "../components/ChatBot";
 import EmbeddedChat from "../components/EmbeddedChat";
 import PasteModal from "../components/PasteModal";
@@ -62,6 +62,31 @@ function Dashboard() {
   const [showContentLayout, setShowContentLayout] = useState(false);
   const videoContainerRef = useRef(null);
   const { user, toggleAuthModal } = useAuth();
+  const navigate = useNavigate();
+  
+  const [recentContent, setRecentContent] = useState([]);
+  const [recentLoading, setRecentLoading] = useState(false);
+  const [recentError, setRecentError] = useState("");
+  const [spaces, setSpaces] = useState([]);
+  const [spacesLoading, setSpacesLoading] = useState(false);
+  const [spacesError, setSpacesError] = useState("");
+  
+  const typeLabels = {
+    blog: "Blog",
+    summary: "Summary",
+    quiz: "Quiz",
+    flashcards: "Flashcards",
+    slides: "Slides",
+    other: "Content"
+  };
+  
+  const typeIcons = {
+    blog: FileText,
+    summary: BookOpen,
+    quiz: ListChecks,
+    flashcards: MessageCircle,
+    slides: StickyNote
+  };
   
   // Playlist detection states
   const [isPlaylist, setIsPlaylist] = useState(false);
@@ -86,6 +111,108 @@ function Dashboard() {
     clearCurrentSession,
     getContextForChat
   } = useContentContext();
+
+  const formatContentDate = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: date.getFullYear() === new Date().getFullYear() ? undefined : "numeric"
+    });
+  };
+
+  const formatRelativeTime = (dateString) => {
+    if (!dateString) return "";
+    const date = new Date(dateString);
+    const diffMs = Date.now() - date.getTime();
+    const diffMinutes = Math.floor(diffMs / 60000);
+
+    if (diffMinutes < 1) return "Just now";
+    if (diffMinutes < 60) return `${diffMinutes}m ago`;
+
+    const diffHours = Math.floor(diffMinutes / 60);
+    if (diffHours < 24) return `${diffHours}h ago`;
+
+    const diffDays = Math.floor(diffHours / 24);
+    if (diffDays < 7) return `${diffDays}d ago`;
+
+    return date.toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric"
+    });
+  };
+
+  useEffect(() => {
+    if (!user) {
+      setRecentContent([]);
+      setRecentError("");
+      setRecentLoading(false);
+      return;
+    }
+
+    const fetchContentOverview = async () => {
+      try {
+        setRecentLoading(true);
+        setRecentError("");
+        const response = await api.get("/api/content");
+        const payload = Array.isArray(response.data)
+          ? response.data
+          : Array.isArray(response.data?.content)
+            ? response.data.content
+            : [];
+
+        const sortedItems = [...payload].sort((a, b) => {
+          const dateA = new Date(a.createdAt || 0).getTime();
+          const dateB = new Date(b.createdAt || 0).getTime();
+          return dateB - dateA;
+        });
+
+        setRecentContent(sortedItems.slice(0, 6));
+      } catch (err) {
+        console.error("Failed to fetch dashboard content:", err);
+        setRecentError("Unable to load your recent activity.");
+      } finally {
+        setRecentLoading(false);
+      }
+    };
+
+    fetchContentOverview();
+  }, [user]);
+
+  useEffect(() => {
+    if (!user) {
+      setSpaces([]);
+      setSpacesError("");
+      setSpacesLoading(false);
+      return;
+    }
+
+    const fetchSpaces = async () => {
+      try {
+        setSpacesLoading(true);
+        setSpacesError("");
+        const response = await api.get("/api/collaborate/spaces", {
+          params: { limit: 8 }
+        });
+
+        const list = Array.isArray(response.data?.spaces)
+          ? response.data.spaces
+          : Array.isArray(response.data)
+            ? response.data
+            : [];
+
+        setSpaces(list);
+      } catch (err) {
+        console.error("Failed to load collaboration spaces:", err);
+        setSpacesError("Unable to load your spaces right now.");
+      } finally {
+        setSpacesLoading(false);
+      }
+    };
+
+    fetchSpaces();
+  }, [user]);
 
   // Debug: Watch for changes in originalSource
   useEffect(() => {
@@ -1181,104 +1308,103 @@ function Dashboard() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       {/* Main Content */}
-      <div className={`${showContentLayout ? 'px-4 py-8' : 'max-w-4xl mx-auto px-4 py-16'}`}>
+      <div className={`${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
         {/* Header */}
         {!showContentLayout && (
-          <div className="text-center mb-12">
-            <h1 className="text-4xl md:text-5xl font-bold text-gray-900 dark:text-[#fafafa] mb-4">
-              What do you want to learn?
-            </h1>
-          </div>
+          <>
+            <div className="text-center mb-6">
+              <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
+                What do you want to learn?
+              </h1>
+            </div>
+
+            {/* Input Method Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+              {/* Upload Card */}
+              <div 
+                className={`relative bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                  uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+                }`}
+                onClick={() => {
+                  if (!user) {
+                    toggleAuthModal(true);
+                    return;
+                  }
+                  setUploadMode("file");
+                  resetStates();
+                }}
+              >
+                <div className="absolute top-3 right-3">
+                  <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs font-semibold px-2 py-1 rounded-full">
+                    Popular
+                  </span>
+                </div>
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
+                  </div>
+                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Upload</h3>
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">File, audio, video</p>
+                </div>
+              </div>
+
+              {/* Paste Card */}
+              <div 
+                className={`bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                  uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+                }`}
+                onClick={() => {
+                  if (!user) {
+                    toggleAuthModal(true);
+                    return;
+                  }
+                  setUploadMode("youtube");
+                  setShowPasteModal(true);
+                  resetStates();
+                }}
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <Link size={32} className="text-purple-600 dark:text-purple-400" />
+                  </div>
+                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Paste</h3>
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">YouTube, website, text</p>
+                </div>
+              </div>
+
+              {/* Record Card */}
+              <div 
+                className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+                onClick={() => {
+                  if (!user) {
+                    toggleAuthModal(true);
+                    return;
+                  }
+                  // Future feature - recording functionality
+                  alert("Recording feature coming soon!");
+                }}
+              >
+                <div className="text-center">
+                  <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                    <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                    </svg>
+                  </div>
+                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Record</h3>
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Record class, video call</p>
+                </div>
+              </div>
+            </div>
+          </>
         )}
-
-        {/* Input Method Cards */}
-        {!showContentLayout && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-12">
-          {/* Upload Card */}
-          <div 
-            className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
-            }`}
-            onClick={() => {
-              if (!user) {
-                toggleAuthModal(true);
-                return;
-              }
-              setUploadMode("file");
-              resetStates();
-            }}
-          >
-            <div className="absolute top-3 right-3">
-              <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs font-semibold px-2 py-1 rounded-full">
-                Popular
-              </span>
-            </div>
-            <div className="text-center">
-              <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Upload size={32} className="text-blue-600 dark:text-blue-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Upload</h3>
-              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">File, audio, video</p>
-            </div>
-          </div>
-
-          {/* Paste Card */}
-          <div 
-            className={`bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg ${
-              uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E]"
-            }`}
-            onClick={() => {
-              if (!user) {
-                toggleAuthModal(true);
-                return;
-              }
-              setUploadMode("youtube");
-              setShowPasteModal(true);
-              resetStates();
-            }}
-          >
-            <div className="text-center">
-              <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <Link size={32} className="text-purple-600 dark:text-purple-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Paste</h3>
-              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">YouTube, website, text</p>
-            </div>
-          </div>
-
-          {/* Record Card */}
-          <div 
-            className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#2E2E2E] rounded-2xl p-6 cursor-pointer transition-all duration-300 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#3E3E3E]"
-            onClick={() => {
-              if (!user) {
-                toggleAuthModal(true);
-                return;
-              }
-              // Future feature - recording functionality
-              alert("Recording feature coming soon!");
-            }}
-          >
-            <div className="text-center">
-              <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </div>
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-2">Record</h3>
-              <p className="text-sm text-gray-600 dark:text-[#fafafacc]">Record class, video call</p>
-            </div>
-          </div>
-        </div>
-        )}
-
         {/* File Upload Area (shown when file mode is selected) */}
         {!showContentLayout && uploadMode === "file" && (
           <div className="max-w-3xl mx-auto mt-6">
             <div
               className={`relative border-2 ${
-                dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-dashed border-gray-300 dark:border-[#2E2E2E]"
-              } rounded-2xl p-8 text-center transition-all ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-[#2E2E2E]"
+                dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-dashed border-gray-300 dark:border-[#fafafa1a]"
+              } rounded-xl p-6 text-center transition-all ${
+                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-[#1E1E1E]"
               }`}
               onDragEnter={handleDrag}
               onDragLeave={handleDrag}
@@ -1318,16 +1444,16 @@ function Dashboard() {
                       }
                       fileInputRef.current?.click();
                     }}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-lg"
+                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-base"
                     disabled={isLoading}
                   >
                     Click to upload
                   </button>
-                  <span className="text-gray-600 dark:text-[#fafafacc] text-lg">
+                  <span className="text-[#171717cc] dark:text-[#fafafacc] text-base">
                     {" "}or drag and drop
                   </span>
                 </div>
-                <p className="text-sm text-gray-500 dark:text-[#fafafacc]">
+                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                   PDF, DOCX, TXT, PPTX (max 10MB)
                 </p>
                 {selectedFile && (
@@ -1362,11 +1488,11 @@ function Dashboard() {
                           }
                         }}
                         disabled={isLoading || isExtractingContent}
-                        className="px-8 py-3 bg-[#171717] dark:bg-[#fafafa] text-[#fafafa] dark:text-[#171717] rounded-xl font-semibold hover:bg-[#333333] dark:hover:bg-[#e5e5e5] transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+                        className="px-6 py-2.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-sm"
                       >
                         {isLoading || isExtractingContent ? (
                           <>
-                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                            <LoaderSpinner size="sm" />
                             <span>Processing...</span>
                           </>
                         ) : (
@@ -1384,21 +1510,142 @@ function Dashboard() {
           </div>
         )}
         
+
+        {/* Dashboard Overview */}
+        {!showContentLayout && (
+          <>
+            {user && (
+              <div className="space-y-6 mb-6">
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">My Spaces</h2>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/collaborate')}
+                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                    >
+                      View all
+                    </button>
+                  </div>
+                  {spacesError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mb-2">{spacesError}</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    <button
+                      type="button"
+                      onClick={() => navigate('/collaborate')}
+                      className="h-full min-h-[150px] border-2 border-dashed border-gray-300 dark:border-[#fafafa1a] rounded-xl flex flex-col items-center justify-center text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:border-gray-400 dark:hover:border-[#fafafa2a] transition-colors bg-white dark:bg-[#171717]"
+                    >
+                      <span className="text-2xl mb-1">+</span>
+                      Create Space
+                    </button>
+
+                    {spacesLoading
+                      ? Array.from({ length: 3 }).map((_, idx) => (
+                          <div key={idx} className="min-h-[150px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
+                        ))
+                      : spaces.slice(0, 7).map((space) => (
+                          <button
+                            key={space._id}
+                            type="button"
+                            onClick={() => navigate(`/collaborate/space/${space._id}`)}
+                            className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 text-left hover:shadow-lg transition-all duration-200"
+                          >
+                            <div className="flex items-center justify-between mb-2">
+                              <h3 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] truncate">
+                                {space.title || 'Untitled Space'}
+                              </h3>
+                              <span className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                                {space.stats?.totalContent || 0} content
+                              </span>
+                            </div>
+                            <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] line-clamp-2 mb-3">
+                              {space.description || 'Collaborate with your team and manage shared learning content.'}
+                            </p>
+                            <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                              <span>{space.ownerName ? `by ${space.ownerName}` : 'Private space'}</span>
+                              <span>{formatRelativeTime(space.stats?.lastActivity || space.updatedAt)}</span>
+                            </div>
+                          </button>
+                        ))}
+                  </div>
+                </section>
+
+                <section>
+                  <div className="flex items-center justify-between mb-3">
+                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Recents</h2>
+                    <button
+                      type="button"
+                      onClick={() => navigate('/content')}
+                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                    >
+                      View all
+                    </button>
+                  </div>
+                  {recentError && (
+                    <p className="text-xs text-red-600 dark:text-red-400 mb-2">{recentError}</p>
+                  )}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+                    {recentLoading
+                      ? Array.from({ length: 4 }).map((_, idx) => (
+                          <div key={idx} className="min-h-[140px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
+                        ))
+                      : recentContent.length > 0
+                        ? recentContent.slice(0, 8).map((item) => {
+                            const Icon = typeIcons[item.type] || FileText;
+                            return (
+                              <div
+                                key={item._id || item.title}
+                                className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 hover:shadow-lg transition-all duration-200"
+                              >
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#1E1E1E] flex items-center justify-center">
+                                    <Icon className="w-4 h-4 text-[#171717cc] dark:text-[#fafafacc]" />
+                                  </div>
+                                  <div>
+                                    <p className="text-xs font-semibold uppercase tracking-wide text-[#171717cc] dark:text-[#fafafacc]">
+                                      {typeLabels[item.type] || 'Content'}
+                                    </p>
+                                    <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa] line-clamp-1">
+                                      {item.title || 'Untitled'}
+                                    </p>
+                                  </div>
+                                </div>
+                                <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                                  <span>{formatContentDate(item.createdAt)}</span>
+                                  {item.source && <span className="truncate max-w-[120px] text-right">{item.source}</span>}
+                                </div>
+                              </div>
+                            );
+                          })
+                        : (
+                          <div className="col-span-full text-sm text-[#171717cc] dark:text-[#fafafacc] bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4">
+                            You haven't generated any content yet. Start by uploading a document or pasting a link.
+                          </div>
+                        )}
+                  </div>
+                </section>
+              </div>
+            )}
+          </>
+        )}
+
+        
         {!showContentLayout && error && (
-          <div className="max-w-3xl mx-auto mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <div className="max-w-3xl mx-auto mt-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
             <p className="text-red-700 dark:text-red-400 text-sm text-center">{error}</p>
           </div>
         )}
 
         {/* Content Layout - only show after generate is clicked */}
         {showContentLayout && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
             {/* Left column: File Preview - Takes 2/3 of the space */}
-            <div className="lg:col-span-2 h-[500px] md:h-[600px] lg:h-[680px] flex flex-col">
+            <div className="lg:col-span-2 h-[500px] md:h-[520px] lg:h-[580px] flex flex-col">
               {uploadMode === "youtube" && videoId && (
                 <div 
                   ref={videoContainerRef}
-                  className={`bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden transition-all duration-700 ease-in-out flex flex-col h-full max-h-full ${
+                  className={`bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out flex flex-col h-full max-h-full ${
                     showVideo 
                       ? "opacity-100 transform translate-y-0" 
                       : "opacity-0 transform -translate-y-10"
@@ -1416,20 +1663,20 @@ function Dashboard() {
                   </div>
                   
                   {/* Video Info - Compact footer */}
-                  <div className="p-4 border-t border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E] flex-shrink-0">
+                  <div className="p-4 border-t border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E] flex-shrink-0">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">Ready for processing</span>
+                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">Ready for processing</span>
                       </div>
                       
                       {/* Action Buttons - More professional */}
                       <div className="flex gap-2">
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#3E3E3E] transition-colors flex items-center space-x-1">
+                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#2E2E2E] transition-colors flex items-center space-x-1">
                           <FileText size={14} />
                           <span>Chapters</span>
                         </button>
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#3E3E3E] transition-colors flex items-center space-x-1">
+                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#2E2E2E] transition-colors flex items-center space-x-1">
                           <BookOpen size={14} />
                           <span>Transcript</span>
                         </button>
@@ -1442,23 +1689,23 @@ function Dashboard() {
               {/* Playlist Info Display */}
               {isPlaylist && playlistInfo && (
                 <div 
-                  className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full"
+                  className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full"
                 >
                   {/* Playlist Header */}
-                  <div className="p-6 border-b border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E]">
+                  <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
                     <div className="flex items-start space-x-4">
                       <div className="w-12 h-12 bg-blue-600 dark:bg-blue-500 rounded-xl flex items-center justify-center flex-shrink-0">
                         <ListChecks className="w-6 h-6 text-white" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa] mb-1 truncate">
+                        <h3 className="text-base font-bold text-[#171717] dark:text-[#fafafa] mb-1 truncate">
                           {playlistInfo.playlist_title || 'YouTube Playlist'}
                         </h3>
                         <div className="flex items-center space-x-4 text-sm">
-                          <span className="px-3 py-1 bg-blue-600 text-white rounded-full font-medium">
+                          <span className="px-2.5 py-1 bg-blue-600 text-white rounded-full font-medium">
                             {playlistInfo.video_count} videos
                           </span>
-                          <span className="text-gray-600 dark:text-[#fafafacc]">
+                          <span className="text-[#171717cc] dark:text-[#fafafacc]">
                             Ready to process entire playlist
                           </span>
                         </div>
@@ -1467,7 +1714,7 @@ function Dashboard() {
                   </div>
 
                   {/* Playlist Description */}
-                  <div className="p-6 flex-1 overflow-y-auto">
+                  <div className="p-4 flex-1 overflow-y-auto">
                     <div className="space-y-4">
                       <div className="bg-blue-50 dark:bg-blue-900/10 border-l-4 border-blue-600 p-4 rounded-lg">
                         <p className="text-sm text-blue-900 dark:text-blue-300 font-medium mb-2">
@@ -1480,11 +1727,11 @@ function Dashboard() {
                         </p>
                       </div>
 
-                      <div className="bg-gray-50 dark:bg-[#2E2E2E] border-l-4 border-gray-600 dark:border-gray-500 p-4 rounded-lg">
-                        <p className="text-sm text-gray-900 dark:text-[#fafafacc] font-medium mb-2">
+                      <div className="bg-gray-50 dark:bg-[#1E1E1E] border-l-4 border-gray-600 dark:border-gray-500 p-4 rounded-lg">
+                        <p className="text-sm text-[#171717] dark:text-[#fafafacc] font-medium mb-2">
                           ⏱️ Processing Time
                         </p>
-                        <p className="text-sm text-gray-700 dark:text-[#fafafacc]">
+                        <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                           Processing may take a few minutes as we fetch transcripts from all videos 
                           with appropriate delays (5 seconds between each video) to ensure reliability.
                         </p>
@@ -1492,24 +1739,24 @@ function Dashboard() {
 
                       {/* Video List Preview */}
                       <div className="mt-6">
-                        <h4 className="text-sm font-semibold text-gray-900 dark:text-[#fafafa] mb-3">
+                        <h4 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-3">
                           Videos in this playlist:
                         </h4>
                         <div className="space-y-2 max-h-[300px] overflow-y-auto">
                           {playlistInfo.videos && playlistInfo.videos.slice(0, 10).map((video, index) => (
                             <div 
                               key={video.id || video.video_id || index}
-                              className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg hover:bg-gray-100 dark:hover:bg-[#3E3E3E] transition-colors"
+                              className="flex items-start space-x-3 p-3 bg-gray-50 dark:bg-[#1E1E1E] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors"
                             >
                               <span className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-xs font-medium">
                                 {index + 1}
                               </span>
                               <div className="flex-1 min-w-0">
-                                <p className="text-sm text-gray-900 dark:text-[#fafafa] font-medium truncate">
+                                <p className="text-sm text-[#171717] dark:text-[#fafafa] font-medium truncate">
                                   {video.title || `Video ${index + 1}`}
                                 </p>
                                 {video.duration && (
-                                  <p className="text-xs text-gray-500 dark:text-[#fafafacc] mt-0.5">
+                                  <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] mt-0.5">
                                     Duration: {Math.floor(video.duration / 60)}:{String(video.duration % 60).padStart(2, '0')}
                                   </p>
                                 )}
@@ -1517,7 +1764,7 @@ function Dashboard() {
                             </div>
                           ))}
                           {playlistInfo.videos && playlistInfo.videos.length > 10 && (
-                            <p className="text-xs text-gray-500 dark:text-[#fafafacc] text-center py-2">
+                            <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] text-center py-2">
                               ... and {playlistInfo.videos.length - 10} more videos
                             </p>
                           )}
@@ -1530,35 +1777,35 @@ function Dashboard() {
 
               {/* Text Preview - For pasted text content */}
               {originalSource?.type === 'text' && originalSource?.content && (
-                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full">
+                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full">
                   {/* Text Header */}
-                  <div className="p-4 border-b border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E]">
+                  <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/20 rounded-lg flex items-center justify-center">
                           <StickyNote className="w-4 h-4 text-purple-600 dark:text-purple-400" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-[#fafafa]">Pasted Text Content</p>
-                          <p className="text-sm text-gray-500 dark:text-[#fafafacc]">
+                          <p className="font-medium text-[#171717] dark:text-[#fafafa]">Pasted Text Content</p>
+                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                             {originalSource.content.length} characters
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">Ready for processing</span>
+                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">Ready for processing</span>
                       </div>
                     </div>
                   </div>
                   
                   {/* Text Content Display */}
                   <div className="flex-1 p-0 min-h-0">
-                    <div className="w-full h-full border-gray-200 dark:border-[#2E2E2E] overflow-hidden bg-white dark:bg-[#171717]">
-                      <div className="h-full overflow-y-auto p-6">
+                    <div className="w-full h-full border-gray-200 dark:border-[#fafafa1a] overflow-hidden bg-white dark:bg-[#171717]">
+                      <div className="h-full overflow-y-auto p-4">
                         <div className="prose dark:prose-invert max-w-none">
-                          <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-4">Your Text</h3>
-                          <div className="text-gray-800 dark:text-[#fafafacc] whitespace-pre-wrap leading-relaxed">
+                          <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-4">Your Text</h3>
+                          <div className="text-[#171717cc] dark:text-[#fafafacc] whitespace-pre-wrap leading-relaxed">
                             {originalSource.content}
                           </div>
                         </div>
@@ -1567,7 +1814,7 @@ function Dashboard() {
                   </div>
                   
                   {/* Remove Text Button */}
-                  <div className="p-4 border-t border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E] text-center">
+                  <div className="p-4 border-t border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E] text-center">
                     <button
                       onClick={() => {
                         clearCurrentSession();
@@ -1612,24 +1859,24 @@ function Dashboard() {
               )}
 
               {uploadMode === "file" && selectedFile && (
-                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full">
+                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full">
                   {/* File Header */}
-                  <div className="p-4 border-b border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E]">
+                  <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className="w-8 h-8 bg-gray-100 dark:bg-[#171717] rounded-lg flex items-center justify-center">
-                          <FileText className="w-4 h-4 text-gray-600 dark:text-[#fafafacc]" />
+                          <FileText className="w-4 h-4 text-[#171717cc] dark:text-[#fafafacc]" />
                         </div>
                         <div>
-                          <p className="font-medium text-gray-900 dark:text-[#fafafa]">{selectedFile.name}</p>
-                          <p className="text-sm text-gray-500 dark:text-[#fafafacc]">
+                          <p className="font-medium text-[#171717] dark:text-[#fafafa]">{selectedFile.name}</p>
+                          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                             {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
                           </p>
                         </div>
                       </div>
                       <div className="flex items-center space-x-2">
                         <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">Ready for processing</span>
+                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">Ready for processing</span>
                       </div>
                     </div>
                   </div>
@@ -1637,16 +1884,16 @@ function Dashboard() {
                   {/* File Preview - Takes remaining space */}
                   <div className="flex-1 p-0 min-h-0">
                     {selectedFile.type === "application/pdf" && (
-                      <div className="w-full h-full border-gray-200 dark:border-[#2E2E2E] overflow-hidden">
+                      <div className="w-full h-full border-gray-200 dark:border-[#fafafa1a] overflow-hidden">
                         <PDFViewer file={selectedFile} />
                       </div>
                     )}
                     {selectedFile.type === "application/vnd.openxmlformats-officedocument.wordprocessingml.document" && (
-                      <div className="w-full h-full  border-gray-200 dark:border-[#2E2E2E]  overflow-hidden bg-white dark:bg-[#171717]">
-                        <div className="h-full overflow-y-auto p-6">
+                      <div className="w-full h-full  border-gray-200 dark:border-[#fafafa1a]  overflow-hidden bg-white dark:bg-[#171717]">
+                        <div className="h-full overflow-y-auto p-4">
                           <div className="prose dark:prose-invert max-w-none">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-4">Document Content</h3>
-                            <div className="text-gray-800 dark:text-[#fafafacc] whitespace-pre-wrap">
+                            <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-4">Document Content</h3>
+                            <div className="text-[#171717cc] dark:text-[#fafafacc] whitespace-pre-wrap">
                               {fileContent || "Content is being extracted..."}
                             </div>
                           </div>
@@ -1654,11 +1901,11 @@ function Dashboard() {
                       </div>
                     )}
                     {selectedFile.type === "text/plain" && (
-                      <div className="w-full h-full  border-gray-200 dark:border-[#2E2E2E]  overflow-hidden bg-white dark:bg-[#171717]">
-                        <div className="h-full overflow-y-auto p-6">
+                      <div className="w-full h-full  border-gray-200 dark:border-[#fafafa1a]  overflow-hidden bg-white dark:bg-[#171717]">
+                        <div className="h-full overflow-y-auto p-4">
                           <div className="prose dark:prose-invert max-w-none">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-4">Text Content</h3>
-                            <div className="text-gray-800 dark:text-[#fafafacc] whitespace-pre-wrap">
+                            <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-4">Text Content</h3>
+                            <div className="text-[#171717cc] dark:text-[#fafafacc] whitespace-pre-wrap">
                               {fileContent || "Content is being extracted..."}
                             </div>
                           </div>
@@ -1666,11 +1913,11 @@ function Dashboard() {
                       </div>
                     )}
                     {selectedFile.type === "application/vnd.openxmlformats-officedocument.presentationml.presentation" && (
-                      <div className="w-full h-full  border-gray-200 dark:border-[#2E2E2E]  overflow-hidden bg-white dark:bg-[#171717]">
-                        <div className="h-full overflow-y-auto p-6">
+                      <div className="w-full h-full  border-gray-200 dark:border-[#fafafa1a]  overflow-hidden bg-white dark:bg-[#171717]">
+                        <div className="h-full overflow-y-auto p-4">
                           <div className="prose dark:prose-invert max-w-none">
-                            <h3 className="text-lg font-semibold text-gray-900 dark:text-[#fafafa] mb-4">Presentation Content</h3>
-                            <div className="text-gray-800 dark:text-[#fafafacc] whitespace-pre-wrap">
+                            <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-4">Presentation Content</h3>
+                            <div className="text-[#171717cc] dark:text-[#fafafacc] whitespace-pre-wrap">
                               {fileContent || "Content is being extracted..."}
                             </div>
                           </div>
@@ -1680,7 +1927,7 @@ function Dashboard() {
                   </div>
                   
                   {/* Remove File Button */}
-                  <div className="p-4 border-t border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#2E2E2E] text-center">
+                  <div className="p-4 border-t border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E] text-center">
                     <button
                       onClick={() => {
                         setSelectedFile(null);
@@ -1730,25 +1977,25 @@ function Dashboard() {
         {/* Right column: Learning Materials Tabs - Takes 1/3 of the space */}
         <div className="lg:col-span-1 flex flex-col h-full">
           {/* Learning Materials Header */}
-          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl p-6 h-full flex flex-col max-h-full overflow-hidden">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-4 h-full flex flex-col max-h-full overflow-hidden">
+            <div className="flex items-center justify-between mb-4">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-100 dark:bg-[#2E2E2E] rounded-xl flex items-center justify-center">
-                  <Target size={20} className="text-gray-600 dark:text-[#fafafacc]" />
+                <div className="w-10 h-10 bg-gray-100 dark:bg-[#1E1E1E] rounded-xl flex items-center justify-center">
+                  <Target size={20} className="text-[#171717cc] dark:text-[#fafafacc]" />
                 </div>
                 <div>
-                  <h3 className="text-xl font-semibold text-gray-900 dark:text-[#fafafa]">Learning Materials</h3>
-                  <p className="text-sm text-gray-500 dark:text-[#fafafacc]">Generate educational content from your source</p>
+                  <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Learning Materials</h3>
+                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Generate educational content from your source</p>
                 </div>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-gray-600 dark:text-[#fafafacc] font-medium">AI Ready</span>
+                <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">AI Ready</span>
               </div>
             </div>
             
             {/* Professional Content Generation Grid */}
-            <div className="flex-1 flex flex-col gap-4 overflow-y-auto min-h-0">
+            <div className="flex-1 flex flex-col gap-3 overflow-y-auto min-h-0">
               {[
                 { 
                   id: "chat", 
@@ -1801,12 +2048,12 @@ function Dashboard() {
                 return (
                   <button
                     key={tab.id}
-                    className={`p-4 rounded-xl text-left transition-all duration-200 border ${
+                    className={`p-3 rounded-lg text-left transition-all duration-200 border ${
                       isDisabled
-                        ? "bg-gray-50 dark:bg-[#2E2E2E] text-gray-400 dark:text-[#fafafacc] cursor-not-allowed border-gray-200 dark:border-[#2E2E2E]"
+                        ? "bg-gray-50 dark:bg-[#1E1E1E] text-gray-400 dark:text-[#fafafacc] cursor-not-allowed border-gray-200 dark:border-[#fafafa1a]"
                         : isActive
                         ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 shadow-sm"
-                        : "bg-white dark:bg-[#171717] text-gray-700 dark:text-[#fafafacc] border-gray-200 dark:border-[#2E2E2E] hover:border-gray-300 dark:hover:border-[#3E3E3E] hover:shadow-sm"
+                        : "bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a] hover:shadow-sm"
                     }`}
                     onClick={() => !isDisabled && handleTabClick(tab.id)}
                     disabled={isDisabled}
@@ -1814,19 +2061,19 @@ function Dashboard() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
                         <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isActive ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-[#2E2E2E]'
+                          isActive ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-[#1E1E1E]'
                         }`}>
                           <tab.icon size={16} className={isActive ? 'text-blue-600 dark:text-blue-400' : tab.color} />
                         </div>
                         <div>
-                          <div className="font-medium">{tab.label}</div>
-                          <div className="text-sm text-gray-500 dark:text-[#fafafacc]">{tab.description}</div>
+                          <div className="font-medium text-sm">{tab.label}</div>
+                          <div className="text-xs text-[#171717cc] dark:text-[#fafafacc]">{tab.description}</div>
                         </div>
                       </div>
                       
                       <div className="flex items-center space-x-2">
                         {isLoading && (
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-current"></div>
+                          <LoaderSpinner size="sm" />
                         )}
                         {hasError && (
                           <div className="text-red-500 text-xs">Error</div>
@@ -1848,20 +2095,20 @@ function Dashboard() {
       
       {/* Generated Content Section - Full width below main container */}
       {hasContent && activeTab && (
-        <div className="w-full px-4 py-6">
+        <div className="w-full px-4 py-4">
           <div className="max-w-7xl mx-auto">
-            <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden">
-              <div className="p-8">
+            <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden">
+              <div className="p-4">
                 {activeTab === "blog" && (
                   <div>
                     {loadingStates.blog && (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating blog post...</p>
+                      <div className="text-center py-8">
+                        <LoaderSpinner size="xl" className="mb-4" />
+                        <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">Generating blog post...</p>
                       </div>
                     )}
                     {errors.blog && (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                         <p className="text-red-700 dark:text-red-400">{errors.blog}</p>
                       </div>
                     )}
@@ -1871,13 +2118,13 @@ function Dashboard() {
                 {activeTab === "slides" && (
                   <div>
                     {loadingStates.slides && (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating slides...</p>
+                      <div className="text-center py-8">
+                        <LoaderSpinner size="xl" className="mb-4" />
+                        <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">Generating slides...</p>
                       </div>
                     )}
                     {errors.slides && (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                         <p className="text-red-700 dark:text-red-400">{errors.slides}</p>
                       </div>
                     )}
@@ -1889,13 +2136,13 @@ function Dashboard() {
                 {activeTab === "flashcards" && (
                   <div>
                     {loadingStates.flashcards && (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating flashcards...</p>
+                      <div className="text-center py-8">
+                        <LoaderSpinner size="xl" className="mb-4" />
+                        <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">Generating flashcards...</p>
                       </div>
                     )}
                     {errors.flashcards && (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                         <p className="text-red-700 dark:text-red-400">{errors.flashcards}</p>
                       </div>
                     )}
@@ -1907,13 +2154,13 @@ function Dashboard() {
                 {activeTab === "quiz" && (
                   <div>
                     {loadingStates.quiz && (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating quiz...</p>
+                      <div className="text-center py-8">
+                        <LoaderSpinner size="xl" className="mb-4" />
+                        <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">Generating quiz...</p>
                       </div>
                     )}
                     {errors.quiz && (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                         <p className="text-red-700 dark:text-red-400">{errors.quiz}</p>
                       </div>
                     )}
@@ -1923,13 +2170,13 @@ function Dashboard() {
                 {activeTab === "summary" && (
                   <div>
                     {loadingStates.summary && (
-                      <div className="text-center py-12">
-                        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-                        <p className="text-gray-600 dark:text-[#fafafacc] text-lg">Generating summary...</p>
+                      <div className="text-center py-8">
+                        <LoaderSpinner size="xl" className="mb-4" />
+                        <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">Generating summary...</p>
                       </div>
                     )}
                     {errors.summary && (
-                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+                      <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-4">
                         <p className="text-red-700 dark:text-red-400">{errors.summary}</p>
                       </div>
                     )}
@@ -1938,10 +2185,10 @@ function Dashboard() {
                 )}
                 {activeTab === "chat" && (
                   <div className="h-[600px]">
-                    <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden h-full flex flex-col border border-gray-200 dark:border-[#2E2E2E]">
-                      <div className="p-4 border-b border-gray-200 dark:border-[#2E2E2E] flex justify-between items-center bg-[#171717] dark:bg-[#2E2E2E] text-[#fafafa] dark:text-[#fafafacc]">
+                    <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden h-full flex flex-col border border-gray-200 dark:border-[#fafafa1a]">
+                      <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] flex justify-between items-center bg-[#171717] dark:bg-[#1E1E1E] text-[#fafafa] dark:text-[#fafafacc]">
                         <div className="flex items-center space-x-2">
-                          <h3 className="font-semibold text-lg">EduExtract Assistant</h3>
+                          <h3 className="font-semibold text-base">EduExtract Assistant</h3>
                           <div className="flex items-center space-x-1">
                             <div className="w-2 h-2 bg-green-400 rounded-full"></div>
                             <span className="text-xs text-green-300">Context Active</span>
@@ -1969,17 +2216,17 @@ function Dashboard() {
       {/* Playlist Processing Progress Modal */}
       {playlistProcessing && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-200 dark:border-[#2E2E2E]">
+          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg max-w-md w-full p-4 border border-gray-200 dark:border-[#fafafa1a]">
             {/* Header */}
-            <div className="flex items-center space-x-3 mb-6">
+            <div className="flex items-center space-x-3 mb-4">
               <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/20 rounded-xl flex items-center justify-center">
                 <ListChecks className="w-6 h-6 text-blue-600 dark:text-blue-400" />
               </div>
               <div>
-                <h3 className="text-lg font-bold text-gray-900 dark:text-[#fafafa]">
+                <h3 className="text-base font-bold text-[#171717] dark:text-[#fafafa]">
                   Processing Playlist
                 </h3>
-                <p className="text-sm text-gray-600 dark:text-[#fafafacc]">
+                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                   Generating {playlistContentType}
                 </p>
               </div>
@@ -1990,14 +2237,14 @@ function Dashboard() {
               {/* Progress Bar */}
               <div>
                 <div className="flex justify-between items-center mb-2">
-                  <span className="text-sm font-medium text-gray-700 dark:text-[#fafafacc]">
+                  <span className="text-sm font-medium text-[#171717cc] dark:text-[#fafafacc]">
                     Fetching transcripts...
                   </span>
                   <span className="text-sm font-bold text-blue-600 dark:text-blue-400">
                     {Math.round(playlistProgress.percentage)}%
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 dark:bg-[#2E2E2E] rounded-full h-3 overflow-hidden">
+                <div className="w-full bg-gray-200 dark:bg-[#1E1E1E] rounded-full h-3 overflow-hidden">
                   <div 
                     className="h-full bg-gradient-to-r from-blue-500 to-blue-600 rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-1"
                     style={{ width: `${playlistProgress.percentage}%` }}
@@ -2010,18 +2257,18 @@ function Dashboard() {
               </div>
 
               {/* Video Count */}
-              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#2E2E2E] rounded-lg">
-                <span className="text-sm text-gray-600 dark:text-[#fafafacc]">
+              <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-[#1E1E1E] rounded-lg">
+                <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                   Videos processed
                 </span>
-                <span className="text-sm font-bold text-gray-900 dark:text-[#fafafa]">
+                <span className="text-sm font-bold text-[#171717] dark:text-[#fafafa]">
                   {playlistProgress.current} / {playlistProgress.total}
                 </span>
               </div>
 
               {/* Status Message */}
               <div className="flex items-start space-x-2 p-3 bg-blue-50 dark:bg-blue-900/10 rounded-lg border-l-4 border-blue-600">
-                <div className="animate-spin rounded-full h-4 w-4 border-2 border-blue-600 border-t-transparent mt-0.5"></div>
+                <LoaderSpinner size="md" className="mt-0.5" />
                 <div className="flex-1">
                   <p className="text-sm text-blue-900 dark:text-blue-300 font-medium">
                     {playlistProgress.current === 0 ? 'Starting...' :
@@ -2037,7 +2284,7 @@ function Dashboard() {
               {/* Estimated Time */}
               {playlistProgress.total > 0 && (
                 <div className="text-center pt-2">
-                  <p className="text-xs text-gray-500 dark:text-[#fafafacc]">
+                  <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
                     Estimated time: ~{Math.ceil(playlistProgress.total * 5 / 60)} minutes
                   </p>
                 </div>

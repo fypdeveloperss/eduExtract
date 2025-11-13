@@ -4,6 +4,8 @@ import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
 import MarketplaceContentSelectionModal from '../components/MarketplaceContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
+import PageLoader from '../components/PageLoader';
+import LoaderSpinner from '../components/LoaderSpinner';
 
 function Marketplace() {
   const { user } = useAuth();
@@ -157,14 +159,8 @@ function Marketplace() {
     return `${symbols[currency] || '$'}${price}`;
   };
 
-  const getDifficultyColor = (difficulty) => {
-    const colors = {
-      beginner: 'bg-green-100 text-green-800',
-      intermediate: 'bg-yellow-100 text-yellow-800',
-      advanced: 'bg-red-100 text-red-800'
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
-  };
+  const getDifficultyClass = () =>
+    'bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc]';
 
   const getCategoryIcon = (category) => {
     const icons = {
@@ -182,13 +178,16 @@ function Marketplace() {
     return icons[category] || '📁';
   };
 
-  if ((activeTab === 'browse' && loading && content.length === 0) || (activeTab === 'purchased' && purchasedLoading && purchasedContent.length === 0)) {
+  if (
+    (activeTab === "browse" && loading && content.length === 0) ||
+    (activeTab === "purchased" && purchasedLoading && purchasedContent.length === 0)
+  ) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#171717] dark:border-[#fafafa] mx-auto mb-4"></div>
-          <p className="text-[#171717cc] dark:text-[#fafafacc]">
-            {activeTab === 'browse' ? 'Loading marketplace...' : 'Loading purchases...'}
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center space-y-3 text-center">
+          <LoaderSpinner size="xl" />
+          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+            {activeTab === "browse" ? "Loading marketplace..." : "Loading purchases..."}
           </p>
         </div>
       </div>
@@ -198,25 +197,25 @@ function Marketplace() {
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212]">
       {/* Hero Section */}
-      <div className="bg-[#171717] dark:bg-[#121212] text-white dark:text-[#fafafa] py-8">
-        <div className="max-w-7xl mx-auto px-4 text-center">
-          <h1 className="text-2xl md:text-3xl font-bold mb-3">
+      <div className="max-w-7xl mx-auto px-4 pt-6">
+        <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl shadow-lg px-6 py-10 text-center">
+          <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
             Discover Amazing Educational Content
           </h1>
-          <p className="text-base md:text-lg text-[#fafafacc] dark:text-[#fafafacc] mb-6 max-w-3xl mx-auto">
+          <p className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] mb-6 max-w-3xl mx-auto">
             Access high-quality learning materials, study guides, and educational resources 
             created by experts and educators worldwide.
           </p>
           
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="max-w-2xl mx-auto">
-            <div className="flex bg-white dark:bg-[#171717] rounded-lg shadow-lg overflow-hidden">
+            <div className="flex bg-gray-50 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#fafafa1a] rounded-lg overflow-hidden">
               <input
                 type="text"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 placeholder="Search for courses, documents, study guides..."
-                className="flex-1 px-4 py-2.5 text-[#171717cc] dark:text-[#fafafacc] text-base focus:outline-none bg-transparent placeholder-[#171717cc] dark:placeholder-[#fafafacc]"
+                className="flex-1 px-4 py-2.5 text-[#171717cc] dark:text-[#fafafacc] text-base focus:outline-none bg-transparent placeholder-[#17171766] dark:placeholder-[#fafafa66]"
               />
               <button
                 type="submit"
@@ -467,19 +466,11 @@ function Marketplace() {
                   
                   {/* Price Badge */}
                   <div className="absolute top-2 right-2">
-                    {activeTab === 'purchased' ? (
-                      <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200">
-                        ✅ Purchased
-                      </span>
-                    ) : (
-                      <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
-                        contentItem.price === 0 
-                          ? 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-200' 
-                          : 'bg-gray-100 dark:bg-[#1E1E1E] text-[#171717cc] dark:text-[#fafafacc]'
-                      }`}>
-                        {formatPrice(contentItem.price, contentItem.currency)}
-                      </span>
-                    )}
+                    <span className="px-2 py-0.5 rounded-full text-xs font-semibold border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]">
+                      {activeTab === "purchased"
+                        ? "Purchased"
+                        : formatPrice(contentItem.price, contentItem.currency)}
+                    </span>
                   </div>
 
                   {/* Content Type Badge */}
@@ -510,7 +501,7 @@ function Marketplace() {
                       {contentItem?.subject || 'N/A'}
                     </span>
                     {contentItem?.difficulty && (
-                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyColor(contentItem.difficulty)}`}>
+                      <span className={`px-1.5 py-0.5 rounded-full text-xs font-medium ${getDifficultyClass()}`}>
                         {contentItem.difficulty}
                       </span>
                     )}

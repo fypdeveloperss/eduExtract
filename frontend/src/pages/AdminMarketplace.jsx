@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
+import LoaderSpinner from '../components/LoaderSpinner';
 
 function AdminMarketplace() {
   const { user, isAdmin, adminLoading } = useAuth();
@@ -82,14 +83,8 @@ function AdminMarketplace() {
     return `${symbols[currency] || '$'}${price}`;
   };
 
-  const getDifficultyColor = (difficulty) => {
-    const colors = {
-      beginner: 'bg-green-100 text-green-800',
-      intermediate: 'bg-yellow-100 text-yellow-800',
-      advanced: 'bg-red-100 text-red-800'
-    };
-    return colors[difficulty] || 'bg-gray-100 text-gray-800';
-  };
+  const getDifficultyColor = () =>
+    'bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc]';
 
   const getCategoryIcon = (category) => {
     const icons = {
@@ -109,10 +104,10 @@ function AdminMarketplace() {
 
   if (adminLoading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Checking admin status...</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center space-y-3 text-center text-[#171717cc] dark:text-[#fafafacc]">
+          <LoaderSpinner size="xl" />
+          <p>Checking admin status...</p>
         </div>
       </div>
     );
@@ -120,13 +115,16 @@ function AdminMarketplace() {
 
   if (!isAdmin) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">Access Denied</h1>
-          <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">You don't have admin privileges.</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl shadow-xl p-8 max-w-md w-full text-center space-y-4">
+          <div className="w-16 h-16 border border-gray-200 dark:border-[#2E2E2E] bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto">
+            <span className="text-2xl">🚫</span>
+          </div>
+          <h1 className="text-2xl font-bold text-[#171717] dark:text-[#fafafa]">Access Denied</h1>
+          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">You don't have admin privileges.</p>
           <button
             onClick={() => navigate('/')}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded"
+            className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
           >
             Go to Home
           </button>
@@ -137,10 +135,10 @@ function AdminMarketplace() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-[#171717cc] dark:text-[#fafafacc]">Loading pending content...</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
+        <div className="flex flex-col items-center space-y-3 text-center text-[#171717cc] dark:text-[#fafafacc]">
+          <LoaderSpinner size="xl" />
+          <p>Loading pending content...</p>
         </div>
       </div>
     );
@@ -160,7 +158,7 @@ function AdminMarketplace() {
             </div>
             <button
               onClick={() => navigate('/admin')}
-              className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg transition-colors"
+              className="px-4 py-2 border border-gray-300 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors"
             >
               Back to Admin
             </button>
@@ -171,8 +169,8 @@ function AdminMarketplace() {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
           <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-6">
             <div className="flex items-center">
-              <div className="p-3 bg-yellow-100 dark:bg-yellow-900/20 rounded-lg">
-                <svg className="w-6 h-6 text-yellow-600 dark:text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className="p-3 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-lg">
+                <svg className="w-6 h-6 text-[#171717cc] dark:text-[#fafafacc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
@@ -186,16 +184,16 @@ function AdminMarketplace() {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 rounded-lg p-4 mb-6">
-            <p className="text-red-700 dark:text-red-300">{error}</p>
+          <div className="border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] rounded-lg p-4 mb-6">
+            <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">{error}</p>
           </div>
         )}
 
         {/* Pending Content List */}
         {pendingContent.length === 0 ? (
           <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] p-12 text-center">
-            <div className="w-16 h-16 bg-green-100 dark:bg-green-900/20 rounded-full flex items-center justify-center mx-auto mb-4">
-              <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="w-16 h-16 bg-gray-100 dark:bg-[#1E1E1E] border border-gray-200 dark:border-[#2E2E2E] rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-[#171717cc] dark:text-[#fafafacc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
               </svg>
             </div>
@@ -210,21 +208,16 @@ function AdminMarketplace() {
                   <div className="flex-1">
                     <div className="flex items-center space-x-3 mb-4">
                       <span className="text-3xl">{getCategoryIcon(content.category)}</span>
-                      <div>
-                        <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc]">
-                          {content.title}
-                        </h3>
-                        <div className="flex items-center space-x-2 mt-1">
-                          <span className="bg-blue-100 dark:bg-blue-900/20 text-blue-800 dark:text-blue-400 px-2 py-1 rounded-full text-sm">
-                            {content.category}
-                          </span>
-                          <span className={`px-2 py-1 rounded-full text-sm ${getDifficultyColor(content.difficulty)}`}>
-                            {content.difficulty}
-                          </span>
-                          <span className="bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] px-2 py-1 rounded-full text-sm">
-                            {content.contentType}
-                          </span>
-                        </div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-2 py-1 rounded-full text-sm border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] capitalize">
+                          {content.category}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-sm ${getDifficultyColor()}`}>
+                          {content.difficulty}
+                        </span>
+                        <span className="bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] px-2 py-1 rounded-full text-sm">
+                          {content.contentType}
+                        </span>
                       </div>
                     </div>
 
@@ -243,11 +236,8 @@ function AdminMarketplace() {
                       </div>
                       <div>
                         <span className="text-[#171717cc] dark:text-[#fafafacc]">Plagiarism Score:</span>
-                        <p className={`font-medium ${
-                          content.plagiarismScore < 30 ? 'text-green-600' :
-                          content.plagiarismScore < 70 ? 'text-yellow-600' : 'text-red-600'
-                        }`}>
-                          {content.plagiarismScore || 'N/A'}%
+                        <p className="font-medium text-[#171717cc] dark:text-[#fafafacc]">
+                          {content.plagiarismScore ?? 'N/A'}%
                         </p>
                       </div>
                       <div>
@@ -280,40 +270,30 @@ function AdminMarketplace() {
                     <button
                       onClick={() => handleApprove(content._id)}
                       disabled={actionLoading[content._id]}
-                      className="bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                      className="px-4 py-2 border border-gray-200 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {actionLoading[content._id] === 'approving' ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <LoaderSpinner size="sm" />
                           Approving...
                         </>
                       ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                          </svg>
-                          Approve
-                        </>
+                        <>Approve</>
                       )}
                     </button>
                     
                     <button
                       onClick={() => handleReject(content._id)}
                       disabled={actionLoading[content._id]}
-                      className="bg-red-600 hover:bg-red-700 disabled:bg-red-400 text-white px-4 py-2 rounded-lg transition-colors flex items-center"
+                      className="px-4 py-2 border border-gray-200 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                     >
                       {actionLoading[content._id] === 'rejecting' ? (
                         <>
-                          <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                          <LoaderSpinner size="sm" />
                           Rejecting...
                         </>
                       ) : (
-                        <>
-                          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                          </svg>
-                          Reject
-                        </>
+                        <>Reject</>
                       )}
                     </button>
                   </div>
