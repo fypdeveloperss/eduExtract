@@ -376,10 +376,18 @@ const CollaborationSpace = () => {
   // Early returns for different states
   if (!user) {
     return (
-      <div className="collaboration-space">
-        <div className="auth-required">
-          <h2>Authentication Required</h2>
-          <p>Please log in to access this collaboration space</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg p-8 text-center">
+            <h2 className="text-2xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">Authentication Required</h2>
+            <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">Please log in to access this collaboration space</p>
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="px-5 py-2.5 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 transition-opacity text-sm font-semibold"
+            >
+              Go to Dashboard
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -387,10 +395,12 @@ const CollaborationSpace = () => {
 
   if (loading && !space) {
     return (
-      <div className="collaboration-space">
-        <div className="loading-container">
-          <Spinner />
-          <p>Loading collaboration space...</p>
+      <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="flex flex-col items-center justify-center min-h-[50vh] gap-4">
+            <Spinner />
+            <p className="text-[#171717cc] dark:text-[#fafafacc] text-lg">Loading collaboration space...</p>
+          </div>
         </div>
       </div>
     );
@@ -400,24 +410,32 @@ const CollaborationSpace = () => {
     const isAccessDenied = error.includes('no longer have access');
     
     return (
-      <div className="collaboration-space">
-        <div className="error-container">
-          <h2>{isAccessDenied ? 'Access Denied' : 'Error'}</h2>
-          <p>{error}</p>
-          {redirectCountdown && (
-            <p className="redirect-notice">
-              Redirecting to CollaborateHub in {redirectCountdown} seconds...
-            </p>
-          )}
-          <div className="error-actions">
-            <button onClick={() => navigate('/collaborate')} className="back-btn">
-              {isAccessDenied ? 'Go to CollaborateHub Now' : 'Back to CollaborateHub'}
-            </button>
-            {!isAccessDenied && (
-              <button onClick={() => debouncedFetch(true)} className="retry-btn">
-                Try Again
-              </button>
+      <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-6 text-center">
+            <h2 className="text-2xl font-bold text-red-600 dark:text-red-400 mb-3">{isAccessDenied ? 'Access Denied' : 'Error'}</h2>
+            <p className="text-red-700 dark:text-red-300 mb-4">{error}</p>
+            {redirectCountdown && (
+              <p className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-3 mb-4 text-yellow-800 dark:text-yellow-200 text-sm">
+                Redirecting to CollaborateHub in {redirectCountdown} seconds...
+              </p>
             )}
+            <div className="flex gap-3 justify-center">
+              <button 
+                onClick={() => navigate('/collaborate')} 
+                className="px-5 py-2.5 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 transition-opacity text-sm font-semibold"
+              >
+                {isAccessDenied ? 'Go to CollaborateHub Now' : 'Back to CollaborateHub'}
+              </button>
+              {!isAccessDenied && (
+                <button 
+                  onClick={() => debouncedFetch(true)} 
+                  className="px-5 py-2.5 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-all text-sm font-semibold"
+                >
+                  Try Again
+                </button>
+              )}
+            </div>
           </div>
         </div>
       </div>
@@ -426,13 +444,18 @@ const CollaborationSpace = () => {
 
   if (!space) {
     return (
-      <div className="collaboration-space">
-        <div className="not-found">
-          <h2>Space Not Found</h2>
-          <p>The collaboration space you're looking for doesn't exist or has been removed.</p>
-          <button onClick={() => navigate('/collaborate')} className="back-btn">
-            Back to CollaborateHub
-          </button>
+      <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-6">
+          <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg p-8 text-center">
+            <h2 className="text-2xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">Space Not Found</h2>
+            <p className="text-[#171717cc] dark:text-[#fafafacc] mb-6">The collaboration space you're looking for doesn't exist or has been removed.</p>
+            <button 
+              onClick={() => navigate('/collaborate')} 
+              className="px-5 py-2.5 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 transition-opacity text-sm font-semibold"
+            >
+              Back to CollaborateHub
+            </button>
+          </div>
         </div>
       </div>
     );
@@ -441,8 +464,8 @@ const CollaborationSpace = () => {
   const userPermission = getUserPermission();
 
   return (
-    <div className="collaboration-space">
-      <div className="collaboration-main">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8">
         <SpaceHeader 
           space={space}
           currentUser={user}
@@ -451,57 +474,58 @@ const CollaborationSpace = () => {
           onSpaceUpdate={handleSpaceUpdate}
         />
 
-        <div className="collaboration-toolbar">
-          <CollaborationTabs
-            activeTab={activeTab}
-            onTabChange={handleTabChange}
-            userPermission={userPermission}
-            space={space}
-            currentUser={user}
-          />
-          
-          <div className="toolbar-actions">
-            {canLeaveSpace() && (
-              <button 
-                className="leave-space-btn"
-                onClick={() => {
-                  console.log('Leave space button clicked');
-                  setShowLeaveConfirm(true);
-                }}
-                title="Leave this space"
-                disabled={leaving}
-              >
-                🚪 Leave Space
-              </button>
-            )}
+        <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg p-6">
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-6">
+            <CollaborationTabs
+              activeTab={activeTab}
+              onTabChange={handleTabChange}
+              userPermission={userPermission}
+              space={space}
+              currentUser={user}
+            />
             
-            <div className="connection-status">
-              <span className={`status-dot ${isConnected ? 'connected' : 'disconnected'}`}></span>
-              <span className="status-text">
-                {isConnected ? 'Connected' : 'Reconnecting...'}
-              </span>
-            </div>
-            
-            <button 
-              className={`notifications-btn ${notifications.length > 0 ? 'has-notifications' : ''}`}
-              onClick={() => setShowNotifications(!showNotifications)}
-              title="Toggle notifications"
-            >
-              🔔
-              {notifications.length > 0 && (
-                <span className="notification-badge">{notifications.length}</span>
+            <div className="flex items-center gap-3 flex-wrap">
+              {canLeaveSpace() && (
+                <button 
+                  className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  onClick={() => {
+                    console.log('Leave space button clicked');
+                    setShowLeaveConfirm(true);
+                  }}
+                  title="Leave this space"
+                  disabled={leaving}
+                >
+                  🚪 Leave Space
+                </button>
               )}
-            </button>
-            
-            {loading && (
-              <div className="refresh-indicator">
-                <span className="spinner-small">⟳</span>
+              
+              <div className="flex items-center gap-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                <span className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-red-500'} animate-pulse`}></span>
+                <span>
+                  {isConnected ? 'Connected' : 'Reconnecting...'}
+                </span>
               </div>
-            )}
+              
+              <button 
+                className={`relative px-4 py-2 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-all text-sm font-semibold ${notifications.length > 0 ? 'border-[#171717] dark:border-[#fafafa]' : ''}`}
+                onClick={() => setShowNotifications(!showNotifications)}
+                title="Toggle notifications"
+              >
+                🔔
+                {notifications.length > 0 && (
+                  <span className="absolute -top-1 -right-1 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                    {notifications.length}
+                  </span>
+                )}
+              </button>
+              
+              {loading && (
+                <div className="w-5 h-5 border-2 border-[#171717] dark:border-[#fafafa] border-t-transparent rounded-full animate-spin"></div>
+              )}
+            </div>
           </div>
-        </div>
 
-        <div className="tab-content">
+          <div>
           {activeTab === 'content' && (
             <SpaceContentList 
               key={`content-${spaceId}-${contentRefreshKey}`}
@@ -545,30 +569,31 @@ const CollaborationSpace = () => {
               onDelete={() => navigate('/collaborate')}
             />
           )}
+          </div>
         </div>
       </div>
 
       {showNotifications && (
-        <div className="notifications-sidebar">
+        <div className="fixed right-4 top-20 w-80 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg z-50">
           <NotificationPanel />
         </div>
       )}
 
       {/* Leave Space Confirmation Modal */}
       {showLeaveConfirm && (
-        <div className="modal-overlay">
-          <div className="modal-content">
-            <div className="modal-header">
-              <h2>Leave Collaboration Space</h2>
+        <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 p-4">
+          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg max-w-md w-full overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-[#fafafa1a]">
+              <h2 className="text-xl font-bold text-[#171717] dark:text-[#fafafa]">Leave Collaboration Space</h2>
             </div>
             
-            <div className="modal-body">
-              <p>
+            <div className="px-6 py-4">
+              <p className="text-[#171717cc] dark:text-[#fafafacc] mb-4">
                 Are you sure you want to leave <strong>"{space?.title}"</strong>?
               </p>
-              <div className="leave-warning">
-                <p>⚠️ <strong>Warning:</strong></p>
-                <ul>
+              <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                <p className="text-yellow-800 dark:text-yellow-200 font-semibold mb-2 text-sm">⚠️ <strong>Warning:</strong></p>
+                <ul className="text-yellow-800 dark:text-yellow-200 text-sm space-y-1 list-disc list-inside">
                   <li>You will lose access to all content in this space</li>
                   <li>You will need to be re-invited to rejoin</li>
                   <li>Any pending contributions will remain but you won't be able to edit them</li>
@@ -576,16 +601,16 @@ const CollaborationSpace = () => {
               </div>
             </div>
 
-            <div className="modal-actions">
+            <div className="px-6 py-4 bg-gray-50 dark:bg-[#1f1f1f] border-t border-gray-200 dark:border-[#fafafa1a] flex gap-3 justify-end">
               <button
-                className="confirm-leave-btn danger-btn"
+                className="px-5 py-2.5 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold"
                 onClick={handleLeaveSpace}
                 disabled={leaving}
               >
                 {leaving ? 'Leaving...' : 'Yes, Leave Space'}
               </button>
               <button
-                className="cancel-btn"
+                className="px-5 py-2.5 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-all disabled:opacity-60 disabled:cursor-not-allowed text-sm font-semibold"
                 onClick={() => setShowLeaveConfirm(false)}
                 disabled={leaving}
               >

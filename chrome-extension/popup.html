@@ -11,18 +11,23 @@
     <!-- Header -->
     <div class="header">
       <div class="logo">
-        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="#3B82F6" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 17L12 22L22 17" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M2 12L12 17L22 12" stroke="#3B82F6" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        <h1>EduExtract</h1>
+        <div class="logo-text">
+          <h1>EduExtract</h1>
+          <p class="tagline">AI Learning Assistant</p>
+        </div>
       </div>
     </div>
 
     <!-- Current Page Info -->
     <div id="pageInfo" class="page-info">
-      <div class="info-icon">📺</div>
+      <div class="info-icon-wrapper">
+        <div class="info-icon" id="infoIcon">📺</div>
+      </div>
       <div class="info-content">
         <p class="info-title" id="pageTitle">Loading...</p>
         <p class="info-url" id="pageUrl">...</p>
@@ -30,45 +35,55 @@
     </div>
 
     <!-- Quick Actions -->
-    <div class="actions">
-      <h3>Quick Generate</h3>
+    <div class="actions" id="quickActions">
+      <div class="section-header">
+        <h3>Quick Generate</h3>
+        <p class="section-subtitle">Choose a content type to generate</p>
+      </div>
       <div class="action-grid">
-        <button class="action-btn" id="generateSummary">
-          <span class="icon">📝</span>
-          <span>Summary</span>
+        <button class="action-btn" id="generateSummary" data-type="summary">
+          <div class="action-icon">📝</div>
+          <span class="action-label">Summary</span>
         </button>
-        <button class="action-btn" id="generateBlog">
-          <span class="icon">📰</span>
-          <span>Blog</span>
+        <button class="action-btn" id="generateBlog" data-type="blog">
+          <div class="action-icon">📰</div>
+          <span class="action-label">Blog</span>
         </button>
-        <button class="action-btn" id="generateSlides">
-          <span class="icon">📊</span>
-          <span>Slides</span>
+        <button class="action-btn" id="generateSlides" data-type="slides">
+          <div class="action-icon">📊</div>
+          <span class="action-label">Slides</span>
         </button>
-        <button class="action-btn" id="generateQuiz">
-          <span class="icon">❓</span>
-          <span>Quiz</span>
+        <button class="action-btn" id="generateQuiz" data-type="quiz">
+          <div class="action-icon">❓</div>
+          <span class="action-label">Quiz</span>
         </button>
-        <button class="action-btn" id="generateFlashcards">
-          <span class="icon">🃏</span>
-          <span>Flashcards</span>
+        <button class="action-btn" id="generateFlashcards" data-type="flashcards">
+          <div class="action-icon">🃏</div>
+          <span class="action-label">Flashcards</span>
         </button>
-        <button class="action-btn" id="openDashboard">
-          <span class="icon">🏠</span>
-          <span>Dashboard</span>
+        <button class="action-btn action-btn-primary" id="openDashboard" data-type="dashboard">
+          <div class="action-icon">🏠</div>
+          <span class="action-label">Dashboard</span>
         </button>
       </div>
     </div>
 
     <!-- Status -->
     <div id="status" class="status hidden">
-      <div class="status-icon">⏳</div>
-      <p id="statusMessage">Processing...</p>
+      <div class="status-content">
+        <div class="status-icon" id="statusIcon">⏳</div>
+        <p id="statusMessage" class="status-message">Processing...</p>
+      </div>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      <a href="#" id="openFullApp">Open Full App →</a>
+      <button class="footer-link" id="openFullApp">
+        <span>Open Full App</span>
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 17L17 7M7 7h10v10"/>
+        </svg>
+      </button>
     </div>
   </div>
 

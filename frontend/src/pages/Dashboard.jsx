@@ -38,6 +38,7 @@ function Dashboard() {
   const [uploadMode, setUploadMode] = useState("youtube");
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef(null);
+  const extensionFileGeneratedRef = useRef(false);
   const [loadingStates, setLoadingStates] = useState({
     blog: false,
     slides: false,
@@ -229,6 +230,18 @@ function Dashboard() {
   useEffect(() => {
     const urlParam = searchParams.get('url');
     const typeParam = searchParams.get('type');
+    const modeParam = searchParams.get('mode');
+    
+    // Handle file mode from extension
+    if (modeParam === 'file' && typeParam) {
+      setUploadMode('file');
+      setActiveTab(typeParam.toLowerCase());
+      setExtensionAutoGen(true);
+      // Don't set showContentLayout yet - wait for file upload
+      return;
+    }
+    
+    // Handle YouTube mode from extension
     if (urlParam && typeParam) {
       const decodedUrl = decodeURIComponent(urlParam);
       // Extract video ID immediately
@@ -248,11 +261,91 @@ function Dashboard() {
 
   // Trigger content generation only after both url and activeTab are set from extension
   useEffect(() => {
-    if (extensionAutoGen && url && activeTab) {
+    // For YouTube mode, generate when url and activeTab are set
+    if (extensionAutoGen && uploadMode === 'youtube' && url && activeTab) {
       handleTabClick(activeTab);
       setExtensionAutoGen(false); // Prevent repeat
     }
-  }, [extensionAutoGen, url, activeTab]);
+    // For file mode, just set the tab (file upload will trigger generation)
+    if (extensionAutoGen && uploadMode === 'file' && activeTab) {
+      setExtensionAutoGen(false); // Prevent repeat
+      // File mode is ready, user needs to upload file
+    }
+  }, [extensionAutoGen, url, activeTab, uploadMode]);
+
+  // Handle file retrieval from Chrome extension
+  useEffect(() => {
+    const fileId = searchParams.get('fileId');
+    const typeParam = searchParams.get('type');
+    if (fileId && uploadMode === 'file' && typeParam) {
+      // Listen for file data from extension content script
+      const handleFileMessage = async (event) => {
+        if (event.data && event.data.type === 'EDUEXTRACT_FILE_DATA' && event.data.fileId === fileId) {
+          const fileData = event.data.fileData;
+          
+          // Convert base64 data URL back to File object
+          const byteString = atob(fileData.data.split(',')[1]);
+          const mimeString = fileData.data.split(',')[0].split(':')[1].split(';')[0];
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) {
+            ia[i] = byteString.charCodeAt(i);
+          }
+          const blob = new Blob([ab], { type: mimeString });
+          const file = new File([blob], fileData.name, { type: fileData.type });
+          
+          // Set the file and extract content
+          await handleFileSelect(file);
+          
+          // Enable tabs by setting isFileValidated
+          setIsFileValidated(true);
+          
+          // Remove listener
+          window.removeEventListener('message', handleFileMessage);
+        }
+      };
+      
+      window.addEventListener('message', handleFileMessage);
+      
+      // Request file from extension
+      window.postMessage({ type: 'EDUEXTRACT_REQUEST_FILE', fileId }, '*');
+      
+      return () => {
+        window.removeEventListener('message', handleFileMessage);
+      };
+    }
+  }, [searchParams, uploadMode]);
+
+  // Auto-generate content when file is loaded from extension
+  useEffect(() => {
+    const fileId = searchParams.get('fileId');
+    const typeParam = searchParams.get('type');
+    
+    // Only auto-generate if we have fileId, type, file is loaded, content extracted, and not already generated
+    if (fileId && uploadMode === 'file' && typeParam && activeTab && 
+        selectedFile && fileContent && !isExtractingContent && 
+        !extensionFileGeneratedRef.current && activeTab === typeParam.toLowerCase()) {
+      // File is ready - first show content layout and ensure tab is set
+      extensionFileGeneratedRef.current = true;
+      setShowContentLayout(true); // Show content area instead of upload area
+      setActiveTab(typeParam.toLowerCase()); // Ensure tab is set
+      
+      console.log('Auto-generating content for file from extension:', activeTab);
+      
+      // Wait a bit longer to ensure UI is updated and tab is visible
+      setTimeout(() => {
+        // Ensure we're on the right tab before generating
+        if (activeTab === typeParam.toLowerCase()) {
+          handleTabClick(activeTab);
+        }
+      }, 500);
+    }
+    
+    // Reset flag when fileId changes or when file is cleared
+    if (!fileId || !selectedFile) {
+      extensionFileGeneratedRef.current = false;
+    }
+  }, [fileContent, selectedFile, activeTab, uploadMode, searchParams, isExtractingContent]);
 
   // Detect playlist when URL changes
   useEffect(() => {
@@ -855,8 +948,14 @@ function Dashboard() {
       return;
     }
     
+    // Set active tab first to show the correct view
     setActiveTab(tabId);
-    if (loaded[tabId]) return;
+    setShowContentLayout(true); // Ensure content layout is shown
+    
+    // If content is already loaded for this tab, just show it
+    if (loaded[tabId]) {
+      return;
+    }
     
     setLoadingStates(prev => ({ ...prev, [tabId]: true }));
     setErrors(prev => ({ ...prev, [tabId]: "" }));
@@ -1184,12 +1283,16 @@ function Dashboard() {
               });
               break;
           }
+          
+          // Mark as loaded after successful file processing
+          setLoaded(prev => ({ ...prev, [tabId]: true }));
         } catch (error) {
           console.error("Error processing file:", error);
           setErrors(prev => ({
             ...prev,
             [tabId]: error.response?.data?.error || error.message || `Failed to process ${tabId}`
           }));
+          setLoadingStates(prev => ({ ...prev, [tabId]: false }));
           return;
         }
       } else if (originalSource?.type === 'text' && originalSource?.content) {

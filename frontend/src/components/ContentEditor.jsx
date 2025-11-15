@@ -166,15 +166,15 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
       <div className="diff-view">
         <div className="grid grid-cols-2 gap-4">
           <div className="original">
-            <h4 className="font-semibold text-red-700 mb-2">Original Content</h4>
-            <div className="bg-red-50 border border-red-200 rounded p-3 max-h-96 overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap">{originalLines.join('\n')}</pre>
+            <h4 className="font-semibold text-red-700 dark:text-red-400 mb-2">Original Content</h4>
+            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 max-h-96 overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap text-[#171717] dark:text-[#fafafa]">{originalLines.join('\n')}</pre>
             </div>
           </div>
           <div className="edited">
-            <h4 className="font-semibold text-green-700 mb-2">Proposed Changes</h4>
-            <div className="bg-green-50 border border-green-200 rounded p-3 max-h-96 overflow-y-auto">
-              <pre className="text-sm whitespace-pre-wrap">{editedLines.join('\n')}</pre>
+            <h4 className="font-semibold text-green-700 dark:text-green-400 mb-2">Proposed Changes</h4>
+            <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 max-h-96 overflow-y-auto">
+              <pre className="text-sm whitespace-pre-wrap text-[#171717] dark:text-[#fafafa]">{editedLines.join('\n')}</pre>
             </div>
           </div>
         </div>
@@ -185,49 +185,49 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
   if (!content) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col">
+    <div className="fixed inset-0 bg-black/45 flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#171717] rounded-xl max-w-6xl w-full max-h-[90vh] overflow-hidden flex flex-col shadow-lg border border-gray-200 dark:border-[#fafafa1a]">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+        <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-[#fafafa1a]">
+          <h2 className="text-xl font-semibold text-[#171717] dark:text-[#fafafa]">
             Edit Content: {content.title}
           </h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 text-2xl"
+            className="text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] text-2xl transition-colors"
           >
             ×
           </button>
         </div>
 
         {/* Tabs */}
-        <div className="flex border-b border-gray-200 dark:border-gray-700">
+        <div className="flex border-b border-gray-200 dark:border-[#fafafa1a]">
           <button
             onClick={() => setActiveTab('edit')}
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'edit'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-[#171717] dark:border-[#fafafa] text-[#171717] dark:text-[#fafafa]'
+                : 'text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa]'
             }`}
           >
             Edit Content
           </button>
           <button
             onClick={() => setActiveTab('ai')}
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'ai'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-[#171717] dark:border-[#fafafa] text-[#171717] dark:text-[#fafafa]'
+                : 'text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa]'
             }`}
           >
             AI Assistant
           </button>
           <button
             onClick={() => setActiveTab('diff')}
-            className={`px-4 py-2 font-medium ${
+            className={`px-4 py-2 font-medium transition-colors ${
               activeTab === 'diff'
-                ? 'border-b-2 border-blue-500 text-blue-600'
-                : 'text-gray-500 hover:text-gray-700'
+                ? 'border-b-2 border-[#171717] dark:border-[#fafafa] text-[#171717] dark:text-[#fafafa]'
+                : 'text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa]'
             }`}
           >
             View Changes
@@ -235,17 +235,17 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-4">
+        <div className="flex-1 overflow-y-auto p-6">
           {activeTab === 'edit' && (
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                   Content
                 </label>
                 <textarea
                   value={editedContent}
                   onChange={(e) => setEditedContent(e.target.value)}
-                  className="w-full h-96 p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white font-mono text-sm"
+                  className="w-full h-96 p-3 border border-gray-200 dark:border-[#fafafa1a] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#1f1f1f] text-[#171717] dark:text-[#fafafa] font-mono text-sm outline-none"
                   placeholder="Edit your content here..."
                 />
               </div>
@@ -254,9 +254,9 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
 
           {activeTab === 'ai' && (
             <div className="space-y-4">
-              <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+              <div className="bg-gray-50 dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#fafafa1a] rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
-                  <h3 className="font-medium text-blue-800 dark:text-blue-200">
+                  <h3 className="font-medium text-[#171717] dark:text-[#fafafa]">
                     🤖 AI Content Assistant
                   </h3>
                   {aiStatus && (
@@ -264,13 +264,13 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
                       <div className={`w-2 h-2 rounded-full mr-1 ${
                         aiStatus.available ? 'bg-green-500' : 'bg-yellow-500'
                       }`}></div>
-                      <span className="text-blue-600 dark:text-blue-300">
+                      <span className="text-[#171717cc] dark:text-[#fafafacc]">
                         {aiStatus.available ? `${aiStatus.provider} AI` : 'Fallback Mode'}
                       </span>
                     </div>
                   )}
                 </div>
-                <p className="text-blue-700 dark:text-blue-300 text-sm">
+                <p className="text-[#171717cc] dark:text-[#fafafacc] text-sm">
                   {aiStatus?.available 
                     ? `Powered by ${aiStatus.model || 'Llama'} AI model. Describe how you'd like to improve or modify the content.`
                     : 'Using basic enhancement rules. Describe how you\'d like to improve or modify the content.'
@@ -279,18 +279,18 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                   AI Prompt
                 </label>
                 <textarea
                   value={aiPrompt}
                   onChange={(e) => setAiPrompt(e.target.value)}
-                  className="w-full h-24 p-3 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+                  className="w-full h-24 p-3 border border-gray-200 dark:border-[#fafafa1a] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#1f1f1f] text-[#171717] dark:text-[#fafafa] outline-none"
                   placeholder="e.g., 'Make this more concise and add bullet points' or 'Improve the writing style and fix grammar'"
                 />
                 
                 <div className="mt-2">
-                  <p className="text-xs text-gray-500 dark:text-gray-400 mb-1">Quick suggestions:</p>
+                  <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] mb-1">Quick suggestions:</p>
                   <div className="flex flex-wrap gap-1">
                     {[
                       'Make it more concise',
@@ -304,7 +304,7 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
                       <button
                         key={suggestion}
                         onClick={() => setAiPrompt(suggestion)}
-                        className="text-xs bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-2 py-1 rounded"
+                        className="text-xs bg-gray-50 dark:bg-[#1f1f1f] hover:bg-gray-100 dark:hover:bg-[#2a2a2a] text-[#171717] dark:text-[#fafafa] px-2 py-1 rounded border border-gray-200 dark:border-[#fafafa1a] transition-colors"
                       >
                         {suggestion}
                       </button>
@@ -317,11 +317,11 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
                 <button
                   onClick={handleAiAssist}
                   disabled={aiLoading || !aiPrompt.trim()}
-                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 text-white px-4 py-2 rounded-lg font-medium flex items-center"
+                  className="px-4 py-2 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium flex items-center transition-opacity outline-none"
                 >
                   {aiLoading ? (
                     <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-[#171717] border-t-transparent mr-2"></div>
                       Processing...
                     </>
                   ) : (
@@ -339,7 +339,7 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
                       setAiAssistMode(false);
                       setShowDiff(false);
                     }}
-                    className="bg-gray-500 hover:bg-gray-600 text-white px-4 py-2 rounded-lg font-medium flex items-center"
+                    className="px-4 py-2 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] font-medium flex items-center transition-colors outline-none"
                   >
                     <span className="mr-2">↺</span>
                     Reset to Original
@@ -361,11 +361,11 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
 
               {editedContent && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
                     Current Content Preview
                   </label>
-                  <div className="bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg p-3 max-h-64 overflow-y-auto">
-                    <pre className="text-sm whitespace-pre-wrap text-gray-800 dark:text-gray-200">{editedContent.substring(0, 500)}...</pre>
+                  <div className="bg-gray-50 dark:bg-[#1f1f1f] border border-gray-200 dark:border-[#fafafa1a] rounded-lg p-3 max-h-64 overflow-y-auto">
+                    <pre className="text-sm whitespace-pre-wrap text-[#171717] dark:text-[#fafafa]">{editedContent.substring(0, 500)}...</pre>
                   </div>
                 </div>
               )}
@@ -388,29 +388,29 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
         </div>
 
         {/* Change Request Details */}
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-700">
+        <div className="border-t border-gray-200 dark:border-[#fafafa1a] p-6 bg-gray-50 dark:bg-[#1f1f1f]">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-1">
                 Change Request Title
               </label>
               <input
                 type="text"
                 value={changeTitle}
                 onChange={(e) => setChangeTitle(e.target.value)}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full p-2 border border-gray-200 dark:border-[#fafafa1a] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] outline-none"
                 placeholder="Brief title for your changes"
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-1">
                 Description
               </label>
               <input
                 type="text"
                 value={changeDescription}
                 onChange={(e) => setChangeDescription(e.target.value)}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-800 text-gray-900 dark:text-white"
+                className="w-full p-2 border border-gray-200 dark:border-[#fafafa1a] rounded-lg focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] outline-none"
                 placeholder="Describe what you changed and why"
               />
             </div>
@@ -418,25 +418,25 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
 
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-600 dark:text-gray-400">
+              <span className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
                 {aiAssistMode ? '✨ AI-assisted changes' : '✏️ Manual changes'}
               </span>
             </div>
             <div className="flex space-x-3">
               <button
                 onClick={onClose}
-                className="px-4 py-2 text-gray-600 hover:text-gray-800 border border-gray-300 rounded-lg"
+                className="px-5 py-2.5 rounded-lg border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-colors text-sm font-semibold outline-none"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmitChangeRequest}
                 disabled={submitting || !changeTitle.trim() || !changeDescription.trim()}
-                className="bg-green-600 hover:bg-green-700 disabled:bg-gray-400 text-white px-6 py-2 rounded-lg font-medium flex items-center"
+                className="px-5 py-2.5 rounded-lg bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed font-medium flex items-center transition-opacity outline-none text-sm"
               >
                 {submitting ? (
                   <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    <div className="animate-spin rounded-full h-4 w-4 border-2 border-white dark:border-[#171717] border-t-transparent mr-2"></div>
                     Submitting...
                   </>
                 ) : (

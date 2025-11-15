@@ -134,14 +134,28 @@
 }
 
 .action-btn.primary {
-  background: linear-gradient(135deg, #1976d2, #2196f3);
+  background: #171717;
   color: white;
+  outline: none;
+}
+
+[data-theme="dark"] .action-btn.primary {
+  background: #fafafa;
+  color: #171717;
 }
 
 .action-btn.primary:hover {
-  background: linear-gradient(135deg, #1565c0, #1976d2);
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(25, 118, 210, 0.3);
+  opacity: 0.9;
+}
+
+[data-theme="dark"] .action-btn.primary:hover {
+  opacity: 0.9;
+}
+
+.action-btn.primary:focus,
+.action-btn.primary:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .action-btn.secondary {

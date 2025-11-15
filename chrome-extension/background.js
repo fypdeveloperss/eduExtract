@@ -17,9 +17,20 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   }
 });
 
+// Check if URL is a document
+function isDocumentUrl(url) {
+  if (!url) return false;
+  const documentExtensions = ['.pdf', '.doc', '.docx', '.txt', '.pptx', '.ppt'];
+  const lowerUrl = url.toLowerCase();
+  return documentExtensions.some(ext => lowerUrl.includes(ext)) || 
+         lowerUrl.includes('application/pdf') ||
+         lowerUrl.includes('application/msword') ||
+         lowerUrl.includes('application/vnd.openxmlformats');
+}
+
 // Context menu for right-click
 chrome.runtime.onInstalled.addListener(() => {
-  // Create context menu items
+  // Create main context menu
   chrome.contextMenus.create({
     id: 'eduextract-generate',
     title: 'Generate with EduExtract',
@@ -77,9 +88,20 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
   const type = typeMap[info.menuItemId];
   
   if (type) {
-    chrome.tabs.create({
-      url: `${FRONTEND_URL}/dashboard?url=${encodeURIComponent(url)}&type=${type}`
-    });
+    // Check if it's a document URL
+    const isDocument = isDocumentUrl(url);
+    const isYouTube = url.includes('youtube.com');
+    
+    // Build dashboard URL
+    let dashboardUrl = `${FRONTEND_URL}/dashboard?url=${encodeURIComponent(url)}&type=${type}`;
+    
+    // If it's a document link, we can process it directly
+    if (isDocument || isYouTube) {
+      chrome.tabs.create({ url: dashboardUrl });
+    } else {
+      // For other pages, open dashboard and let user upload file
+      chrome.tabs.create({ url: `${FRONTEND_URL}/dashboard?mode=file&type=${type}` });
+    }
   }
 });
 

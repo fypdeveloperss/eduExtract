@@ -38,7 +38,7 @@
 }
 
 .invite-btn {
-  background: linear-gradient(135deg, #171717cc, #2E2E2E);
+  background: #171717;
   color: white;
   border: none;
   padding: 10px 20px;
@@ -46,20 +46,26 @@
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
+  outline: none;
 }
 
 [data-theme="dark"] .invite-btn {
-  background: linear-gradient(135deg, #fafafacc, #171717);
-  color: #121212;
+  background: #fafafa;
+  color: #171717;
 }
 
 .invite-btn:hover {
-  background: linear-gradient(135deg, #2E2E2E, #171717cc);
-  transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 [data-theme="dark"] .invite-btn:hover {
-  background: linear-gradient(135deg, #171717, #fafafacc);
+  opacity: 0.9;
+}
+
+.invite-btn:focus,
+.invite-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .members-content {
@@ -103,7 +109,7 @@
   width: 50px;
   height: 50px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #1976d2, #2196f3);
+  background: #171717;
   color: white;
   display: flex;
   align-items: center;
@@ -111,6 +117,11 @@
   font-size: 1.2rem;
   font-weight: 600;
   flex-shrink: 0;
+}
+
+[data-theme="dark"] .member-avatar {
+  background: #fafafa;
+  color: #171717;
 }
 
 .member-details {

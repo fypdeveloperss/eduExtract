@@ -78,26 +78,52 @@
 }
 
 .filter-tab.active {
-  background: linear-gradient(135deg, #171717cc, #2E2E2E);
+  background: #171717;
   color: white;
-  border-color: #171717cc;
+  border-color: #171717;
 }
 
 [data-theme="dark"] .filter-tab.active {
-  background: linear-gradient(135deg, #fafafacc, #171717);
-  color: #121212;
-  border-color: #fafafacc;
+  background: #fafafa;
+  color: #171717;
+  border-color: #fafafa;
 }
 
 .pending-count {
-  background: rgba(255, 255, 255, 0.3);
-  color: white;
+  background: rgba(23, 23, 23, 0.15);
+  color: #171717;
   border-radius: 12px;
   padding: 2px 6px;
   font-size: 0.8rem;
   font-weight: 600;
   min-width: 18px;
   text-align: center;
+  transition: all 0.3s ease;
+}
+
+/* When tab is active in light mode - badge should be visible on dark background */
+.filter-tab.active .pending-count {
+  background: rgba(255, 255, 255, 0.9);
+  color: #171717;
+  font-weight: 700;
+}
+
+/* When tab is not active in light mode - badge should be visible on light background */
+.filter-tab:not(.active) .pending-count {
+  background: rgba(23, 23, 23, 0.15);
+  color: #171717;
+}
+
+/* When tab is active in dark mode - badge needs dark background with light text */
+[data-theme="dark"] .filter-tab.active .pending-count {
+  background: rgba(23, 23, 23, 0.4);
+  color: #fafafa;
+}
+
+/* When tab is not active in dark mode - badge should be visible */
+[data-theme="dark"] .filter-tab:not(.active) .pending-count {
+  background: rgba(250, 250, 250, 0.2);
+  color: #fafafa;
 }
 
 .requests-content {
@@ -315,22 +341,28 @@
 }
 
 .review-btn {
-  background: linear-gradient(135deg, #171717cc, #2E2E2E);
+  background: #171717;
   color: white;
+  outline: none;
 }
 
 [data-theme="dark"] .review-btn {
-  background: linear-gradient(135deg, #fafafacc, #171717);
-  color: #121212;
+  background: #fafafa;
+  color: #171717;
 }
 
 .review-btn:hover {
-  background: linear-gradient(135deg, #2E2E2E, #171717cc);
-  transform: translateY(-1px);
+  opacity: 0.9;
 }
 
 [data-theme="dark"] .review-btn:hover {
-  background: linear-gradient(135deg, #171717, #fafafacc);
+  opacity: 0.9;
+}
+
+.review-btn:focus,
+.review-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .approve-btn {
@@ -352,12 +384,34 @@
 }
 
 .cancel-btn {
-  background: #9e9e9e;
-  color: white;
+  background: white;
+  color: #171717;
+  border: 1px solid #e5e5e5;
+  outline: none;
+}
+
+[data-theme="dark"] .cancel-btn {
+  background: #171717;
+  border-color: rgba(250, 250, 250, 0.1);
+  color: #fafafa;
 }
 
 .cancel-btn:hover:not(:disabled) {
-  background: #757575;
+  background: #f5f5f5;
+  border-color: #171717;
+  color: #171717;
+}
+
+[data-theme="dark"] .cancel-btn:hover:not(:disabled) {
+  background: #1f1f1f;
+  border-color: rgba(250, 250, 250, 0.1);
+  color: #fafafa;
+}
+
+.cancel-btn:focus,
+.cancel-btn:active {
+  outline: none;
+  box-shadow: none;
 }
 
 .action-btn:disabled {
@@ -398,22 +452,25 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.6);
+  background: rgba(0, 0, 0, 0.45);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 1000;
+  z-index: 9999;
   padding: 20px;
 }
 
 .review-modal {
   background: white;
   border-radius: 16px;
-  max-width: 600px;
+  max-width: 660px;
   width: 100%;
-  max-height: 90vh;
-  overflow-y: auto;
+  max-height: calc(100vh - 180px);
+  display: flex;
+  flex-direction: column;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  overflow: hidden;
+  margin-top: 50px;
 }
 
 [data-theme="dark"] .review-modal {
@@ -426,6 +483,9 @@
   align-items: center;
   padding: 24px 30px;
   border-bottom: 1px solid #e0e0e0;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .modal-header {
@@ -465,18 +525,39 @@
   color: #fafafacc;
 }
 
-.modal-content {
+.review-modal .modal-content {
   padding: 30px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  width: 100% !important;
+  max-width: 100% !important;
+  box-sizing: border-box;
 }
 
 .request-summary {
   margin-bottom: 24px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .request-summary h3 {
   margin: 0 0 12px 0;
   color: #171717cc;
   font-size: 1.2rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.request-summary .request-description {
+  width: 100%;
+  box-sizing: border-box;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
 }
 
 [data-theme="dark"] .request-summary h3 {
@@ -488,6 +569,8 @@
   border-radius: 8px;
   padding: 16px;
   margin-top: 16px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .detailed-changes {
@@ -505,6 +588,8 @@
 
 .change-detail {
   margin-bottom: 12px;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .change-detail strong {
@@ -526,8 +611,13 @@
   font-size: 0.9rem;
   color: #171717cc;
   white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
   max-height: 150px;
   overflow-y: auto;
+  overflow-x: hidden;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 [data-theme="dark"] .change-value {
@@ -538,6 +628,9 @@
 
 .review-form {
   margin-bottom: 24px;
+  flex-shrink: 0;
+  width: 100%;
+  box-sizing: border-box;
 }
 
 .review-form textarea {
@@ -549,6 +642,8 @@
   font-size: 0.9rem;
   resize: vertical;
   min-height: 80px;
+  max-width: 100%;
+  box-sizing: border-box;
   background: white;
   color: #171717cc;
 }
@@ -574,6 +669,24 @@
   display: flex;
   gap: 12px;
   justify-content: flex-end;
+  padding-top: 20px;
+  margin-top: auto;
+  border-top: 1px solid #e0e0e0;
+  flex-wrap: wrap;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+[data-theme="dark"] .modal-actions {
+  border-top-color: rgba(250, 250, 250, 0.1);
+}
+
+.modal-actions .action-btn {
+  min-width: 100px;
+  flex-shrink: 0;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 /* Responsive Design */
@@ -607,6 +720,7 @@
   .review-modal {
     margin: 10px;
     max-height: calc(100vh - 20px);
+    margin-top: 20px;
   }
 
   .modal-header {
@@ -619,6 +733,11 @@
 
   .modal-actions {
     flex-direction: column;
+  }
+
+  .modal-actions .action-btn {
+    width: 100%;
+    min-width: auto;
   }
 }
 

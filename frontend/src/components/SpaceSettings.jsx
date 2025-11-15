@@ -461,7 +461,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
             )}
 
             {/* Join Request Settings */}
-            <h4 style={{ marginTop: '32px', marginBottom: '16px', color: '#333' }}>Join Request Settings</h4>
+            <h4 className="section-subtitle">Join Request Settings</h4>
             
             <div className="form-group checkbox-group">
               <label className="checkbox-label">
@@ -479,7 +479,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
             </div>
 
             {/* Pending Join Requests */}
-            <h4 style={{ marginTop: '32px', marginBottom: '16px', color: '#333' }}>
+            <h4 className="section-subtitle">
               Join Requests ({joinRequests.filter(req => req.status === 'pending').length})
             </h4>
             

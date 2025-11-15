@@ -302,8 +302,14 @@ const MyContent = () => {
   const formatDate = (date) => {
     const d = new Date(date);
     const now = new Date();
-    const diffTime = Math.abs(now - d);
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    
+    // Reset time to midnight for accurate day comparison
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dateToCheck = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+    
+    // Calculate difference in days
+    const diffTime = today - dateToCheck;
+    const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
     
     if (diffDays === 0) return 'Today';
     if (diffDays === 1) return 'Yesterday';

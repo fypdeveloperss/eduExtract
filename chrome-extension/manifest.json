@@ -6,12 +6,17 @@
   "permissions": [
     "activeTab",
     "storage",
-    "tabs"
+    "tabs",
+    "contextMenus",
+    "downloads",
+    "scripting"
   ],
   "host_permissions": [
     "https://www.youtube.com/*",
     "http://localhost:5173/*",
-    "http://localhost:5000/*"
+    "http://localhost:5000/*",
+    "http://*/*",
+    "https://*/*"
   ],
   "action": {
     "default_popup": "popup.html",
@@ -31,6 +36,11 @@
       "matches": ["https://www.youtube.com/*"],
       "js": ["content.js"],
       "css": ["content.css"]
+    },
+    {
+      "matches": ["http://localhost:5173/dashboard*"],
+      "js": ["dashboard-bridge.js"],
+      "run_at": "document_start"
     }
   ],
   "background": {
