@@ -14,9 +14,9 @@ function getTokenCount(contentType, userPreferences) {
       detailed: 6500   // ~3500 words * 1.5 = 5250 tokens + buffer for HTML tags and comprehensive content
     },
     summary: {
-      brief: 400,      // Increased from 300 to avoid cutoffs
-      medium: 700,     // Increased from 512
-      detailed: 1200   // Increased from 1000
+      brief: 8192,     // Maximum allowed by Groq API - AI will generate based on Brief instructions (200-300 words) and stop naturally
+      medium: 8192,    // Maximum allowed by Groq API - AI will generate based on Medium instructions (400-600 words) and stop naturally
+      detailed: 8192   // Maximum allowed by Groq API - AI will generate based on Detailed instructions (800-1200 words) and stop naturally
     },
     flashcards: {
       simple: 800,
@@ -31,11 +31,11 @@ function getTokenCount(contentType, userPreferences) {
       default: 1500
     },
     quiz: {
-      5: 1000,
-      10: 1200,
-      15: 1500,
-      20: 1800,
-      default: 1200
+      5: 2000,
+      10: 3000,
+      15: 4000,
+      20: 5000,
+      default: 3000
     }
   };
 
@@ -533,8 +533,7 @@ FORMAT REQUIREMENTS:
 - Do NOT include code blocks or markdown syntax
 - Start with content immediately (no "Here is..." or "Summary:")
 - Proper HTML structure: <h2>Heading</h2><p>Paragraph text.</p><ul><li>Item</li></ul>
-- IMPORTANT: Complete all sentences - do not cut off mid-sentence
-- End with a proper conclusion paragraph`;
+- End with a complete, well-formed conclusion paragraph that summarizes the key points`;
 
   prompt += buildToneInstructions(tonePrefs);
   prompt += buildCustomizationInstructions(customization, prefs.studyProfile);

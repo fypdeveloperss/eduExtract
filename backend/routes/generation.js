@@ -471,18 +471,19 @@ router.post("/generate-slides", verifyToken, async (req, res) => {
       });
     }, 3);
 
-    // Validate slide structure - support both 'content' and 'points' arrays
+    // Validate slide structure (accept both 'content' and 'points' for backward compatibility)
     const validSlides = slides.filter(slide => 
       slide && typeof slide === 'object' && 
       typeof slide.title === 'string' && slide.title.trim() &&
-      (Array.isArray(slide.content) || Array.isArray(slide.points) || typeof slide.content === 'string')
+      (Array.isArray(slide.content) || Array.isArray(slide.points)) &&
+      (slide.content?.length > 0 || slide.points?.length > 0)
     );
 
     if (validSlides.length === 0) {
       throw new Error("No valid slides found in response");
     }
 
-    console.log(`Valid slides count: ${validSlides.length}`);
+    console.log(`Generated ${validSlides.length} valid slides`);
 
     // Generate PowerPoint with enhanced formatting
     const pptx = new PptxGenJS();
@@ -704,12 +705,30 @@ router.post("/generate-quiz", verifyToken, async (req, res) => {
       });
     }, 3);
 
-    // Validate quiz structure
-    const validQuiz = quiz.filter(q => 
-      q && typeof q === 'object' && 
-      typeof q.question === 'string' && q.question.trim() &&
-      (Array.isArray(q.options) || typeof q.correctAnswer === 'string')
-    );
+    // Validate quiz structure (supports both correctAnswer and answer for backward compatibility)
+    const validQuiz = quiz.filter(q => {
+      if (!q || typeof q !== 'object') return false;
+      if (!q.question || typeof q.question !== 'string' || !q.question.trim()) return false;
+      if (!Array.isArray(q.options) || q.options.length < 2) return false;
+      
+      // Support both 'correctAnswer' (new format) and 'answer' (old format)
+      const correctAnswer = q.correctAnswer || q.answer;
+      if (!correctAnswer || typeof correctAnswer !== 'string' || !correctAnswer.trim()) return false;
+      if (!q.options.includes(correctAnswer)) return false;
+      
+      // Normalize to use correctAnswer
+      if (q.answer && !q.correctAnswer) {
+        q.correctAnswer = q.answer;
+        delete q.answer;
+      }
+      
+      // Make explanation optional (may be incomplete if response was truncated)
+      if (q.explanation && typeof q.explanation !== 'string') {
+        q.explanation = '';
+      }
+      
+      return true;
+    });
 
     if (validQuiz.length === 0) {
       throw new Error("No valid quiz questions found in response");
@@ -1256,6 +1275,10 @@ router.post("/process-file", verifyToken, upload.single('file'), async (req, res
 
     console.log(`Extracted ${fileContent.length} characters from file`);
 
+    // Fetch user preferences
+    const user = await User.findOne({ uid: userId });
+    const userPreferences = user?.preferences || {};
+
     let generatedContentData;
     let contentTitle;
     let result;
@@ -1263,22 +1286,34 @@ router.post("/process-file", verifyToken, upload.single('file'), async (req, res
     // Generate content based on type
     switch (type) {
       case 'blog':
+        // Get dynamic token count based on preferences
+        const blogMaxTokens = getTokenCount('blog', userPreferences);
+        // Build personalized prompt
+        const blogSystemPrompt = buildBlogPrompt(userPreferences);
+        
+        // Get word count requirement for user message reminder
+        const blogLength = userPreferences?.contentPreferences?.blogLength || 'medium';
+        const blogWordCounts = {
+          brief: { min: 800, max: 1200, target: 1000 },
+          medium: { min: 1500, max: 2000, target: 1750 },
+          detailed: { min: 2500, max: 3500, target: 3000 }
+        };
+        const blogWordCount = blogWordCounts[blogLength] || blogWordCounts.medium;
+        
+        // Add word count reminder to user message
+        const blogUserMessage = `${fileContent}\n\n⚠️ REMINDER: Generate a blog post with ${blogWordCount.min}-${blogWordCount.max} words (target: ${blogWordCount.target} words). Ensure you meet the minimum word count requirement.`;
+        
         const blogCompletion = await withRetry(async () => {
           return await groq.chat.completions.create({
             model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
-            max_tokens: 2048,
+            max_tokens: blogMaxTokens, // Dynamic based on preferences
             messages: [
               {
                 role: "system",
-                content: `Generate a professional, well-structured HTML blog post (2000+ words) based on the provided content.
-                - Use <h1> for title, <h2> for sections, <h3> for sub-sections.
-                - Include an engaging introduction and a thoughtful conclusion.
-                - Use <p> for paragraphs, <ul><li> for lists, and emphasize key points with <b> or <i>.
-                - Return only valid HTML without CSS or markdown.
-                - Do not include any JSON formatting or code blocks.`,
+                content: blogSystemPrompt
               },
-              { role: "user", content: fileContent },
+              { role: "user", content: blogUserMessage },
             ],
           });
         }, 3);
@@ -1292,27 +1327,20 @@ router.post("/process-file", verifyToken, upload.single('file'), async (req, res
         break;
 
       case 'flashcards':
+        // Get dynamic token count based on preferences
+        const flashcardMaxTokens = getTokenCount('flashcards', userPreferences);
+        // Build personalized prompt
+        const flashcardSystemPrompt = buildFlashcardPrompt(userPreferences);
+        
         const flashcards = await parseAIResponseWithRetry(async () => {
           return await groq.chat.completions.create({
             model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
-            max_tokens: 1024,
+            max_tokens: flashcardMaxTokens, // Dynamic based on preferences
             messages: [
               {
                 role: "system",
-                content: `Generate exactly 5-8 educational flashcards as a JSON array.
-Each flashcard must have exactly these fields:
-{
-  "question": "Clear, specific question text",
-  "answer": "Concise, accurate answer text"
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each question should be educational and based on the content
-- Start response with [ and end with ]
-- Example format: [{"question":"What is...?","answer":"It is..."},{"question":"How does...?","answer":"It works by..."}]`,
+                content: flashcardSystemPrompt
               },
               { role: "user", content: fileContent },
             ],
@@ -1338,38 +1366,32 @@ IMPORTANT:
         break;
 
       case 'slides':
+        // Get dynamic token count based on preferences
+        const slidesMaxTokens = getTokenCount('slides', userPreferences);
+        // Build personalized prompt
+        const slidesSystemPrompt = buildSlidesPrompt(userPreferences);
+        
         const slides = await parseAIResponseWithRetry(async () => {
           return await groq.chat.completions.create({
             model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
-            max_tokens: 1500,
+            max_tokens: slidesMaxTokens, // Dynamic based on preferences
             messages: [
               {
                 role: "system",
-                content: `Create exactly 6-10 slide objects based on this content. 
-Return a valid JSON array where each object has:
-{
-  "title": "Clear slide title",
-  "points": ["Bullet point 1", "Bullet point 2", "Bullet point 3"]
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each slide should have 2-4 bullet points
-- Start response with [ and end with ]
-- Points should be clear and concise`,
+                content: slidesSystemPrompt
               },
               { role: "user", content: fileContent },
             ],
           });
         }, 3);
 
-        // Validate slide structure
+        // Validate slide structure (accept both 'content' and 'points' for backward compatibility)
         const validSlides = slides.filter(slide => 
           slide && typeof slide === 'object' && 
           typeof slide.title === 'string' && slide.title.trim() &&
-          Array.isArray(slide.points) && slide.points.length > 0
+          (Array.isArray(slide.content) || Array.isArray(slide.points)) &&
+          (slide.content?.length > 0 || slide.points?.length > 0)
         );
 
         if (validSlides.length === 0) {
@@ -1531,42 +1553,50 @@ IMPORTANT:
         break;
 
       case 'quiz':
+        // Get dynamic token count based on preferences
+        const quizMaxTokens = getTokenCount('quiz', userPreferences);
+        // Build personalized prompt
+        const quizSystemPrompt = buildQuizPrompt(userPreferences);
+        
         const quiz = await parseAIResponseWithRetry(async () => {
           return await groq.chat.completions.create({
             model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
-            max_tokens: 1200,
+            max_tokens: quizMaxTokens, // Dynamic based on preferences
             messages: [
               {
                 role: "system",
-                content: `Generate exactly 6-8 multiple-choice quiz questions in JSON format.
-Each object must include:
-{
-  "question": "Clear question text",
-  "options": ["Option A", "Option B", "Option C", "Option D"],
-  "answer": "Option A"
-}
-
-IMPORTANT:
-- Return ONLY a valid JSON array
-- No markdown, no code blocks, no explanations
-- Each question should have exactly 4 options
-- The answer should be one of the options (exact match)
-- Start response with [ and end with ]`,
+                content: quizSystemPrompt
               },
               { role: "user", content: fileContent },
             ],
           });
         }, 3);
 
-        // Validate quiz structure
-        const validQuiz = quiz.filter(q => 
-          q && typeof q === 'object' && 
-          typeof q.question === 'string' && q.question.trim() &&
-          Array.isArray(q.options) && q.options.length === 4 &&
-          typeof q.answer === 'string' && q.answer.trim() &&
-          q.options.includes(q.answer)
-        );
+        // Validate quiz structure (supports both correctAnswer and answer for backward compatibility)
+        const validQuiz = quiz.filter(q => {
+          if (!q || typeof q !== 'object') return false;
+          if (!q.question || typeof q.question !== 'string' || !q.question.trim()) return false;
+          if (!Array.isArray(q.options) || q.options.length < 2) return false;
+          
+          // Support both 'correctAnswer' (new format) and 'answer' (old format)
+          const correctAnswer = q.correctAnswer || q.answer;
+          if (!correctAnswer || typeof correctAnswer !== 'string' || !correctAnswer.trim()) return false;
+          if (!q.options.includes(correctAnswer)) return false;
+          
+          // Normalize to use correctAnswer
+          if (q.answer && !q.correctAnswer) {
+            q.correctAnswer = q.answer;
+            delete q.answer;
+          }
+          
+          // Make explanation optional (may be incomplete if response was truncated)
+          if (q.explanation && typeof q.explanation !== 'string') {
+            q.explanation = '';
+          }
+          
+          return true;
+        });
 
         if (validQuiz.length === 0) {
           throw new Error("No valid quiz questions found in response");
@@ -1580,23 +1610,20 @@ IMPORTANT:
         break;
 
       case 'summary':
+        // Get dynamic token count based on preferences
+        const summaryMaxTokens = getTokenCount('summary', userPreferences);
+        // Build personalized prompt
+        const summarySystemPrompt = buildSummaryPrompt(userPreferences);
+        
         const summaryCompletion = await withRetry(async () => {
           return await groq.chat.completions.create({
             model: "meta-llama/llama-4-scout-17b-16e-instruct",
             temperature: 0.7,
-            max_tokens: 512,
+            max_tokens: summaryMaxTokens, // Dynamic based on preferences
             messages: [
               {
                 role: "system",
-                content: `You are tasked with creating a summary of the provided content. 
-                Create a concise and informative summary that:
-                - Is 150-200 words long
-                - Focuses on the main topics and key points
-                - Uses clear, engaging prose
-                - Does not use markdown, code formatting, or bullet points
-                - Provides value to someone who hasn't read the original content
-                
-                The user will provide the content for you to summarize.`,
+                content: summarySystemPrompt
               },
               { role: "user", content: `Please summarize this content:\n\n${fileContent}` },
             ],
@@ -1604,10 +1631,18 @@ IMPORTANT:
         }, 3);
         
         let summary = summaryCompletion.choices[0].message.content;
-        summary = summary.replace(/```(json|text)?/g, "").trim();
         
-        // Remove any potential prefixes like "Summary:" or "Content Summary:"
-        summary = summary.replace(/^(summary|content summary):\s*/i, "");
+        // Remove code blocks and markdown formatting
+        summary = summary.replace(/```(html|json|text|markdown)?/g, "").trim();
+        
+        // Remove any potential prefixes like "Summary:" or "Video Summary:" or "Here is..."
+        summary = summary.replace(/^(here is (the|a)?|summary|video summary|content summary):\s*/i, "");
+        summary = summary.replace(/^(here's (the|a)?)\s*/i, "");
+        
+        // Clean up nested p tags around headings (common AI mistake)
+        summary = summary.replace(/<p>\s*<h([1-6])>/g, '<h$1>');
+        summary = summary.replace(/<\/h([1-6])>\s*<\/p>/g, '</h$1>');
+        summary = summary.replace(/<p><\/p>/g, '');
         
         generatedContentData = summary;
         contentTitle = `Summary from ${req.file.originalname}`;

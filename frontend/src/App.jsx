@@ -26,6 +26,9 @@ import ForumTopic from "./pages/ForumTopic";
 import ForumCreate from "./pages/ForumCreate";
 import AdminForum from "./pages/AdminForum";
 import AdminForumModeration from "./pages/AdminForumModeration";
+import ContentQualityHub from "./pages/ContentQualityHub";
+import SmartMentorManagement from "./pages/SmartMentorManagement";
+import UserEngagementAnalytics from "./pages/UserEngagementAnalytics";
 import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
 import CollaborationInvites from "./pages/CollaborationInvites";
@@ -68,6 +71,9 @@ function App() {
                 <Route path="marketplace" element={<AdminMarketplace />} />
                 <Route path="forum" element={<AdminForum />} />
                 <Route path="forum-moderation" element={<AdminForumModeration />} />
+                <Route path="content-quality" element={<ContentQualityHub />} />
+                <Route path="smart-mentor" element={<SmartMentorManagement />} />
+                <Route path="user-engagement" element={<UserEngagementAnalytics />} />
               </Route>
             </Routes>
             <OnboardingModal />

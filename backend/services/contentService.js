@@ -60,10 +60,28 @@ class ContentService {
         }
       ]);
       
+      // Get flagged content count (from marketplace)
+      let flaggedContent = 0;
+      let pendingReviews = 0;
+      try {
+        const MarketplaceContent = require('../models/MarketplaceContent');
+        flaggedContent = await MarketplaceContent.countDocuments({
+          status: { $in: ['pending', 'flagged'] }
+        });
+        pendingReviews = await MarketplaceContent.countDocuments({
+          status: 'pending'
+        });
+      } catch (error) {
+        console.error('Error getting marketplace stats:', error);
+        // Continue without marketplace stats if model doesn't exist
+      }
+      
       return {
         totalContent,
         todayContent,
-        contentByType
+        contentByType,
+        flaggedContent,
+        pendingReviews
       };
     } catch (error) {
       console.error('Error getting content stats:', error);

@@ -38,6 +38,31 @@ const generatedContentSchema = new mongoose.Schema({
   updatedAt: {
     type: Date,
     default: Date.now
+  },
+  // Quality and flagging fields
+  flagged: {
+    type: Boolean,
+    default: false
+  },
+  flaggedAt: {
+    type: Date,
+    required: false
+  },
+  flaggedBy: {
+    type: String,
+    required: false,
+    ref: 'User'
+  },
+  flagReason: {
+    type: String,
+    required: false,
+    maxlength: 500
+  },
+  qualityScore: {
+    type: Number,
+    required: false,
+    min: 0,
+    max: 100
   }
 });
 
