@@ -908,11 +908,38 @@ router.post("/api/chat", verifyToken, async (req, res) => {
         let relevantChunks = [];
         if (userMessage) {
           try {
-            relevantChunks = await ragService.retrieveRelevantChunks(userMessage, {
+            // If we have contentContext, restrict RAG to only that content
+            const ragOptions = {
               userId,
               limit: 5,
               minSimilarity: 0.7
-            });
+            };
+            
+            // If contentContext exists, we want to restrict to current content only
+            if (contentContext && (contentContext.currentSession || contentContext.originalSource)) {
+              // Get content IDs from current session to restrict search
+              const currentContentIds = [];
+              if (contentContext.currentSession) {
+                Object.values(contentContext.currentSession).forEach(content => {
+                  if (content && content.contentId) {
+                    currentContentIds.push(content.contentId);
+                  }
+                });
+              }
+              
+              if (currentContentIds.length > 0) {
+                // Only search within current content
+                ragOptions.includeOnlyContentIds = currentContentIds;
+                console.log(`Restricting RAG search to current content IDs: ${currentContentIds}`);
+              } else {
+                // If no current content IDs, restrict by using a very high similarity threshold
+                // to effectively disable RAG and rely only on current session content
+                ragOptions.minSimilarity = 0.95;
+                console.log('No content IDs found, using high similarity threshold to restrict RAG');
+              }
+            }
+            
+            relevantChunks = await ragService.retrieveRelevantChunks(userMessage, ragOptions);
             console.log(`Retrieved ${relevantChunks.length} relevant chunks from RAG`);
           } catch (ragError) {
             console.error('Error retrieving RAG chunks:', ragError);
@@ -2088,11 +2115,44 @@ router.post("/api/chat/restricted", verifyToken, async (req, res) => {
       console.log(`Created new restricted chat session: ${newSessionId}`);
     }
 
+    // Get the user's latest message for RAG retrieval
+    const userMessage = messages && messages.length > 0 
+      ? messages[messages.length - 1].content 
+      : '';
+
     let contextualPrompt = "You are a helpful educational assistant for EduExtract. You can help users with understanding content, navigating the app, and answering questions about educational materials. Be concise and friendly in your responses.";
     
     if (contentContext) {
       try {
         console.log('Building restricted context for embedded chat...');
+        
+        // Try to retrieve relevant chunks from RAG but ONLY from current content
+        let relevantChunks = [];
+        if (userMessage && contentContext.currentSession) {
+          try {
+            // Get content IDs from current session to restrict search
+            const currentContentIds = [];
+            Object.values(contentContext.currentSession).forEach(content => {
+              if (content && content.contentId) {
+                currentContentIds.push(content.contentId);
+              }
+            });
+            
+            if (currentContentIds.length > 0) {
+              console.log(`Restricting RAG to current content IDs: ${currentContentIds}`);
+              relevantChunks = await ragService.retrieveRelevantChunks(userMessage, {
+                userId,
+                limit: 3,
+                minSimilarity: 0.6,
+                includeOnlyContentIds: currentContentIds
+              });
+              console.log(`Retrieved ${relevantChunks.length} relevant chunks from current content`);
+            }
+          } catch (ragError) {
+            console.error('Error retrieving RAG chunks for restricted chat:', ragError);
+            // Continue without RAG chunks if retrieval fails
+          }
+        }
         
         // Build restricted context - only current file/video content
         const restrictedContext = {
@@ -2105,7 +2165,17 @@ router.post("/api/chat/restricted", verifyToken, async (req, res) => {
           }
         };
         
-        // Create restricted prompt
+        // Build context using RAG chunks and current session content
+        let ragContext = '';
+        if (relevantChunks.length > 0) {
+          ragContext = ragService.buildContextFromChunks(
+            relevantChunks,
+            restrictedContext.currentSession,
+            restrictedContext.originalSource
+          );
+        }
+        
+        // Create restricted prompt with enhanced context from RAG
         contextualPrompt = `You are an AI tutor for ${userName} using EduExtract. You can ONLY answer questions based on the current file or video content that the user has uploaded/processed.
 
 CRITICAL RESTRICTIONS:
@@ -2113,7 +2183,9 @@ CRITICAL RESTRICTIONS:
 - Do NOT use any external knowledge or general information
 - If a question cannot be answered from the provided content, say "I can only answer questions based on the current file/video content you've uploaded. Please ask something related to that content."
 - Do NOT reference any previous content or user history
-- Stay strictly within the bounds of the provided content`;
+- Stay strictly within the bounds of the provided content
+
+${ragContext ? `RELEVANT CONTENT SECTIONS FROM YOUR UPLOADED MATERIAL:\n${ragContext}\n` : ''}`;
 
         if (restrictedContext.originalSource) {
           contextualPrompt += `\n\nCURRENT FILE/VIDEO CONTENT (Your ONLY source of information):`;
@@ -2147,6 +2219,9 @@ CRITICAL RESTRICTIONS:
 
 REMEMBER: You are restricted to ONLY the content provided above. Do not use any external knowledge.`;
         
+        // Update session with context snapshot including RAG info
+        restrictedContext.metadata.ragEnabled = relevantChunks.length > 0;
+        restrictedContext.metadata.chunksRetrieved = relevantChunks.length;
         chatSession.contextSnapshot = restrictedContext;
         await chatSession.save();
         
@@ -2154,6 +2229,17 @@ REMEMBER: You are restricted to ONLY the content provided above. Do not use any 
       } catch (contextError) {
         console.error('Error building restricted context:', contextError);
       }
+    } else {
+      // No content context provided - return a helpful message
+      console.log('No content context provided for restricted chat');
+      contextualPrompt = `You are an AI tutor for EduExtract. This is a restricted chat that can only answer questions based on specific file or video content.
+
+Currently, no file or video content has been loaded. Please:
+1. Upload a file (PDF, DOCX) or provide a YouTube video URL
+2. Generate content from that material (summary, blog, quiz, etc.)
+3. Then ask questions about that specific content
+
+I can only help with questions related to content you've uploaded and processed in this session.`;
     }
 
     const systemPrompt = {

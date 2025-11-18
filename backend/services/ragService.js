@@ -31,8 +31,13 @@ class RAGService {
     try {
       console.log(`Processing content for RAG: ${contentType}, contentId: ${contentId}`);
 
-      // Delete existing chunks for this content (in case of update)
-      await this.chromaService.deleteByContentId(contentId);
+      // Try to delete existing chunks for this content (in case of update)
+      try {
+        await this.chromaService.deleteByContentId(contentId);
+      } catch (chromaError) {
+        console.log(`⚠️  ChromaDB unavailable for deletion - continuing without vector storage`);
+        console.log(`ChromaDB error: ${chromaError.message}`);
+      }
 
       // Chunk the content based on type
       const chunks = this.textChunker.chunkContent(contentData, contentType, {
@@ -113,8 +118,14 @@ class RAGService {
         }
       }));
 
-      // Add to ChromaDB
-      await this.chromaService.addChunks(chunksWithEmbeddings);
+      // Try to add to ChromaDB
+      try {
+        await this.chromaService.addChunks(chunksWithEmbeddings);
+        console.log(`✅ Successfully stored ${chunksWithEmbeddings.length} chunks in ChromaDB for contentId: ${contentId}`);
+      } catch (chromaError) {
+        console.log(`⚠️  ChromaDB unavailable for storage - embeddings generated but not stored`);
+        console.log(`ChromaDB error: ${chromaError.message}`);
+      }
 
       console.log(`Successfully processed ${chunksWithEmbeddings.length} chunks for contentId: ${contentId}`);
 
@@ -142,6 +153,7 @@ class RAGService {
         limit = 5,
         minSimilarity = 0.7,
         excludeContentIds = [],
+        includeOnlyContentIds = null,
         includeCurrentSession = true
       } = options;
 
@@ -154,12 +166,24 @@ class RAGService {
         contentType,
         limit: limit * 2, // Get more chunks initially to filter better
         minSimilarity: minSimilarity * 0.9, // Slightly lower threshold for initial retrieval
-        excludeContentIds
+        excludeContentIds,
+        includeOnlyContentIds
       });
+
+      // Filter chunks by includeOnlyContentIds if specified
+      let filteredChunks = similarChunks;
+      if (includeOnlyContentIds && includeOnlyContentIds.length > 0) {
+        console.log(`Filtering chunks to only include content IDs: ${includeOnlyContentIds}`);
+        filteredChunks = similarChunks.filter(chunk => {
+          const contentIdStr = chunk.metadata?.contentId || chunk.contentId?.toString();
+          return includeOnlyContentIds.includes(contentIdStr);
+        });
+        console.log(`Filtered ${similarChunks.length} chunks down to ${filteredChunks.length} chunks`);
+      }
 
       // Group by contentId and select best chunks from each content
       const chunksByContent = {};
-      similarChunks.forEach(chunk => {
+      filteredChunks.forEach(chunk => {
         const contentIdStr = chunk.metadata?.contentId || chunk.contentId?.toString();
         if (!chunksByContent[contentIdStr]) {
           chunksByContent[contentIdStr] = [];

@@ -24,16 +24,16 @@ class ChromaService {
     const chromaDbUrl = process.env.CHROMADB_URL || 'http://localhost:8000';
     
     try {
-      const url = new URL(chromaDbUrl);
-      // Don't pass 'path' parameter when connecting to server
+      console.log(`Initializing ChromaDB connection to: ${chromaDbUrl}`);
+      
+      // Initialize client with proper configuration
       this.client = new ChromaClient({
-        host: url.hostname,
-        port: parseInt(url.port) || 8000
-        // Remove path parameter - it's not needed for server connections
+        path: chromaDbUrl
       });
-      console.log(`Connecting to ChromaDB server at: ${chromaDbUrl}`);
+      
+      console.log(`✅ ChromaDB client initialized for: ${chromaDbUrl}`);
     } catch (error) {
-      console.error('Error initializing ChromaDB client:', error);
+      console.error('❌ Error initializing ChromaDB client:', error);
       throw error;
     }
     
@@ -49,8 +49,13 @@ class ChromaService {
     if (this.initialized) return;
 
     try {
-      // Check if collection exists, create if not
+      console.log(`🔄 Initializing ChromaDB collection: ${this.collectionName}`);
+      
+      // Test connection first
+      console.log('🔗 Testing ChromaDB connection...');
       const collections = await this.client.listCollections();
+      console.log('✅ ChromaDB connection successful');
+      
       const collectionExists = collections && collections.some(c => 
         (typeof c === 'string' ? c === this.collectionName : c.name === this.collectionName)
       );
@@ -70,9 +75,18 @@ class ChromaService {
       }
 
       this.initialized = true;
+      console.log('🎉 ChromaDB initialization complete');
     } catch (error) {
-      console.error('Error initializing ChromaDB:', error);
-      throw error;
+      console.error('❌ Error initializing ChromaDB:', error);
+      console.error('Full error details:', {
+        message: error.message,
+        cause: error.cause,
+        stack: error.stack
+      });
+      
+      // Don't throw the error immediately - let's provide a fallback
+      console.log('⚠️  ChromaDB unavailable - operating in degraded mode');
+      this.initialized = false;
     }
   }
 
@@ -138,7 +152,8 @@ class ChromaService {
       contentType,
       limit = 5,
       minSimilarity = 0.7,
-      excludeContentIds = []
+      excludeContentIds = [],
+      includeOnlyContentIds = null
     } = options;
 
     // Build where clause for filtering
@@ -151,6 +166,9 @@ class ChromaService {
     }
     if (excludeContentIds.length > 0) {
       where.contentId = { $nin: excludeContentIds.map(id => id.toString()) };
+    }
+    if (includeOnlyContentIds && includeOnlyContentIds.length > 0) {
+      where.contentId = { $in: includeOnlyContentIds.map(id => id.toString()) };
     }
 
     try {
