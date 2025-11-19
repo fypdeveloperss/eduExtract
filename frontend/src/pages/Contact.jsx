@@ -156,8 +156,8 @@ const Contact = () => {
           className="py-16 px-4 sm:px-6 lg:px-8"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
+          transition={{ duration: 0.5 }}
+          viewport={{ once: true, amount: 0.3 }}
         >
           <div className="max-w-7xl mx-auto">
             <motion.div 
@@ -165,7 +165,7 @@ const Contact = () => {
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.3 }}
             >
               {contactInfo.map((info, index) => (
                 <motion.div
@@ -321,15 +321,15 @@ const Contact = () => {
           className="py-20"
           initial={{ opacity: 0 }}
           whileInView={{ opacity: 1 }}
-          transition={{ duration: 0.8 }}
-          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true, amount: 0.3 }}
         >
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
             <motion.div
               initial={{ opacity: 0, y: 50 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true, amount: 0.3 }}
               className="text-center mb-16"
             >
               <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-6">
@@ -345,7 +345,7 @@ const Contact = () => {
               variants={staggerContainer}
               initial="initial"
               whileInView="animate"
-              viewport={{ once: true }}
+              viewport={{ once: true, amount: 0.3 }}
             >
               {faqs.map((faq, index) => (
                 <motion.div

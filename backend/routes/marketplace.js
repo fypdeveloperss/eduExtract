@@ -747,6 +747,114 @@ router.post('/purchase', verifyToken, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/marketplace/checkout/session
+ * @desc    Create Stripe Checkout session for marketplace purchase
+ * @access  Private
+ */
+router.post('/checkout/session', verifyToken, async (req, res) => {
+  try {
+    const PaymentService = require('../services/paymentService');
+    const stripe = PaymentService.getStripeClient();
+    if (!stripe) {
+      return res.status(400).json({ error: 'Stripe is not configured' });
+    }
+
+    const { contentId, successUrl, cancelUrl } = req.body;
+    if (!contentId || !successUrl || !cancelUrl) {
+      return res.status(400).json({ error: 'contentId, successUrl and cancelUrl are required' });
+    }
+
+    const MarketplaceContent = require('../models/MarketplaceContent');
+    const content = await MarketplaceContent.findById(contentId);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    if (content.status !== 'approved') {
+      return res.status(400).json({ error: 'Content is not available for purchase' });
+    }
+    if (content.price <= 0) {
+      return res.status(400).json({ error: 'Content is free, no checkout required' });
+    }
+
+    const session = await stripe.checkout.sessions.create({
+      mode: 'payment',
+      payment_method_types: ['card'],
+      customer_email: req.user.email || undefined,
+      line_items: [
+        {
+          price_data: {
+            currency: (content.currency || 'USD').toLowerCase(),
+            unit_amount: Math.round(content.price * 100),
+            product_data: {
+              name: content.title,
+              description: content.description?.slice(0, 200),
+              metadata: {
+                contentId: content._id.toString()
+              }
+            }
+          },
+          quantity: 1
+        }
+      ],
+      metadata: {
+        contentId: content._id.toString(),
+        buyerId: req.user.uid,
+        sellerId: content.creatorId
+      },
+      success_url: `${successUrl}&session_id={CHECKOUT_SESSION_ID}`,
+      cancel_url: cancelUrl
+    });
+
+    res.json({ sessionId: session.id });
+  } catch (error) {
+    console.error('Checkout session error:', error);
+    res.status(500).json({ error: 'Failed to create checkout session' });
+  }
+});
+
+/**
+ * @route   POST /api/marketplace/checkout/confirm
+ * @desc    Confirm Stripe Checkout session and record purchase
+ * @access  Private
+ */
+router.post('/checkout/confirm', verifyToken, async (req, res) => {
+  try {
+    const { sessionId } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ error: 'sessionId is required' });
+    }
+
+    const PaymentService = require('../services/paymentService');
+    const stripe = PaymentService.getStripeClient();
+    if (!stripe) {
+      return res.status(400).json({ error: 'Stripe is not configured' });
+    }
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ['payment_intent']
+    });
+
+    if (!session || session.metadata?.buyerId !== req.user.uid) {
+      return res.status(403).json({ error: 'You are not authorized to confirm this session' });
+    }
+
+    if (session.payment_status !== 'paid') {
+      return res.status(400).json({ error: 'Payment not completed yet' });
+    }
+
+    const purchase = await PaymentService.recordStripeCheckoutSession(session);
+    res.json({
+      success: true,
+      purchaseId: purchase.purchaseId,
+      transactionId: purchase.transactionId
+    });
+  } catch (error) {
+    console.error('Checkout confirmation error:', error);
+    res.status(500).json({ error: 'Failed to confirm checkout session' });
+  }
+});
+
+/**
  * @route   GET /api/marketplace/content/:id/access
  * @desc    Check if user has access to content
  * @access  Private
@@ -790,6 +898,132 @@ router.get('/sales', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching sales:', error);
     res.status(500).json({ error: 'Failed to fetch sales' });
+  }
+});
+
+/**
+ * @route   GET /api/marketplace/seller/analytics
+ * @desc    Get seller's analytics (revenue, sales, products)
+ * @access  Private
+ */
+router.get('/seller/analytics', verifyToken, async (req, res) => {
+  try {
+    const sellerId = req.user.uid;
+    const Purchase = require('../models/Purchase');
+    const User = require('../models/User');
+
+    // Get all products by this seller
+    const products = await MarketplaceContent.find({ creatorId: sellerId })
+      .select('_id title price currency status views likes createdAt category contentType')
+      .sort({ createdAt: -1 });
+
+    // Get all sales for this seller
+    const allSales = await Purchase.find({ 
+      sellerId,
+      paymentStatus: 'completed'
+    }).populate('contentId', 'title category contentType');
+    
+    // Get buyer info for each sale
+    const buyerIds = [...new Set(allSales.map(sale => sale.buyerId))];
+    const buyers = await User.find({ uid: { $in: buyerIds } }).select('uid name email');
+    const buyerMap = {};
+    buyers.forEach(buyer => {
+      buyerMap[buyer.uid] = buyer;
+    });
+
+    // Calculate metrics
+    const totalRevenue = allSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
+    const totalEarnings = allSales.reduce((sum, sale) => sum + (sale.sellerEarnings || 0), 0);
+    const totalCommission = allSales.reduce((sum, sale) => sum + (sale.platformCommission || 0), 0);
+    
+    // Revenue in last 30 days
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const recentSales = allSales.filter(sale => new Date(sale.purchasedAt) >= thirtyDaysAgo);
+    const revenue30d = recentSales.reduce((sum, sale) => sum + (sale.amount || 0), 0);
+    const earnings30d = recentSales.reduce((sum, sale) => sum + (sale.sellerEarnings || 0), 0);
+    
+    // Get earnings summary
+    const earningsSummary = await PaymentService.getTotalEarnings(sellerId);
+    const pendingEarnings = await PaymentService.getPendingEarnings(sellerId);
+
+    // Sales by product
+    const salesByProduct = {};
+    allSales.forEach(sale => {
+      const productId = sale.contentId?._id?.toString() || 'unknown';
+      if (!salesByProduct[productId]) {
+        salesByProduct[productId] = {
+          productId,
+          title: sale.contentId?.title || 'Unknown',
+          sales: 0,
+          revenue: 0
+        };
+      }
+      salesByProduct[productId].sales += 1;
+      salesByProduct[productId].revenue += sale.amount || 0;
+    });
+
+    // Daily sales trend (last 30 days)
+    const dailyTrend = {};
+    recentSales.forEach(sale => {
+      const date = new Date(sale.purchasedAt).toISOString().split('T')[0];
+      if (!dailyTrend[date]) {
+        dailyTrend[date] = { date, revenue: 0, orders: 0 };
+      }
+      dailyTrend[date].revenue += sale.amount || 0;
+      dailyTrend[date].orders += 1;
+    });
+
+    // Product stats
+    const productStats = products.map(product => {
+      const productSales = allSales.filter(sale => 
+        sale.contentId?._id?.toString() === product._id.toString()
+      );
+      return {
+        ...product.toObject(),
+        totalSales: productSales.length,
+        totalRevenue: productSales.reduce((sum, sale) => sum + (sale.amount || 0), 0)
+      };
+    });
+
+    res.json({
+      metrics: {
+        totalProducts: products.length,
+        approvedProducts: products.filter(p => p.status === 'approved').length,
+        pendingProducts: products.filter(p => p.status === 'pending').length,
+        totalRevenue,
+        revenue30d,
+        totalEarnings,
+        earnings30d,
+        totalCommission,
+        totalSales: allSales.length,
+        sales30d: recentSales.length,
+        pendingEarnings: earningsSummary.pendingEarnings,
+        paidEarnings: earningsSummary.paidEarnings
+      },
+      earnings: earningsSummary,
+      pendingEarnings: pendingEarnings,
+      products: productStats,
+      topProducts: Object.values(salesByProduct)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 10),
+      salesTrend: Object.values(dailyTrend).sort((a, b) => a.date.localeCompare(b.date)),
+      recentSales: allSales.slice(0, 20).map(sale => {
+        const buyer = buyerMap[sale.buyerId];
+        return {
+          purchaseId: sale.purchaseId,
+          productTitle: sale.contentId?.title || 'Unknown',
+          buyerName: buyer?.name || buyer?.email || 'Unknown',
+          amount: sale.amount,
+          currency: sale.currency,
+          purchasedAt: sale.purchasedAt,
+          transactionId: sale.transactionId
+        };
+      })
+    });
+  } catch (error) {
+    console.error('Error fetching seller analytics:', error);
+    res.status(500).json({ error: 'Failed to fetch seller analytics' });
   }
 });
 
@@ -1178,6 +1412,89 @@ router.post('/publish-existing', verifyToken, async (req, res) => {
  * @desc    Delete marketplace content (creator only)
  * @access  Private
  */
+/**
+ * @route   PUT /api/marketplace/content/:id
+ * @desc    Update marketplace content (seller only)
+ * @access  Private
+ */
+router.put('/content/:id', verifyToken, upload.single('document'), async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.uid;
+    
+    // Find the content
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    
+    // Check if user is the creator
+    if (content.creatorId !== userId) {
+      return res.status(403).json({ error: 'You can only edit your own content' });
+    }
+    
+    // Allowed fields for editing
+    const allowedFields = ['title', 'description', 'category', 'subject', 'difficulty', 'tags', 'price', 'currency'];
+    const updates = {};
+    
+    // Update allowed fields
+    allowedFields.forEach(field => {
+      if (req.body[field] !== undefined) {
+        if (field === 'tags' && Array.isArray(req.body[field])) {
+          updates[field] = req.body[field];
+        } else if (field === 'price') {
+          updates[field] = Math.max(0, parseFloat(req.body[field]) || 0);
+        } else {
+          updates[field] = req.body[field];
+        }
+      }
+    });
+    
+    // Handle file upload if provided
+    if (req.file) {
+      // Delete old file if exists
+      if (content.filePath && fs.existsSync(content.filePath)) {
+        try {
+          fs.unlinkSync(content.filePath);
+        } catch (fileError) {
+          console.error('Error deleting old file:', fileError);
+        }
+      }
+      
+      updates.filePath = req.file.path;
+      updates.contentData = {
+        originalName: req.file.originalname,
+        filename: req.file.filename,
+        path: req.file.path,
+        size: req.file.size,
+        mimetype: req.file.mimetype
+      };
+    }
+    
+    // If significant changes, set status back to pending for re-approval
+    const significantChanges = ['title', 'description', 'category', 'subject', 'contentData', 'filePath'];
+    const hasSignificantChanges = significantChanges.some(field => updates[field] !== undefined);
+    
+    if (hasSignificantChanges && content.status === 'approved') {
+      updates.status = 'pending';
+      updates.approvedAt = null;
+      updates.approvedBy = null;
+    }
+    
+    // Update content
+    Object.assign(content, updates);
+    await content.save();
+    
+    res.json({
+      message: 'Content updated successfully',
+      content: content
+    });
+  } catch (error) {
+    console.error('Error updating content:', error);
+    res.status(500).json({ error: 'Failed to update content' });
+  }
+});
+
 router.delete('/content/:id', verifyToken, async (req, res) => {
   try {
     const { id } = req.params;
@@ -1218,6 +1535,113 @@ router.delete('/content/:id', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error deleting content:', error);
     res.status(500).json({ error: 'Failed to delete content' });
+  }
+});
+
+// ==================== PAYOUT ROUTES ====================
+
+/**
+ * @route   GET /api/marketplace/payouts/earnings
+ * @desc    Get seller's earnings summary
+ * @access  Private
+ */
+router.get('/payouts/earnings', verifyToken, async (req, res) => {
+  try {
+    const sellerId = req.user.uid;
+    const totalEarnings = await PaymentService.getTotalEarnings(sellerId);
+    const pendingEarnings = await PaymentService.getPendingEarnings(sellerId);
+    
+    res.json({
+      ...totalEarnings,
+      pendingDetails: pendingEarnings
+    });
+  } catch (error) {
+    console.error('Error fetching earnings:', error);
+    res.status(500).json({ error: 'Failed to fetch earnings' });
+  }
+});
+
+/**
+ * @route   GET /api/marketplace/payouts/history
+ * @desc    Get seller's payout history
+ * @access  Private
+ */
+router.get('/payouts/history', verifyToken, async (req, res) => {
+  try {
+    const Payout = require('../models/Payout');
+    const sellerId = req.user.uid;
+    
+    const payouts = await Payout.find({ sellerId })
+      .sort({ requestedAt: -1 })
+      .limit(50);
+    
+    res.json(payouts);
+  } catch (error) {
+    console.error('Error fetching payout history:', error);
+    res.status(500).json({ error: 'Failed to fetch payout history' });
+  }
+});
+
+/**
+ * @route   POST /api/marketplace/payouts/request
+ * @desc    Request a payout
+ * @access  Private
+ */
+router.post('/payouts/request', verifyToken, async (req, res) => {
+  try {
+    const sellerId = req.user.uid;
+    const { amount, currency, payoutMethod, payoutDetails } = req.body;
+    
+    if (!amount || amount <= 0) {
+      return res.status(400).json({ error: 'Valid amount is required' });
+    }
+    
+    const payout = await PaymentService.createPayoutRequest(sellerId, {
+      amount: parseFloat(amount),
+      currency: currency || 'USD',
+      payoutMethod: payoutMethod || 'manual',
+      payoutDetails: payoutDetails || {}
+    });
+    
+    res.json({
+      success: true,
+      message: 'Payout request submitted successfully',
+      payout
+    });
+  } catch (error) {
+    console.error('Error creating payout request:', error);
+    res.status(400).json({ error: error.message || 'Failed to create payout request' });
+  }
+});
+
+/**
+ * @route   GET /api/marketplace/payouts/:payoutId
+ * @desc    Get payout details
+ * @access  Private
+ */
+router.get('/payouts/:payoutId', verifyToken, async (req, res) => {
+  try {
+    const Payout = require('../models/Payout');
+    const { payoutId } = req.params;
+    const userId = req.user.uid;
+    
+    const payout = await Payout.findOne({ payoutId });
+    if (!payout) {
+      return res.status(404).json({ error: 'Payout not found' });
+    }
+    
+    // Check if user is the seller or admin
+    const AdminService = require('../services/adminService');
+    const isAdmin = await AdminService.isAdmin(userId);
+    
+    if (payout.sellerId !== userId && !isAdmin) {
+      return res.status(403).json({ error: 'Access denied' });
+    }
+    
+    res.json(payout);
+  } catch (error) {
+    console.error('Error fetching payout:', error);
+    res.status(500).json({ error: 'Failed to fetch payout' });
   }
 });
 

@@ -686,6 +686,366 @@ router.post('/content-quality/bulk-action', verifyToken, async (req, res) => {
   }
 });
 
+// ==================== MARKETPLACE INTELLIGENCE ====================
+
+// Marketplace analytics overview
+router.get('/marketplace/analytics', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const MarketplaceContent = require('../models/MarketplaceContent');
+    const Purchase = require('../models/Purchase');
+    const User = require('../models/User');
+
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now);
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const sixMonthsAgo = new Date(now);
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 5);
+    sixMonthsAgo.setDate(1);
+    sixMonthsAgo.setHours(0, 0, 0, 0);
+
+    const [
+      statusSummary,
+      totalRevenueAgg,
+      revenue30dAgg,
+      dailyTrend,
+      categoryRevenueAgg,
+      categoryListingAgg,
+      topContentAgg,
+      topCreatorsAgg,
+      activeCreators,
+      avgPriceAgg,
+      recentPurchases
+    ] = await Promise.all([
+      MarketplaceContent.aggregate([
+        {
+          $group: {
+            _id: '$status',
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+      Purchase.aggregate([
+        { $match: { paymentStatus: 'completed' } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$amount' }
+          }
+        }
+      ]),
+      Purchase.aggregate([
+        {
+          $match: {
+            paymentStatus: 'completed',
+            purchasedAt: { $gte: thirtyDaysAgo }
+          }
+        },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: '$amount' }
+          }
+        }
+      ]),
+      Purchase.aggregate([
+        {
+          $match: {
+            paymentStatus: 'completed',
+            purchasedAt: { $gte: thirtyDaysAgo }
+          }
+        },
+        {
+          $group: {
+            _id: {
+              $dateToString: {
+                format: '%Y-%m-%d',
+                date: '$purchasedAt'
+              }
+            },
+            revenue: { $sum: '$amount' },
+            orders: { $sum: 1 }
+          }
+        },
+        { $sort: { _id: 1 } }
+      ]),
+      Purchase.aggregate([
+        { $match: { paymentStatus: 'completed' } },
+        {
+          $lookup: {
+            from: 'marketplacecontents',
+            localField: 'contentId',
+            foreignField: '_id',
+            as: 'content'
+          }
+        },
+        { $unwind: '$content' },
+        {
+          $group: {
+            _id: '$content.category',
+            revenue: { $sum: '$amount' },
+            sales: { $sum: 1 }
+          }
+        },
+        { $sort: { revenue: -1 } }
+      ]),
+      MarketplaceContent.aggregate([
+        { $match: { status: 'approved' } },
+        {
+          $group: {
+            _id: '$category',
+            listings: { $sum: 1 }
+          }
+        }
+      ]),
+      Purchase.aggregate([
+        { $match: { paymentStatus: 'completed' } },
+        {
+          $group: {
+            _id: '$contentId',
+            revenue: { $sum: '$amount' },
+            sales: { $sum: 1 }
+          }
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 }
+      ]),
+      Purchase.aggregate([
+        { $match: { paymentStatus: 'completed' } },
+        {
+          $group: {
+            _id: '$sellerId',
+            revenue: { $sum: '$amount' },
+            sales: { $sum: 1 }
+          }
+        },
+        { $sort: { revenue: -1 } },
+        { $limit: 5 }
+      ]),
+      Purchase.distinct('sellerId', { paymentStatus: 'completed' }),
+      MarketplaceContent.aggregate([
+        { $match: { status: 'approved', price: { $gt: 0 } } },
+        {
+          $group: {
+            _id: null,
+            avgPrice: { $avg: '$price' }
+          }
+        }
+      ]),
+      Purchase.find({ paymentStatus: 'completed' })
+        .sort({ purchasedAt: -1 })
+        .limit(5)
+        .lean()
+    ]);
+
+    const statusMap = statusSummary.reduce((acc, item) => {
+      acc[item._id] = item.count;
+      return acc;
+    }, {});
+
+    const totalListings = Object.values(statusMap).reduce((sum, val) => sum + val, 0);
+
+    const metrics = {
+      totalListings,
+      approvedListings: statusMap.approved || 0,
+      pendingListings: statusMap.pending || 0,
+      rejectedListings: statusMap.rejected || 0,
+      totalRevenue: totalRevenueAgg[0]?.total || 0,
+      revenue30d: revenue30dAgg[0]?.total || 0,
+      activeCreators: activeCreators.length,
+      averagePrice: Math.round((avgPriceAgg[0]?.avgPrice || 0) * 100) / 100
+    };
+
+    const categoryListingMap = categoryListingAgg.reduce((acc, item) => {
+      acc[item._id] = item.listings;
+      return acc;
+    }, {});
+
+    const categoryBreakdown = categoryRevenueAgg.map((item) => ({
+      category: item._id || 'uncategorized',
+      revenue: item.revenue,
+      sales: item.sales,
+      listings: categoryListingMap[item._id] || 0
+    }));
+
+    const contentIds = topContentAgg.map((item) => item._id);
+    const topContentDocs = await MarketplaceContent.find({ _id: { $in: contentIds } }).lean();
+    const creatorIds = [
+      ...new Set([
+        ...topContentDocs.map((doc) => doc.creatorId),
+        ...topCreatorsAgg.map((creator) => creator._id),
+        ...recentPurchases.map((purchase) => purchase.buyerId),
+        ...recentPurchases.map((purchase) => purchase.sellerId)
+      ])
+    ];
+
+    const users = await User.find({ uid: { $in: creatorIds } })
+      .select('uid name email')
+      .lean();
+    const userMap = users.reduce((acc, user) => {
+      acc[user.uid] = user;
+      return acc;
+    }, {});
+
+    const contentMap = topContentDocs.reduce((acc, doc) => {
+      acc[doc._id.toString()] = doc;
+      return acc;
+    }, {});
+
+    const topContent = topContentAgg.map((item) => {
+      const doc = contentMap[item._id.toString()];
+      const creatorInfo = doc ? userMap[doc.creatorId] : null;
+      return {
+        contentId: item._id,
+        title: doc?.title || 'Unknown content',
+        revenue: item.revenue,
+        sales: item.sales,
+        price: doc?.price || 0,
+        creator: creatorInfo
+          ? {
+              uid: creatorInfo.uid,
+              name: creatorInfo.name || 'Unknown creator',
+              email: creatorInfo.email
+            }
+          : null,
+        category: doc?.category
+      };
+    });
+
+    const topCreators = topCreatorsAgg.map((item) => {
+      const creatorInfo = userMap[item._id];
+      return {
+        userId: item._id,
+        name: creatorInfo?.name || 'Unknown creator',
+        email: creatorInfo?.email,
+        revenue: item.revenue,
+        sales: item.sales
+      };
+    });
+
+    const recentContentIds = recentPurchases.map((purchase) => purchase.contentId);
+    const recentContentDocs = await MarketplaceContent.find({ _id: { $in: recentContentIds } })
+      .select('title price currency category')
+      .lean();
+    const recentContentMap = recentContentDocs.reduce((acc, doc) => {
+      acc[doc._id.toString()] = doc;
+      return acc;
+    }, {});
+
+    const recentTransactions = recentPurchases.map((purchase) => ({
+      purchaseId: purchase.purchaseId,
+      amount: purchase.amount,
+      currency: purchase.currency,
+      paymentStatus: purchase.paymentStatus,
+      transactionId: purchase.transactionId,
+      purchasedAt: purchase.purchasedAt,
+      content: recentContentMap[purchase.contentId?.toString()] || null,
+      buyer: userMap[purchase.buyerId] || null,
+      seller: userMap[purchase.sellerId] || null
+    }));
+
+    res.json({
+      metrics,
+      salesTrend: dailyTrend.map((day) => ({
+        date: day._id,
+        revenue: day.revenue,
+        orders: day.orders
+      })),
+      categoryBreakdown,
+      topContent,
+      topCreators,
+      recentTransactions
+    });
+  } catch (error) {
+    console.error('Error getting marketplace analytics:', error);
+    res.status(500).json({ error: 'Failed to get marketplace analytics' });
+  }
+});
+
+// Marketplace activity log
+router.get('/marketplace/activity', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { page = 1, limit = 20, paymentStatus, status } = req.query;
+    const Purchase = require('../models/Purchase');
+    const MarketplaceContent = require('../models/MarketplaceContent');
+    const User = require('../models/User');
+
+    const query = {};
+    if (paymentStatus) {
+      query.paymentStatus = paymentStatus;
+    }
+    if (status) {
+      query.status = status;
+    }
+
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const [records, total] = await Promise.all([
+      Purchase.find(query)
+        .sort({ purchasedAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      Purchase.countDocuments(query)
+    ]);
+
+    const contentIds = [...new Set(records.map((record) => record.contentId?.toString()))];
+    const userIds = [
+      ...new Set([
+        ...records.map((record) => record.buyerId),
+        ...records.map((record) => record.sellerId)
+      ])
+    ];
+
+    const [contents, users] = await Promise.all([
+      MarketplaceContent.find({ _id: { $in: contentIds } })
+        .select('title price currency category creatorId')
+        .lean(),
+      User.find({ uid: { $in: userIds } })
+        .select('uid name email')
+        .lean()
+    ]);
+
+    const contentMap = contents.reduce((acc, content) => {
+      acc[content._id.toString()] = content;
+      return acc;
+    }, {});
+
+    const userMap = users.reduce((acc, user) => {
+      acc[user.uid] = user;
+      return acc;
+    }, {});
+
+    const enrichedRecords = records.map((record) => ({
+      ...record,
+      content: contentMap[record.contentId?.toString()] || null,
+      buyer: userMap[record.buyerId] || null,
+      seller: userMap[record.sellerId] || null
+    }));
+
+    res.json({
+      records: enrichedRecords,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error getting marketplace activity:', error);
+    res.status(500).json({ error: 'Failed to get marketplace activity' });
+  }
+});
+
 // ==================== SMART MENTOR MANAGEMENT ====================
 
 // Get chat analytics
@@ -1100,6 +1460,170 @@ router.get('/user-engagement/activity', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error getting user activity:', error);
     res.status(500).json({ error: 'Failed to get user activity' });
+  }
+});
+
+// ==================== PAYOUT MANAGEMENT ====================
+
+/**
+ * @route   GET /api/admin/marketplace/payouts
+ * @desc    Get all payout requests (admin only)
+ * @access  Private (Admin)
+ */
+router.get('/marketplace/payouts', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const Payout = require('../models/Payout');
+    const { status, page = 1, limit = 20 } = req.query;
+    
+    const query = {};
+    if (status) {
+      query.status = status;
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    const payouts = await Payout.find(query)
+      .sort({ requestedAt: -1 })
+      .skip(skip)
+      .limit(parseInt(limit))
+      .lean();
+    
+    // Manually populate seller info (since sellerId is Firebase UID string, not ObjectId)
+    const User = require('../models/User');
+    const payoutsWithSellers = await Promise.all(
+      payouts.map(async (payout) => {
+        const seller = await User.findOne({ uid: payout.sellerId })
+          .select('name email uid')
+          .lean();
+        return {
+          ...payout,
+          sellerId: seller ? {
+            _id: seller._id,
+            uid: seller.uid,
+            name: seller.name,
+            email: seller.email
+          } : null
+        };
+      })
+    );
+    
+    const total = await Payout.countDocuments(query);
+    
+    res.json({
+      payouts: payoutsWithSellers,
+      pagination: {
+        page: parseInt(page),
+        limit: parseInt(limit),
+        total,
+        pages: Math.ceil(total / parseInt(limit))
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching payouts:', error);
+    res.status(500).json({ error: 'Failed to fetch payouts' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/marketplace/payouts/:payoutId/approve
+ * @desc    Approve and process a payout (admin only)
+ * @access  Private (Admin)
+ */
+router.post('/marketplace/payouts/:payoutId/approve', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { payoutId } = req.params;
+    const PaymentService = require('../services/paymentService');
+    
+    const payout = await PaymentService.processPayout(payoutId, req.user.uid);
+    
+    res.json({
+      success: true,
+      message: 'Payout approved and processing',
+      payout
+    });
+  } catch (error) {
+    console.error('Error approving payout:', error);
+    res.status(400).json({ error: error.message || 'Failed to approve payout' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/marketplace/payouts/:payoutId/complete
+ * @desc    Mark payout as completed (admin only)
+ * @access  Private (Admin)
+ */
+router.post('/marketplace/payouts/:payoutId/complete', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { payoutId } = req.params;
+    const { transactionId } = req.body;
+    const PaymentService = require('../services/paymentService');
+    
+    const payout = await PaymentService.completePayout(payoutId, transactionId);
+    
+    res.json({
+      success: true,
+      message: 'Payout marked as completed',
+      payout
+    });
+  } catch (error) {
+    console.error('Error completing payout:', error);
+    res.status(400).json({ error: error.message || 'Failed to complete payout' });
+  }
+});
+
+/**
+ * @route   POST /api/admin/marketplace/payouts/:payoutId/reject
+ * @desc    Reject a payout request (admin only)
+ * @access  Private (Admin)
+ */
+router.post('/marketplace/payouts/:payoutId/reject', verifyToken, async (req, res) => {
+  try {
+    const isAdminUser = await AdminService.isAdmin(req.user.uid);
+    if (!isAdminUser) {
+      return res.status(403).json({ error: 'Admin access required' });
+    }
+
+    const { payoutId } = req.params;
+    const { reason } = req.body;
+    const Payout = require('../models/Payout');
+    
+    const payout = await Payout.findOne({ payoutId });
+    if (!payout) {
+      return res.status(404).json({ error: 'Payout not found' });
+    }
+    
+    if (payout.status !== 'pending') {
+      return res.status(400).json({ error: 'Only pending payouts can be rejected' });
+    }
+    
+    payout.status = 'rejected';
+    payout.rejectionReason = reason || 'Payout request rejected';
+    payout.approvedBy = req.user.uid;
+    payout.approvedAt = new Date();
+    await payout.save();
+    
+    res.json({
+      success: true,
+      message: 'Payout rejected',
+      payout
+    });
+  } catch (error) {
+    console.error('Error rejecting payout:', error);
+    res.status(500).json({ error: 'Failed to reject payout' });
   }
 });
 

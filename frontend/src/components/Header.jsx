@@ -184,18 +184,12 @@ const Header = () => {
                     </div>
                   )}
                 </div>
-                <a
-                  href="#"
+                <Link
+                  to="/pricing"
                   className="text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc] px-3 py-2 text-sm xl:text-base"
                 >
                   Pricing
-                </a>
-                <a
-                  href="#"
-                  className="text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc] px-3 py-2 text-sm xl:text-base"
-                >
-                  Careers
-                </a>
+                </Link>
                 <ul className="flex flex-row gap-6 xl:gap-10">
                   <li>
                     <Link
@@ -372,20 +366,13 @@ const Header = () => {
                     My Content Library
                   </Link>
                 </div>
-                <a
-                  href="#"
+                <Link
+                  to="/pricing"
                   className="block px-3 py-2 text-base font-medium text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc]"
                   onClick={closeMobileMenu}
                 >
                   Pricing
-                </a>
-                <a
-                  href="#"
-                  className="block px-3 py-2 text-base font-medium text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc]"
-                  onClick={closeMobileMenu}
-                >
-                  Careers
-                </a>
+                </Link>
                 <Link
                   to="/about"
                   className="block px-3 py-2 text-base font-medium text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc]"

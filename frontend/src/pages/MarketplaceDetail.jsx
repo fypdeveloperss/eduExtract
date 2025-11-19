@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
@@ -25,6 +25,8 @@ function MarketplaceDetail() {
   const [downloading, setDownloading] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [confirmingCheckout, setConfirmingCheckout] = useState(false);
+  const confirmingRef = useRef(false);
 
   useEffect(() => {
     fetchContentDetails();
@@ -32,6 +34,16 @@ function MarketplaceDetail() {
       fetchAccessInfo();
     }
   }, [id, user]);
+
+  useEffect(() => {
+    if (!user) return;
+    const params = new URLSearchParams(window.location.search);
+    const checkoutStatus = params.get('checkout');
+    const sessionId = params.get('session_id');
+    if (checkoutStatus === 'success' && sessionId && !confirmingRef.current) {
+      confirmCheckoutSession(sessionId);
+    }
+  }, [user, id]);
 
   const fetchContentDetails = async () => {
     try {
@@ -66,6 +78,27 @@ function MarketplaceDetail() {
       fetchAccessInfo();
       setPurchaseSuccess('');
     }, 3000);
+  };
+
+  const confirmCheckoutSession = async (sessionId) => {
+    try {
+      confirmingRef.current = true;
+      setConfirmingCheckout(true);
+      const response = await api.post('/api/marketplace/checkout/confirm', { sessionId });
+      if (response.data?.success) {
+        handlePurchaseSuccess(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to confirm checkout session:', error);
+      setError(error.response?.data?.error || 'Unable to verify payment. Please contact support.');
+    } finally {
+      setConfirmingCheckout(false);
+      confirmingRef.current = false;
+      const newUrl = new URL(window.location.href);
+      newUrl.searchParams.delete('checkout');
+      newUrl.searchParams.delete('session_id');
+      window.history.replaceState({}, document.title, newUrl.pathname + newUrl.search);
+    }
   };
 
   const handleDownload = async () => {
@@ -259,6 +292,32 @@ function MarketplaceDetail() {
     return icons[category] || '📁';
   };
 
+  const highlightStats = [
+    {
+      label: 'Total Views',
+      value: (content?.views || 0).toLocaleString(),
+      hint: 'Learners reached'
+    },
+    {
+      label: 'Likes & Saves',
+      value: (content?.likes || 0).toLocaleString(),
+      hint: 'Community interest'
+    },
+    {
+      label: 'Average Rating',
+      value: content?.averageRating ? `${content.averageRating}/5` : 'No ratings yet',
+      hint: 'Learner feedback'
+    },
+    {
+      label: 'Originality Score',
+      value:
+        content?.plagiarismScore !== undefined
+          ? `${Math.max(0, 100 - content.plagiarismScore)}%`
+          : 'Pending',
+      hint: 'Plagiarism report'
+    }
+  ];
+
   if (loading) {
     return (
       <div className="min-h-screen bg-white dark:bg-[#121212] flex items-center justify-center px-4">
@@ -293,8 +352,8 @@ function MarketplaceDetail() {
   const canAccessContent = accessInfo?.hasAccess || content.price === 0;
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] py-6 md:py-8">
-      <div className="max-w-7xl mx-auto px-4 md:px-6">
+    <div className="min-h-screen bg-[#f8f8f8] dark:bg-[#0d0d0d] py-6 md:py-10">
+      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8 text-sm md:text-base">
         {/* Breadcrumb */}
         <nav className="mb-6">
           <ol className="flex items-center space-x-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
@@ -311,200 +370,216 @@ function MarketplaceDetail() {
           </ol>
         </nav>
 
-        {/* Main Content */}
-        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-gray-200 dark:border-[#fafafa1a] shadow-xl overflow-hidden">
-          {/* Header Section */}
-          <div className="p-6 md:p-8 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
-            <div className="flex flex-col lg:flex-row gap-6">
-              <div className="flex-1">
-                <div className="flex flex-wrap items-center gap-2 mb-4">
-                  <span className="text-3xl">{getCategoryIcon(content.category)}</span>
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-xs font-medium text-[#171717cc] dark:text-[#fafafacc] capitalize">
-                    {content.category || 'Uncategorized'}
+        {/* Hero + Summary */}
+        <section className="bg-gradient-to-br from-[#171717] via-[#1f1f1f] to-[#2b2b2b] text-white rounded-3xl shadow-2xl border border-[#2a2a2a] p-8">
+          <div className="flex flex-col lg:flex-row gap-8">
+            <div className="flex-1">
+              <div className="flex flex-wrap items-center gap-3 mb-4">
+                <span className="text-4xl">{getCategoryIcon(content.category)}</span>
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                  {content.category || 'Uncategorized'}
+                </span>
+                {content.difficulty && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                    {content.difficulty}
                   </span>
-                  {content.difficulty && (
-                    <span className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getDifficultyClass()}`}>
-                      {content.difficulty}
-                    </span>
-                  )}
-                </div>
-
-                <h1 className="text-3xl md:text-4xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">{content.title}</h1>
-                <p className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] mb-6">{content.description}</p>
-
-                <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                  <span className="flex items-center gap-2">
-                    <span>📚</span>
-                    {content.subject || 'No subject listed'}
+                )}
+                {content.contentType && (
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                    {content.contentType}
                   </span>
-                  <span className="flex items-center gap-2">
-                    <span>👁️</span>
-                    {content.views || 0} views
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span>❤️</span>
-                    {content.likes || 0} likes
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <span>⭐</span>
-                    {content.averageRating ? `${content.averageRating}/5` : 'No ratings'}
-                  </span>
-                </div>
+                )}
               </div>
 
-              {/* Price and Action */}
-              <div className="w-full lg:max-w-sm">
-                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl p-6 shadow-sm">
-                  <div className="text-3xl font-bold mb-1 text-[#171717] dark:text-[#fafafa]">
-                    {formatPrice(content.price, content.currency)}
-                  </div>
-                  <div className="text-sm text-[#171717cc] dark:text-[#fafafacc] mb-4">
-                    {content.price === 0 ? 'Free for everyone' : 'One-time purchase'}
-                  </div>
+              <h1 className="text-3xl md:text-4xl font-bold mb-3">{content.title}</h1>
+              <p className="text-base md:text-lg text-white/80 leading-relaxed mb-6">
+                {content.description}
+              </p>
 
-                  {!user ? (
-                    <button
-                      onClick={() => navigate('/login')}
-                      className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
-                    >
-                      Sign in to Access
-                    </button>
-                  ) : canAccessContent ? (
-                    <button
-                      onClick={handleDownload}
-                      disabled={downloading}
-                      className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
-                    >
-                      {downloading ? (
-                        <>
-                          <LoaderSpinner size="sm" />
-                          Downloading...
-                        </>
-                      ) : (
-                        <>
-                          <span>📄</span>
-                          {['blog', 'summary', 'quiz', 'flashcards'].includes(content.contentType)
-                            ? 'Download PDF'
-                            : content.contentType === 'slides'
-                              ? 'Download PPTX'
-                              : 'Download Content'}
-                        </>
-                      )}
-                    </button>
-                  ) : (
-                    <button
-                      onClick={() => setShowPaymentModal(true)}
-                      className="w-full px-6 py-3 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-semibold flex items-center justify-center gap-2"
-                    >
-                      <span>💳</span>
-                      Purchase Now
-                    </button>
-                  )}
-
-                  {/* Delete Button for Content Creator */}
-                  {user && content.creatorId === user.uid && (
-                    <button
-                      onClick={handleDelete}
-                      disabled={deleting}
-                      className="w-full mt-3 px-6 py-2 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
-                    >
-                      {deleting ? (
-                        <>
-                          <LoaderSpinner size="sm" />
-                          Deleting...
-                        </>
-                      ) : (
-                        <>
-                          <span>🗑️</span>
-                          Delete Content
-                        </>
-                      )}
-                    </button>
-                  )}
-                </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                {highlightStats.map((stat) => (
+                  <div
+                    key={stat.label}
+                    className="p-3 rounded-2xl bg-white/5 border border-white/10"
+                  >
+                    <p className="text-xs uppercase tracking-wide text-white/60">{stat.label}</p>
+                    <p className="text-lg font-semibold">{stat.value}</p>
+                    <p className="text-[11px] text-white/60">{stat.hint}</p>
+                  </div>
+                ))}
               </div>
             </div>
-          </div>
 
-          {/* Content Body */}
-          <div className="p-6 md:p-8 space-y-8">
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              {/* Main Content */}
-              <div className="lg:col-span-2">
-                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 shadow-sm">
-                  <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
-                    <span className="mr-2">📄</span>
-                    Content Preview
-                  </h3>
-                  
-                  {canAccessContent ? (
-                    <div>
-                      {content.filePath ? (
-                        <div className="bg-white dark:bg-[#171717] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
-                          <div className="flex items-center space-x-3 mb-3">
-                            <span className="text-2xl">📎</span>
-                            <div>
-                              <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{content.contentData?.originalName || 'Document'}</div>
-                              <div className="text-sm text-gray-500 dark:text-gray-400">
-                                {content.contentData?.size ? `${(content.contentData.size / 1024 / 1024).toFixed(2)} MB` : ''}
-                              </div>
-                            </div>
-                          </div>
-                          <p className="text-gray-600 dark:text-gray-300 text-sm">
-                            This is a document file. Click the download button above to access the full content.
-                          </p>
-                        </div>
-                      ) : (
-                        <ContentDetail content={{
-                          ...content,
-                          type: content.contentType, // Map contentType to type for ContentDetail compatibility
-                          contentData: content.contentData || content.description // Fallback to description if contentData is empty
-                        }} />
-                      )}
-                    </div>
-                  ) : (
-                    <div className="bg-white dark:bg-[#171717] rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
-                      <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                        <span className="text-2xl">🔒</span>
-                      </div>
-                      <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Content Locked</h4>
-                      <p className="text-gray-600 dark:text-gray-300 mb-4">
-                        Purchase this content to unlock full access and download capabilities.
-                      </p>
-                      <button
-                        onClick={() => setShowPaymentModal(true)}
-                        className="px-6 py-3 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-medium flex items-center gap-2 justify-center"
-                      >
-                        <span>💳</span>
-                        Purchase for {formatPrice(content.price, content.currency)}
-                      </button>
-                    </div>
-                  )}
+            <div className="w-full lg:max-w-sm">
+              <div className="bg-white text-[#171717] rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-100">
+                <div>
+                  <p className="text-xs font-semibold text-[#17171799] uppercase tracking-wide">
+                    Access this resource
+                  </p>
+                  <p className="text-4xl font-bold mt-2">
+                    {formatPrice(content.price, content.currency)}
+                  </p>
+                  <p className="text-sm text-[#17171799]">
+                    {content.price === 0 ? 'Instant download' : 'One-time premium purchase'}
+                  </p>
                 </div>
 
-                {/* Tags */}
-                {content.tags && content.tags.length > 0 && (
-                  <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6">
-                    <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">Tags</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {content.tags.map((tag, index) => (
-                        <span
-                          key={index}
-                          className="px-3 py-1 rounded-full text-sm border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
-                        >
-                          #{tag}
-                        </span>
-                      ))}
-                    </div>
+                {!user ? (
+                  <button
+                    onClick={() => navigate('/login')}
+                    className="w-full px-6 py-3 bg-[#171717] text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                  >
+                    Sign in to Access
+                  </button>
+                ) : canAccessContent ? (
+                  <button
+                    onClick={handleDownload}
+                    disabled={downloading}
+                    className="w-full px-6 py-3 bg-[#171717] text-white rounded-xl hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                  >
+                    {downloading ? (
+                      <>
+                        <LoaderSpinner size="sm" />
+                        Preparing download...
+                      </>
+                    ) : (
+                      <>
+                        <span>⬇️</span>
+                        {['blog', 'summary', 'quiz', 'flashcards'].includes(content.contentType)
+                          ? 'Download PDF'
+                          : content.contentType === 'slides'
+                            ? 'Download PPTX'
+                            : 'Download Content'}
+                      </>
+                    )}
+                  </button>
+                ) : (
+                  <button
+                    onClick={() => setShowPaymentModal(true)}
+                    disabled={confirmingCheckout}
+                    className="w-full px-6 py-3 border border-gray-200 bg-white text-[#171717] rounded-xl hover:bg-gray-50 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    <span>💳</span>
+                    {confirmingCheckout ? 'Confirming purchase...' : 'Purchase Now'}
+                  </button>
+                )}
+
+                {confirmingCheckout && (
+                  <p className="text-xs text-[#17171799] flex items-center gap-2">
+                    <LoaderSpinner size="sm" />
+                    Finalizing your payment...
+                  </p>
+                )}
+
+                {purchaseSuccess && (
+                  <div className="text-xs text-emerald-600 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                    {purchaseSuccess}
                   </div>
                 )}
 
-                {/* Reviews Section */}
-                <ReviewSection 
-                  contentId={id}
-                  hasAccess={canAccessContent}
-                  onReviewSubmitted={fetchContentDetails}
-                />
+                {user && content.creatorId === user.uid && (
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="w-full px-6 py-2.5 border border-gray-200 bg-white text-[#171717cc] rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                  >
+                    {deleting ? (
+                      <>
+                        <LoaderSpinner size="sm" />
+                        Deleting...
+                      </>
+                    ) : (
+                      <>
+                        <span>🗑️</span>
+                        Delete Content
+                      </>
+                    )}
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Main Body */}
+        <div className="bg-white dark:bg-[#171717] rounded-2xl border border-gray-200 dark:border-[#fafafa1a] shadow-xl p-6 md:p-8 space-y-8">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+              {/* Main Content */}
+              <div className="lg:col-span-2">
+              <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6 shadow-sm">
+                <h3 className="text-xl font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4 flex items-center">
+                  <span className="mr-2">📄</span>
+                  Content Preview
+                </h3>
+                
+                {canAccessContent ? (
+                  <div>
+                    {content.filePath ? (
+                      <div className="bg-white dark:bg-[#171717] rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+                        <div className="flex items-center space-x-3 mb-3">
+                          <span className="text-2xl">📎</span>
+                          <div>
+                            <div className="font-medium text-[#171717cc] dark:text-[#fafafacc]">{content.contentData?.originalName || 'Document'}</div>
+                            <div className="text-sm text-gray-500 dark:text-gray-400">
+                              {content.contentData?.size ? `${(content.contentData.size / 1024 / 1024).toFixed(2)} MB` : ''}
+                            </div>
+                          </div>
+                        </div>
+                        <p className="text-gray-600 dark:text-gray-300 text-sm">
+                          This is a document file. Click the download button above to access the full content.
+                        </p>
+                      </div>
+                    ) : (
+                      <ContentDetail content={{
+                        ...content,
+                        type: content.contentType,
+                        contentData: content.contentData || content.description
+                      }} />
+                    )}
+                  </div>
+                ) : (
+                  <div className="bg-white dark:bg-[#171717] rounded-lg p-6 border border-gray-200 dark:border-gray-700 text-center">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-2xl">🔒</span>
+                    </div>
+                    <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">Content Locked</h4>
+                    <p className="text-gray-600 dark:text-gray-300 mb-4">
+                      Purchase this content to unlock full access and download capabilities.
+                    </p>
+                    <button
+                      onClick={() => setShowPaymentModal(true)}
+                      className="px-6 py-3 border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors font-medium flex items-center gap-2 justify-center"
+                    >
+                      <span>💳</span>
+                      Purchase for {formatPrice(content.price, content.currency)}
+                    </button>
+                  </div>
+                )}
+              </div>
+
+              {/* Tags */}
+              {content.tags && content.tags.length > 0 && (
+                <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-6">
+                  <h3 className="text-lg font-semibold text-[#171717cc] dark:text-[#fafafacc] mb-4">Tags</h3>
+                  <div className="flex flex-wrap gap-2">
+                    {content.tags.map((tag, index) => (
+                      <span
+                        key={index}
+                        className="px-3 py-1 rounded-full text-sm border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc]"
+                      >
+                        #{tag}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Reviews Section */}
+              <ReviewSection 
+                contentId={id}
+                hasAccess={canAccessContent}
+                onReviewSubmitted={fetchContentDetails}
+              />
               </div>
 
               {/* Sidebar */}
@@ -577,12 +652,6 @@ function MarketplaceDetail() {
                   </div>
                 </div>
 
-                {/* Purchase Success Message */}
-                {purchaseSuccess && (
-                  <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-xl p-4 text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                    {purchaseSuccess}
-                  </div>
-                )}
               </div>
             </div>
           </div>
@@ -598,8 +667,8 @@ function MarketplaceDetail() {
           />
         )}
       </div>
-    </div>
   );
+
 }
 
 export default MarketplaceDetail;

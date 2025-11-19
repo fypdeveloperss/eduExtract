@@ -3,6 +3,7 @@ import Layout from "./components/Layout";
 import Home from "./pages/Home";
 import About from "./pages/About";
 import Contact from "./pages/Contact";
+import Pricing from "./pages/Pricing";
 import Dashboard from "./pages/Dashboard";
 import { AuthProvider } from "./context/FirebaseAuthContext";
 import { CollaborationProvider } from "./context/CollaborationContext";
@@ -20,6 +21,7 @@ import AdminMarketplace from "./pages/AdminMarketplace";
 import Marketplace from "./pages/Marketplace";
 import MarketplaceDetail from "./pages/MarketplaceDetail";
 import MarketplaceUpload from "./pages/MarketplaceUpload";
+import SellerDashboard from "./pages/SellerDashboard";
 import Forum from "./pages/Forum";
 import ForumCategory from "./pages/ForumCategory";
 import ForumTopic from "./pages/ForumTopic";
@@ -46,6 +48,7 @@ function App() {
                 <Route index element={<Home />} />
                 <Route path="/about" element={<About />} />
                 <Route path="/contact" element={<Contact />} />
+                <Route path="/pricing" element={<Pricing />} />
                 <Route path="/" element={<Layout />}>
                   <Route path="dashboard" element={<Dashboard />} />
                   <Route path="content" element={<MyContent/>}/>
@@ -54,6 +57,7 @@ function App() {
                   <Route path="marketplace" element={<Marketplace />} />
                   <Route path="marketplace/content/:id" element={<MarketplaceDetail />} />
                   <Route path="marketplace/upload" element={<MarketplaceUpload />} />
+                  <Route path="marketplace/seller" element={<SellerDashboard />} />
                   <Route path="forum" element={<Forum />} />
                   <Route path="forum/category/:id" element={<ForumCategory />} />
                   <Route path="forum/topic/:id" element={<ForumTopic />} />

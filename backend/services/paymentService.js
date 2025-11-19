@@ -1,6 +1,13 @@
 const Purchase = require('../models/Purchase');
 const MarketplaceContent = require('../models/MarketplaceContent');
 
+const stripeSecret = process.env.STRIPE_SECRET_KEY;
+let stripeClient = null;
+if (stripeSecret) {
+  const Stripe = require('stripe');
+  stripeClient = new Stripe(stripeSecret);
+}
+
 class PaymentService {
   constructor() {
     // In a real application, you would integrate with Stripe, PayPal, or other payment processors
@@ -48,8 +55,7 @@ class PaymentService {
       const processor = this.paymentProcessors[paymentMethod] || this.paymentProcessors.manual;
       const paymentResult = await processor(paymentData);
 
-      // Create purchase record
-      const purchase = new Purchase({
+      const purchase = await this.createPurchaseRecord({
         contentId,
         buyerId,
         sellerId: content.creatorId,
@@ -57,11 +63,8 @@ class PaymentService {
         currency,
         paymentMethod,
         paymentStatus: paymentResult.status,
-        transactionId: paymentResult.transactionId,
-        status: 'active'
+        transactionId: paymentResult.transactionId
       });
-
-      await purchase.save();
 
       return {
         success: true,
@@ -77,11 +80,98 @@ class PaymentService {
   }
 
   /**
+   * Calculate commission and seller earnings
+   */
+  calculateCommission(amount, commissionRate = 0.15) {
+    const platformCommission = amount * commissionRate;
+    const sellerEarnings = amount - platformCommission;
+    return {
+      platformCommission: Math.round(platformCommission * 100) / 100,
+      sellerEarnings: Math.round(sellerEarnings * 100) / 100,
+      commissionRate
+    };
+  }
+
+  async createPurchaseRecord({
+    contentId,
+    buyerId,
+    sellerId,
+    amount,
+    currency,
+    paymentMethod,
+    paymentStatus,
+    transactionId,
+    commissionRate = 0.15
+  }) {
+    // Calculate commission and seller earnings
+    const { platformCommission, sellerEarnings } = this.calculateCommission(amount, commissionRate);
+    
+    const purchase = new Purchase({
+      contentId,
+      buyerId,
+      sellerId,
+      amount,
+      currency,
+      paymentMethod,
+      paymentStatus,
+      transactionId,
+      platformCommission,
+      commissionRate,
+      sellerEarnings,
+      payoutStatus: paymentStatus === 'completed' ? 'pending' : 'pending',
+      status: 'active'
+    });
+
+    await purchase.save();
+    return purchase;
+  }
+
+  async recordStripeCheckoutSession(session) {
+    if (!session || session.payment_status !== 'paid') {
+      throw new Error('Invalid Stripe session state');
+    }
+
+    const metadata = session.metadata || {};
+    const { contentId, buyerId, sellerId } = metadata;
+
+    if (!contentId || !buyerId || !sellerId) {
+      throw new Error('Missing metadata for Stripe session');
+    }
+
+    // Extract payment intent ID - handle both expanded object and string ID
+    const paymentIntentId = typeof session.payment_intent === 'string' 
+      ? session.payment_intent 
+      : session.payment_intent?.id || session.payment_intent;
+
+    const existing = await Purchase.findOne({ transactionId: paymentIntentId });
+    if (existing) {
+      return existing;
+    }
+
+    const amount = session.amount_total / 100;
+    const currency = session.currency?.toUpperCase() || 'USD';
+
+    return this.createPurchaseRecord({
+      contentId,
+      buyerId,
+      sellerId,
+      amount,
+      currency,
+      paymentMethod: 'stripe',
+      paymentStatus: 'completed',
+      transactionId: paymentIntentId,
+      commissionRate: 0.15 // 15% platform commission
+    });
+  }
+
+  /**
    * Process Stripe payment (placeholder for real integration)
    */
   async processStripePayment(paymentData) {
-    // This would integrate with Stripe API in production
-    // For now, we'll simulate a successful payment
+    if (!stripeClient) {
+      throw new Error('Stripe is not configured');
+    }
+
     return {
       status: 'completed',
       transactionId: 'STRIPE_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9)
@@ -184,6 +274,201 @@ class PaymentService {
       return sales;
     } catch (error) {
       console.error('Error fetching creator sales:', error);
+      throw error;
+    }
+  }
+
+  getStripeClient() {
+    return stripeClient;
+  }
+
+  /**
+   * Get seller's pending earnings (unpaid)
+   */
+  async getPendingEarnings(sellerId) {
+    try {
+      const Purchase = require('../models/Purchase');
+      const pendingPurchases = await Purchase.find({
+        sellerId,
+        paymentStatus: 'completed',
+        payoutStatus: 'pending'
+      });
+
+      const totalPending = pendingPurchases.reduce((sum, purchase) => {
+        return sum + (purchase.sellerEarnings || 0);
+      }, 0);
+
+      return {
+        totalPending: Math.round(totalPending * 100) / 100,
+        purchaseCount: pendingPurchases.length,
+        purchases: pendingPurchases.map(p => ({
+          purchaseId: p.purchaseId,
+          amount: p.sellerEarnings,
+          currency: p.currency,
+          purchasedAt: p.purchasedAt
+        }))
+      };
+    } catch (error) {
+      console.error('Error getting pending earnings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get seller's total earnings (all time)
+   */
+  async getTotalEarnings(sellerId) {
+    try {
+      const Purchase = require('../models/Purchase');
+      const allPurchases = await Purchase.find({
+        sellerId,
+        paymentStatus: 'completed'
+      });
+
+      const totalEarnings = allPurchases.reduce((sum, purchase) => {
+        return sum + (purchase.sellerEarnings || 0);
+      }, 0);
+
+      const paidEarnings = allPurchases
+        .filter(p => p.payoutStatus === 'paid')
+        .reduce((sum, purchase) => {
+          return sum + (purchase.sellerEarnings || 0);
+        }, 0);
+
+      return {
+        totalEarnings: Math.round(totalEarnings * 100) / 100,
+        paidEarnings: Math.round(paidEarnings * 100) / 100,
+        pendingEarnings: Math.round((totalEarnings - paidEarnings) * 100) / 100
+      };
+    } catch (error) {
+      console.error('Error getting total earnings:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Create payout request
+   */
+  async createPayoutRequest(sellerId, payoutData) {
+    try {
+      const Payout = require('../models/Payout');
+      const Purchase = require('../models/Purchase');
+
+      // Get pending earnings
+      const pendingEarnings = await this.getPendingEarnings(sellerId);
+      
+      if (pendingEarnings.totalPending <= 0) {
+        throw new Error('No pending earnings available for payout');
+      }
+
+      if (payoutData.amount > pendingEarnings.totalPending) {
+        throw new Error('Requested amount exceeds pending earnings');
+      }
+
+      // Get purchase IDs for the payout
+      const purchaseIds = pendingEarnings.purchases
+        .slice(0, Math.ceil((payoutData.amount / pendingEarnings.totalPending) * pendingEarnings.purchaseCount))
+        .map(p => p.purchaseId);
+
+      const payout = new Payout({
+        sellerId,
+        totalAmount: payoutData.amount,
+        currency: payoutData.currency || 'USD',
+        payoutMethod: payoutData.payoutMethod || 'manual',
+        payoutDetails: payoutData.payoutDetails || {},
+        status: 'pending',
+        purchaseIds
+      });
+
+      await payout.save();
+      return payout;
+    } catch (error) {
+      console.error('Error creating payout request:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Process payout (mark purchases as paid)
+   */
+  async processPayout(payoutId, adminId) {
+    try {
+      const Payout = require('../models/Payout');
+      const Purchase = require('../models/Purchase');
+
+      const payout = await Payout.findOne({ payoutId });
+      if (!payout) {
+        throw new Error('Payout not found');
+      }
+
+      if (payout.status !== 'pending') {
+        throw new Error('Payout is not in pending status');
+      }
+
+      // Update payout status
+      payout.status = 'processing';
+      payout.approvedAt = new Date();
+      payout.approvedBy = adminId;
+      await payout.save();
+
+      // Update purchase payout status
+      await Purchase.updateMany(
+        { purchaseId: { $in: payout.purchaseIds } },
+        { 
+          $set: { 
+            payoutStatus: 'processing',
+            payoutId: payout.payoutId
+          }
+        }
+      );
+
+      return payout;
+    } catch (error) {
+      console.error('Error processing payout:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Complete payout (mark as paid)
+   */
+  async completePayout(payoutId, transactionId = null) {
+    try {
+      const Payout = require('../models/Payout');
+      const Purchase = require('../models/Purchase');
+
+      const payout = await Payout.findOne({ payoutId });
+      if (!payout) {
+        throw new Error('Payout not found');
+      }
+
+      if (payout.status !== 'processing') {
+        throw new Error('Payout must be in processing status');
+      }
+
+      // Update payout status
+      payout.status = 'completed';
+      payout.completedAt = new Date();
+      payout.processedAt = new Date();
+      if (transactionId) {
+        payout.transactionId = transactionId;
+      }
+      await payout.save();
+
+      // Update purchase payout status
+      await Purchase.updateMany(
+        { purchaseId: { $in: payout.purchaseIds } },
+        { 
+          $set: { 
+            payoutStatus: 'paid',
+            payoutId: payout.payoutId
+          }
+        }
+      );
+
+      return payout;
+    } catch (error) {
+      console.error('Error completing payout:', error);
       throw error;
     }
   }

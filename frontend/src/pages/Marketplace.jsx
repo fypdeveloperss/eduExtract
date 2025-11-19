@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
 import MarketplaceContentSelectionModal from '../components/MarketplaceContentSelectionModal';
@@ -9,6 +9,7 @@ import LoaderSpinner from '../components/LoaderSpinner';
 
 function Marketplace() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [content, setContent] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -264,17 +265,26 @@ function Marketplace() {
               Browse Content
             </button>
             {user && (
-              <button
-                onClick={() => setActiveTab('purchased')}
-                className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm ${
-                  activeTab === 'purchased'
-                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
-                    : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
-                }`}
-              >
-                <span className="mr-2">🛒</span>
-                My Purchases
-              </button>
+              <>
+                <button
+                  onClick={() => setActiveTab('purchased')}
+                  className={`px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm ${
+                    activeTab === 'purchased'
+                      ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                      : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]'
+                  }`}
+                >
+                  <span className="mr-2">🛒</span>
+                  My Purchases
+                </button>
+                <button
+                  onClick={() => navigate('/marketplace/seller')}
+                  className="px-5 py-2 rounded-lg font-semibold transition-colors duration-200 text-sm text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1E1E1E]"
+                >
+                  <span className="mr-2">💰</span>
+                  Seller Dashboard
+                </button>
+              </>
             )}
           </div>
         </div>
