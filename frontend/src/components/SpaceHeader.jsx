@@ -2,11 +2,13 @@ import React, { useState } from 'react';
 import InviteModal from './InviteModal';
 import ContentSelectionModal from './ContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import './SpaceHeader.css';
 
 const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction, onSpaceUpdate }) => {
   const [showInviteModal, setShowInviteModal] = useState(false);
   const [showContentModal, setShowContentModal] = useState(false);
+  const { success, error, warning, info } = useCustomAlerts();
 
   const handleAddContent = async (selectedContent) => {
     try {
@@ -27,9 +29,9 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
       if (result.summary) {
         const { successful, failed, total } = result.summary;
         if (failed > 0) {
-          alert(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`);
+          warning(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`, 'Partial Success');
         } else {
-          alert(`Successfully added ${successful} content items to the space!`);
+          success(`Successfully added ${successful} content items to the space!`, 'Content Added');
         }
       }
 
@@ -38,9 +40,9 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
         onSpaceUpdate(); // Now always triggers a re-fetch in parent
       }
 
-    } catch (error) {
-      console.error('Error adding content:', error);
-      alert(`Failed to add content: ${error.message}`);
+    } catch (err) {
+      console.error('Error adding content:', err);
+      error(`Failed to add content: ${err.message}`, 'Add Content Failed');
     }
   };
 
@@ -86,9 +88,9 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
     setShowInviteModal(false);
     
     if (inviteData.userExists) {
-      alert(`✅ Invitation sent successfully!\n\n${inviteData.message}\n\nThe user will see this invitation in their CollabHub dashboard.`);
+      success(`Invitation sent successfully! ${inviteData.message} The user will see this invitation in their CollabHub dashboard.`, '✅ Invitation Sent');
     } else {
-      alert(`📧 Invitation sent!\n\n${inviteData.message}\n\nShare this invitation link with them:\n${inviteData.inviteUrl}`);
+      info(`Invitation sent! ${inviteData.message} Share this invitation link with them: ${inviteData.inviteUrl}`, '📧 Invitation Link Created');
     }
   };
 

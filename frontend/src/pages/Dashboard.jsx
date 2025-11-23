@@ -15,10 +15,12 @@ import useContentContext from "../hooks/useContentContext";
 import "./Dashboard.css";
 import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
+import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
 
 function Dashboard() {
   const [searchParams] = useSearchParams();
+  const { showInfo } = useNotification();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -1484,7 +1486,9 @@ function Dashboard() {
                     return;
                   }
                   // Future feature - recording functionality
-                  alert("Recording feature coming soon!");
+                  showInfo("Recording feature coming soon!", { 
+                    title: "Feature Coming Soon" 
+                  });
                 }}
               >
                 <div className="text-center">

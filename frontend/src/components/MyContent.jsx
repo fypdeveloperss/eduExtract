@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useNotification } from '../context/NotificationContext';
 import PageLoader from './PageLoader';
 import { 
   Download, 
@@ -30,6 +31,7 @@ import ContentSidebar from './ContentSidebar';
 
 const MyContent = () => {
   const { user } = useAuth();
+  const { showSuccess, showError, showWarning } = useNotification();
   const [contentList, setContentList] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -112,7 +114,10 @@ const MyContent = () => {
         const pendingCount = result.results.filter(r => r.success && r.status === 'pending').length;
         
         if (failed > 0) {
-          alert(`Published ${successful} out of ${total} items. ${failed} items failed to publish.`);
+          showWarning(`Published ${successful} out of ${total} items. ${failed} items failed to publish.`, {
+            title: 'Partial Success',
+            duration: 8000
+          });
         } else {
           let message = `Successfully published ${successful} items to the marketplace!`;
           if (approvedCount > 0) {
@@ -121,12 +126,17 @@ const MyContent = () => {
           if (pendingCount > 0) {
             message += `\n⏳ ${pendingCount} items are pending admin approval.`;
           }
-          alert(message);
+          showSuccess(message, {
+            title: 'Publishing Complete',
+            duration: 8000
+          });
         }
       }
     } catch (error) {
       console.error('Error publishing content:', error);
-      alert(`Error: ${error.message}`);
+      showError(`Error: ${error.message}`, {
+        title: 'Publishing Failed'
+      });
     }
   };
 
@@ -166,7 +176,9 @@ const MyContent = () => {
           filename = `${content.title.replace(/[^a-zA-Z0-9]/g, '_')}.pptx`;
           break;
         default:
-          alert(`Download not supported for content type: ${content.type}`);
+          showWarning(`Download not supported for content type: ${content.type}`, {
+            title: 'Download Not Available'
+          });
           return;
       }
 
@@ -185,7 +197,9 @@ const MyContent = () => {
 
     } catch (error) {
       console.error('Download failed:', error);
-      alert(`Failed to download ${content.type}: ${error.message || 'Please try again.'}`);
+      showError(`Failed to download ${content.type}: ${error.message || 'Please try again.'}`, {
+        title: 'Download Failed'
+      });
     } finally {
       setDownloadingItems(prev => {
         const newSet = new Set(prev);

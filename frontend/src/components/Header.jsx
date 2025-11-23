@@ -2,12 +2,14 @@ import { useState, useEffect, useRef } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { useAuth } from "../context/FirebaseAuthContext";
 import ThemeToggle from "./ThemeToggle";
+import FeedbackForm from "./FeedbackForm";
 import { ChevronDown, BookOpen, Target, Brain, Zap, Users, MessageCircle, FileText, StickyNote, ListChecks, ShoppingCart, MessageSquare } from "lucide-react";
 
 const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isFeaturesOpen, setIsFeaturesOpen] = useState(false);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const { user, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const featuresRef = useRef(null);
@@ -207,6 +209,16 @@ const Header = () => {
                       Contact
                     </Link>
                   </li>
+                  <li>
+                    <button
+                      onClick={() => setShowFeedbackForm(true)}
+                      className="hover:text-[#171717] dark:hover:text-[#fafafacc] text-[#171717cc] dark:text-[#fafafacc] text-sm xl:text-base flex items-center gap-1 transition-colors"
+                      title="Give us feedback"
+                    >
+                      <MessageCircle className="w-4 h-4" />
+                      Feedback
+                    </button>
+                  </li>
                 </ul>
               </div>
             </div>
@@ -387,6 +399,16 @@ const Header = () => {
                 >
                   Contact
                 </Link>
+                <button
+                  onClick={() => {
+                    setShowFeedbackForm(true);
+                    closeMobileMenu();
+                  }}
+                  className="flex items-center gap-2 px-3 py-2 text-base font-medium text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafacc] w-full text-left"
+                >
+                  <MessageCircle className="w-4 h-4" />
+                  Feedback
+                </button>
 
                 {/* Mobile Auth Section */}
                 <div className="pt-4 pb-3 border-t border-gray-200 dark:border-gray-700">
@@ -435,6 +457,12 @@ const Header = () => {
           )}
         </div>
       </nav>
+
+      {/* Feedback Form Modal */}
+      <FeedbackForm 
+        isOpen={showFeedbackForm} 
+        onClose={() => setShowFeedbackForm(false)} 
+      />
     </>
   );
 };

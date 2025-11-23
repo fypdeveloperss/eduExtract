@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 import Spinner from './Spinner';
 import './ChangeRequestsList.css';
 
 const ChangeRequestsList = ({ spaceId, selectedContent, onUpdate }) => {
   const { user } = useAuth();
+  const { error } = useCustomAlerts();
   const [changeRequests, setChangeRequests] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all'); // all, pending, approved, rejected
@@ -68,9 +70,9 @@ const ChangeRequestsList = ({ spaceId, selectedContent, onUpdate }) => {
       if (status === 'approved' && onUpdate) {
         onUpdate();
       }
-    } catch (error) {
-      console.error('Error reviewing change request:', error);
-      alert('Failed to review change request. Please try again.');
+    } catch (err) {
+      console.error('Error reviewing change request:', err);
+      error('Failed to review change request. Please try again.', 'Review Failed');
     } finally {
       setSubmittingReview(false);
     }

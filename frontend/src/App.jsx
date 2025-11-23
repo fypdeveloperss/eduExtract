@@ -9,6 +9,8 @@ import { AuthProvider } from "./context/FirebaseAuthContext";
 import { CollaborationProvider } from "./context/CollaborationContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import { PreferencesProvider } from "./context/PreferencesContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import { DialogProvider } from "./context/DialogContext";
 import OnboardingModal from "./components/OnboardingModal";
 import PreferencesSettings from "./components/PreferencesSettings";
 import Content from "./components/Content";
@@ -40,10 +42,12 @@ import SharedContentView from "./pages/SharedContentView";
 function App() {
   return (
     <AuthProvider>
-      <CollaborationProvider>
-        <OnboardingProvider>
-          <PreferencesProvider>
-            <Router>
+      <NotificationProvider>
+        <DialogProvider>
+          <CollaborationProvider>
+            <OnboardingProvider>
+              <PreferencesProvider>
+                <Router>
               <Routes>
                 <Route index element={<Home />} />
                 <Route path="/about" element={<About />} />
@@ -82,9 +86,11 @@ function App() {
             </Routes>
             <OnboardingModal />
           </Router>
-          </PreferencesProvider>
-        </OnboardingProvider>
-      </CollaborationProvider>
+                </PreferencesProvider>
+              </OnboardingProvider>
+            </CollaborationProvider>
+          </DialogProvider>
+        </NotificationProvider>
     </AuthProvider>
   );
 }

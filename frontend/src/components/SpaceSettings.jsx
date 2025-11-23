@@ -2,12 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import Spinner from './Spinner';
 import './SpaceSettings.css';
 
 const SpaceSettings = ({ space, onUpdate, onDelete }) => {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { success, error, warning } = useCustomAlerts();
   
   // Debug logging
   console.log('SpaceSettings rendered with:', { space: space?._id, user: user?.uid });
@@ -133,13 +135,13 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
         reviewMessage: '' // Send empty review message
       });
       if (response.data.success) {
-        alert('Join request approved successfully!');
+        success('Join request approved successfully!', 'Request Approved');
         fetchJoinRequests(); // Refresh list
         onUpdate?.(); // Update parent component
       }
     } catch (error) {
       console.error('Error approving join request:', error);
-      alert(error.response?.data?.error || 'Failed to approve join request');
+      error(error.response?.data?.error || 'Failed to approve join request', 'Approval Failed');
     }
   };
 
@@ -150,12 +152,12 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
         reviewMessage
       });
       if (response.data.success) {
-        alert('Join request rejected.');
+        success('Join request rejected.', 'Request Rejected');
         fetchJoinRequests(); // Refresh list
       }
     } catch (error) {
       console.error('Error rejecting join request:', error);
-      alert(error.response?.data?.error || 'Failed to reject join request');
+      error(error.response?.data?.error || 'Failed to reject join request', 'Rejection Failed');
     }
   };
 
@@ -201,10 +203,10 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
         onUpdate(); // Just call the update function to trigger refresh
       }
 
-      alert('Settings updated successfully!');
+      success('Settings updated successfully!', 'Settings Saved');
     } catch (error) {
       console.error('Error updating space settings:', error);
-      alert('Failed to update settings. Please try again.');
+      error('Failed to update settings. Please try again.', 'Update Failed');
     } finally {
       setSaving(false);
     }
@@ -214,7 +216,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
     const spaceTitle = space?.title || 'Unknown Space';
     
     if (deleteConfirmText !== spaceTitle) {
-      alert('Please enter the exact space title to confirm deletion.');
+      warning('Please enter the exact space title to confirm deletion.', 'Confirmation Required');
       return;
     }
 
@@ -230,7 +232,7 @@ const SpaceSettings = ({ space, onUpdate, onDelete }) => {
       navigate('/collaborate');
     } catch (error) {
       console.error('Error deleting space:', error);
-      alert('Failed to delete space. Please try again.');
+      error('Failed to delete space. Please try again.', 'Deletion Failed');
     } finally {
       setDeleting(false);
       setShowDeleteConfirm(false);

@@ -60,6 +60,7 @@ const collaborationRoutes = require('./routes/collaboration');
 // Import generation routes
 const generationRoutes = require('./routes/generation');
 const forumRoutes = require('./routes/forum');
+const feedbackRoutes = require('./routes/feedback');
 
 // Use route modules
 app.use('/api/auth', authRoutes);
@@ -68,6 +69,7 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/content', contentRoutes);
 app.use('/api/marketplace', marketplaceRoutes);
 app.use('/api/forum', forumRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/collaborate', collaborationRoutes);
 
 // Content generation routes (includes both root-level and /api routes)

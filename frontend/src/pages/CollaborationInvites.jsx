@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../utils/axios';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import Spinner from '../components/Spinner';
 
 const CollaborationInvites = () => {
@@ -9,6 +10,7 @@ const CollaborationInvites = () => {
   const [error, setError] = useState('');
   const [processing, setProcessing] = useState(null);
   const navigate = useNavigate();
+  const { error: showError } = useCustomAlerts();
 
   useEffect(() => {
     const loadInvites = async () => {
@@ -35,7 +37,7 @@ const CollaborationInvites = () => {
         if (res.data.space?._id) navigate(`/collaborate/space/${res.data.space._id}`);
       }
     } catch {
-      alert('Failed to accept invitation');
+      showError('Failed to accept invitation', 'Invitation Error');
     } finally {
       setProcessing(null);
     }
@@ -47,7 +49,7 @@ const CollaborationInvites = () => {
       const res = await api.post(`/api/collaborate/invitations/${id}/decline`);
       if (res.data.success) setInvitations(prev => prev.filter(i => i._id !== id));
     } catch {
-      alert('Failed to decline invitation');
+      showError('Failed to decline invitation', 'Invitation Error');
     } finally {
       setProcessing(null);
     }

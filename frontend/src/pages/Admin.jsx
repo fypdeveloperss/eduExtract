@@ -2,6 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/FirebaseAuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../utils/axios";
+import AdminFeedback from "./AdminFeedback";
 
 const Admin = () => {
   const { user, isAdmin, adminLoading } = useAuth();
@@ -174,6 +175,7 @@ const Admin = () => {
             { id: 'ai-performance', label: 'AI Performance' },
             { id: 'analytics', label: 'System Analytics' },
             { id: 'flagged', label: 'Flagged Content' },
+            { id: 'feedback', label: 'User Feedback' },
             { id: 'activity', label: 'User Activity' }
           ].map(tab => (
             <button
@@ -348,6 +350,9 @@ const Admin = () => {
           onRefresh={fetchDashboardData}
         />
       )}
+
+      {/* User Feedback Tab */}
+      {activeTab === 'feedback' && <AdminFeedback />}
 
       {/* User Activity Tab */}
       {activeTab === 'activity' && (

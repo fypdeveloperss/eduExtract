@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import api from '../utils/axios';
 import JoinRequestModal from './JoinRequestModal';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import './CollaborationSpaceCard.css';
 
 const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) => {
+  const { success, error } = useCustomAlerts();
   const [joining, setJoining] = useState(false);
   const [showJoinRequestModal, setShowJoinRequestModal] = useState(false);
   const [joinRequestStatus, setJoinRequestStatus] = useState(null);
@@ -49,13 +51,13 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
       const response = await api.post(`/api/collaborate/spaces/${space._id}/join`);
       
       if (response.data.success) {
-        alert('Successfully joined the collaboration space!');
+        success('Successfully joined the collaboration space!', 'Welcome to the Space');
         onJoinSpace?.(space._id);
         // Space has been joined, the card will update from parent
       }
     } catch (error) {
       console.error('Error joining space:', error);
-      alert(error.response?.data?.error || 'Failed to join space');
+      error(error.response?.data?.error || 'Failed to join space', 'Join Failed');
     } finally {
       setJoining(false);
     }
@@ -71,7 +73,7 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
       const response = await api.post('/api/collaborate/join-requests', requestData);
       
       if (response.data.success) {
-        alert('Join request sent successfully! The space owner will review your request.');
+        success('Join request sent successfully! The space owner will review your request.', 'Request Sent');
         setJoinRequestStatus({ hasRequest: true, status: 'pending' });
         setShowJoinRequestModal(false);
       }

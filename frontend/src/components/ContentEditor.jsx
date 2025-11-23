@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 
 const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
   const { user } = useAuth();
+  const { success, error, warning } = useCustomAlerts();
   const [editedContent, setEditedContent] = useState('');
   const [changeTitle, setChangeTitle] = useState('');
   const [changeDescription, setChangeDescription] = useState('');
@@ -39,12 +41,12 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
 
   const handleAiAssist = async () => {
     if (!aiPrompt.trim()) {
-      alert('Please enter a prompt for AI assistance');
+      warning('Please enter a prompt for AI assistance', 'Prompt Required');
       return;
     }
 
     if (!editedContent.trim()) {
-      alert('No content to enhance. Please add some content first.');
+      warning('No content to enhance. Please add some content first.', 'Content Required');
       return;
     }
 
@@ -87,7 +89,7 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
         });
       } else {
         console.error('AI assist failed:', response.data.error);
-        alert(`AI assistance failed: ${response.data.error}`);
+        error(`AI assistance failed: ${response.data.error}`, 'AI Error');
       }
     } catch (error) {
       console.error('AI assist error:', error);
@@ -106,7 +108,7 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
         errorMessage = error.message;
       }
       
-      alert(`Error getting AI assistance: ${errorMessage}`);
+      error(`Error getting AI assistance: ${errorMessage}`, 'AI Service Error');
     } finally {
       setAiLoading(false);
     }
@@ -114,12 +116,12 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
 
   const handleSubmitChangeRequest = async () => {
     if (!changeTitle.trim() || !changeDescription.trim()) {
-      alert('Please provide a title and description for your change request.');
+      warning('Please provide a title and description for your change request.', 'Details Required');
       return;
     }
 
     if (editedContent === (typeof content.content === 'string' ? content.content : JSON.stringify(content.content, null, 2))) {
-      alert('No changes detected. Please make some changes before submitting a request.');
+      warning('No changes detected. Please make some changes before submitting a request.', 'No Changes Found');
       return;
     }
 
@@ -146,13 +148,13 @@ const ContentEditor = ({ content, spaceId, onClose, onSubmitRequest }) => {
       const response = await api.post(`/api/collaborate/content/${content._id}/change-requests`, changeRequestData);
 
       if (response.data.success) {
-        alert('Change request submitted successfully!');
+        success('Change request submitted successfully!', 'Request Submitted');
         onSubmitRequest?.();
         onClose();
       }
     } catch (error) {
       console.error('Error submitting change request:', error);
-      alert('Error submitting change request. Please try again.');
+      error('Error submitting change request. Please try again.', 'Submission Error');
     } finally {
       setSubmitting(false);
     }

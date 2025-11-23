@@ -1,10 +1,12 @@
 import { useState } from "react";
 import { Download } from "lucide-react";
 import api from "../utils/axios";
+import { useCustomAlerts } from "../hooks/useCustomAlerts";
 import Flashcard from "./FlashCard";
 
 function FlashCardGallery(props) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { error } = useCustomAlerts();
 
   const handleDownload = async () => {
     if (!props.flashcards) return;
@@ -27,9 +29,9 @@ function FlashCardGallery(props) {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download flashcards. Please try again.');
+    } catch (err) {
+      console.error('Download failed:', err);
+      error('Failed to download flashcards. Please try again.', 'Download Error');
     } finally {
       setIsDownloading(false);
     }

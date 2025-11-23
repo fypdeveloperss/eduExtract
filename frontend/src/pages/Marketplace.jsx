@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 import MarketplaceContentSelectionModal from '../components/MarketplaceContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
@@ -10,6 +11,7 @@ import LoaderSpinner from '../components/LoaderSpinner';
 function Marketplace() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { success, error: showError, warning } = useCustomAlerts();
   const [content, setContent] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -122,25 +124,25 @@ function Marketplace() {
         const pendingCount = result.results.filter(r => r.success && r.status === 'pending').length;
         
         if (failed > 0) {
-          alert(`Published ${successful} out of ${total} items. ${failed} items failed to publish. Check console for details.`);
+          warning(`Published ${successful} out of ${total} items. ${failed} items failed to publish. Check console for details.`, 'Partial Success');
           console.log('Failed items:', result.results.filter(r => !r.success));
         } else {
           let message = `Successfully published ${successful} items to the marketplace!`;
           if (approvedCount > 0) {
-            message += `\n✅ ${approvedCount} items are now live and visible.`;
+            message += ` ${approvedCount} items are now live and visible.`;
           }
           if (pendingCount > 0) {
-            message += `\n⏳ ${pendingCount} items are pending admin approval.`;
+            message += ` ${pendingCount} items are pending admin approval.`;
           }
-          alert(message);
+          success(message, 'Content Published');
         }
       }
 
       // Refresh content list to show new items
       fetchContent();
-    } catch (error) {
-      console.error('Error publishing content:', error);
-      alert(`Error: ${error.message}`);
+    } catch (err) {
+      console.error('Error publishing content:', err);
+      showError(`Error: ${err.message}`, 'Publishing Failed');
     }
   };
 
