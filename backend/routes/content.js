@@ -49,10 +49,61 @@ async function saveUserContent(userId, title, type, originalContent, generatedCo
   }
 }
 
-// Get user's content
+// Get user's content with advanced filtering and search
 router.get('/', verifyToken, async (req, res) => {
   try {
-    const content = await ContentService.getContentByUserId(req.user.uid);
+    const { 
+      search, 
+      type, 
+      category, 
+      subject, 
+      difficulty, 
+      tags,
+      dateFrom,
+      dateTo,
+      sortBy = 'createdAt',
+      sortOrder = 'desc'
+    } = req.query;
+
+    // Build query
+    const query = { userId: req.user.uid };
+
+    // Text search
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { subject: { $regex: search, $options: 'i' } },
+        { tags: { $in: [new RegExp(search, 'i')] } }
+      ];
+    }
+
+    // Filters
+    if (type) query.type = type;
+    if (category) query.category = category;
+    if (subject) query.subject = { $regex: subject, $options: 'i' };
+    if (difficulty) query.difficulty = difficulty;
+    
+    // Tag filter
+    if (tags) {
+      const tagArray = Array.isArray(tags) ? tags : [tags];
+      query.tags = { $in: tagArray.map(tag => new RegExp(tag, 'i')) };
+    }
+
+    // Date range filter
+    if (dateFrom || dateTo) {
+      query.createdAt = {};
+      if (dateFrom) query.createdAt.$gte = new Date(dateFrom);
+      if (dateTo) query.createdAt.$lte = new Date(dateTo);
+    }
+
+    // Sort
+    const sort = {};
+    sort[sortBy] = sortOrder === 'desc' ? -1 : 1;
+
+    const content = await GeneratedContent.find(query)
+      .sort(sort)
+      .lean();
+
     res.json(content);
   } catch (error) {
     console.error('Error retrieving content:', error);
@@ -145,6 +196,59 @@ router.delete('/admin/:contentId', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error deleting content:', error);
     res.status(500).json({ error: 'Failed to delete content' });
+  }
+});
+
+// Update content metadata (tags, category, subject, difficulty)
+router.put('/:contentId/metadata', verifyToken, async (req, res) => {
+  try {
+    const { contentId } = req.params;
+    const { tags, category, subject, difficulty, title } = req.body;
+
+    const content = await GeneratedContent.findOne({ 
+      _id: contentId, 
+      userId: req.user.uid 
+    });
+
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    // Update fields if provided
+    if (tags !== undefined) content.tags = Array.isArray(tags) ? tags : [];
+    if (category !== undefined) content.category = category;
+    if (subject !== undefined) content.subject = subject;
+    if (difficulty !== undefined) content.difficulty = difficulty;
+    if (title !== undefined) content.title = title;
+    
+    content.updatedAt = new Date();
+    await content.save();
+
+    res.json(content);
+  } catch (error) {
+    console.error('Error updating content metadata:', error);
+    res.status(500).json({ error: 'Failed to update content metadata' });
+  }
+});
+
+// Get all unique tags for the user
+router.get('/tags/all', verifyToken, async (req, res) => {
+  try {
+    const content = await GeneratedContent.find({ userId: req.user.uid })
+      .select('tags')
+      .lean();
+
+    const allTags = new Set();
+    content.forEach(item => {
+      if (item.tags && Array.isArray(item.tags)) {
+        item.tags.forEach(tag => allTags.add(tag));
+      }
+    });
+
+    res.json(Array.from(allTags).sort());
+  } catch (error) {
+    console.error('Error fetching tags:', error);
+    res.status(500).json({ error: 'Failed to fetch tags' });
   }
 });
 

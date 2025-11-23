@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useMemo, useCallback, useRef } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNotification } from '../context/NotificationContext';
 import PageLoader from './PageLoader';
@@ -22,7 +22,13 @@ import {
   Grid3x3,
   List,
   MoreVertical,
-  Sparkles
+  Sparkles,
+  Tag,
+  X,
+  Plus,
+  Edit2,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import api from '../utils/axios';
 import MarketplaceContentSelectionModal from './MarketplaceContentSelectionModal';
@@ -34,6 +40,7 @@ const MyContent = () => {
   const { showSuccess, showError, showWarning } = useNotification();
   const [contentList, setContentList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [filterLoading, setFilterLoading] = useState(false);
   const [error, setError] = useState(null);
   const [showPublishModal, setShowPublishModal] = useState(false);
   const [selectedContentForPublish, setSelectedContentForPublish] = useState(null);
@@ -45,27 +52,123 @@ const MyContent = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [sidebarContentId, setSidebarContentId] = useState(null);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const [initialLoad, setInitialLoad] = useState(true);
+  
+  // Advanced filtering states
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [filterCategory, setFilterCategory] = useState('');
+  const [filterSubject, setFilterSubject] = useState('');
+  const [filterDifficulty, setFilterDifficulty] = useState('');
+  const [selectedTags, setSelectedTags] = useState([]);
+  const [availableTags, setAvailableTags] = useState([]);
+  const [dateFrom, setDateFrom] = useState('');
+  const [dateTo, setDateTo] = useState('');
+  
+  // Debounced filter states (for API calls)
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState('');
+  const [debouncedFilterSubject, setDebouncedFilterSubject] = useState('');
+  
+  // Tag editing states
+  const [editingContentId, setEditingContentId] = useState(null);
+  const [editingTags, setEditingTags] = useState([]);
+  const [newTagInput, setNewTagInput] = useState('');
+  
+  // Refs for debouncing
+  const searchDebounceRef = useRef(null);
+  const subjectDebounceRef = useRef(null);
 
+  // Debounce search query
+  useEffect(() => {
+    if (searchDebounceRef.current) {
+      clearTimeout(searchDebounceRef.current);
+    }
+    searchDebounceRef.current = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+    
+    return () => {
+      if (searchDebounceRef.current) {
+        clearTimeout(searchDebounceRef.current);
+      }
+    };
+  }, [searchQuery]);
+
+  // Debounce subject filter
+  useEffect(() => {
+    if (subjectDebounceRef.current) {
+      clearTimeout(subjectDebounceRef.current);
+    }
+    subjectDebounceRef.current = setTimeout(() => {
+      setDebouncedFilterSubject(filterSubject);
+    }, 300);
+    
+    return () => {
+      if (subjectDebounceRef.current) {
+        clearTimeout(subjectDebounceRef.current);
+      }
+    };
+  }, [filterSubject]);
+
+  // Fetch content with debounced values
   useEffect(() => {
     const fetchContent = async () => {
       if (!user) {
         setError('Please sign in to view your content.');
         setLoading(false);
+        setInitialLoad(false);
         return;
       }
       try {
-        setLoading(true);
+        // Only show full page loader on initial load
+        if (initialLoad) {
+          setLoading(true);
+        } else {
+          // For subsequent filter changes, use subtle loading indicator
+          setFilterLoading(true);
+        }
         setError(null);
-        const res = await api.get(`/api/content`);
+        
+        // Build query params using debounced values
+        const params = new URLSearchParams();
+        if (debouncedSearchQuery) params.append('search', debouncedSearchQuery);
+        if (activeTab !== 'all') params.append('type', activeTab);
+        if (filterCategory) params.append('category', filterCategory);
+        if (debouncedFilterSubject) params.append('subject', debouncedFilterSubject);
+        if (filterDifficulty) params.append('difficulty', filterDifficulty);
+        if (selectedTags.length > 0) {
+          selectedTags.forEach(tag => params.append('tags', tag));
+        }
+        if (dateFrom) params.append('dateFrom', dateFrom);
+        if (dateTo) params.append('dateTo', dateTo);
+        
+        const res = await api.get(`/api/content?${params.toString()}`);
         setContentList(res.data);
+        setInitialLoad(false);
       } catch (err) {
         setError(err.response?.data?.error || 'Failed to fetch content.');
+        setInitialLoad(false);
       } finally {
         setLoading(false);
+        setFilterLoading(false);
       }
     };
     fetchContent();
-  }, [user]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, debouncedSearchQuery, activeTab, filterCategory, debouncedFilterSubject, filterDifficulty, selectedTags, dateFrom, dateTo]);
+
+  // Fetch available tags
+  useEffect(() => {
+    const fetchTags = async () => {
+      if (!user) return;
+      try {
+        const res = await api.get('/api/content/tags/all');
+        setAvailableTags(res.data);
+      } catch (err) {
+        console.error('Failed to fetch tags:', err);
+      }
+    };
+    fetchTags();
+  }, [user, contentList]);
 
   useEffect(() => {
     const fetchQuizAttempts = async () => {
@@ -209,52 +312,103 @@ const MyContent = () => {
     }
   };
 
-  const groupedContent = contentList.reduce((acc, item) => {
-    const type = item.type || 'other';
-    if (!acc[type]) {
-      acc[type] = [];
-    }
-    acc[type].push(item);
-    return acc;
-  }, {});
+  const groupedContent = useMemo(() => {
+    return contentList.reduce((acc, item) => {
+      const type = item.type || 'other';
+      if (!acc[type]) {
+        acc[type] = [];
+      }
+      acc[type].push(item);
+      return acc;
+    }, {});
+  }, [contentList]);
 
-  const getFilteredContent = () => {
-    let filtered = activeTab === 'all' 
-      ? contentList 
-      : contentList.filter(item => (item.type || 'other') === activeTab);
+  const filteredContent = useMemo(() => {
+    // Server-side filtering is now handled, but we still need client-side quiz filtering
+    let filtered = contentList;
     
     if (activeTab === 'quiz') {
       if (quizFilter === 'solved') {
-        filtered = filtered.filter(item => isQuizSolved(item._id));
+        filtered = filtered.filter(item => {
+          return quizAttempts.some(attempt => {
+            const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
+            return attemptQuizId === item._id.toString();
+          });
+        });
       } else if (quizFilter === 'unsolved') {
-        filtered = filtered.filter(item => !isQuizSolved(item._id));
+        filtered = filtered.filter(item => {
+          return !quizAttempts.some(attempt => {
+            const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
+            return attemptQuizId === item._id.toString();
+          });
+        });
       }
-    }
-
-    if (searchQuery.trim()) {
-      filtered = filtered.filter(item => 
-        item.title.toLowerCase().includes(searchQuery.toLowerCase())
-      );
     }
     
     return filtered;
+  }, [contentList, activeTab, quizFilter, quizAttempts]);
+
+  const handleUpdateMetadata = useCallback(async (contentId, metadata) => {
+    try {
+      const res = await api.put(`/api/content/${contentId}/metadata`, metadata);
+      // Update local state
+      setContentList(prev => prev.map(item => 
+        item._id === contentId ? { ...item, ...res.data } : item
+      ));
+      showSuccess('Content metadata updated successfully');
+      setEditingContentId(null);
+      setEditingTags([]);
+      setNewTagInput('');
+    } catch (err) {
+      showError(err.response?.data?.error || 'Failed to update metadata');
+    }
+  }, [showSuccess, showError]);
+
+  const handleAddTag = (contentId, currentTags = []) => {
+    setEditingContentId(contentId);
+    setEditingTags([...currentTags]);
+    setNewTagInput('');
   };
 
-  const isQuizSolved = (quizId) => {
+  const handleSaveTags = async (contentId) => {
+    await handleUpdateMetadata(contentId, { tags: editingTags });
+  };
+
+  const handleAddTagToEditing = () => {
+    const tag = newTagInput.trim();
+    if (tag && !editingTags.includes(tag)) {
+      setEditingTags([...editingTags, tag]);
+      setNewTagInput('');
+    }
+  };
+
+  const handleRemoveTagFromEditing = (tagToRemove) => {
+    setEditingTags(editingTags.filter(tag => tag !== tagToRemove));
+  };
+
+  const clearFilters = () => {
+    setFilterCategory('');
+    setFilterSubject('');
+    setFilterDifficulty('');
+    setSelectedTags([]);
+    setDateFrom('');
+    setDateTo('');
+  };
+
+  const isQuizSolved = useCallback((quizId) => {
     return quizAttempts.some(attempt => {
       const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
       return attemptQuizId === quizId.toString();
     });
-  };
+  }, [quizAttempts]);
 
-  const getQuizAttempt = (quizId) => {
+  const getQuizAttempt = useCallback((quizId) => {
     return quizAttempts.find(attempt => {
       const attemptQuizId = attempt.quizId._id ? attempt.quizId._id.toString() : attempt.quizId.toString();
       return attemptQuizId === quizId.toString();
     });
-  };
+  }, [quizAttempts]);
 
-  const filteredContent = getFilteredContent();
 
   const contentTypeConfig = {
     blog: {
@@ -338,16 +492,18 @@ const MyContent = () => {
 
   if (error) {
     return (
-      <div className="max-w-7xl mx-auto px-4 py-4">
+      <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+        <div className="max-w-7xl mx-auto px-4 md:px-4 space-y-8">
         <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl shadow-lg p-6 text-center">
           <p className="text-sm text-[#171717] dark:text-[#fafafa]">{error}</p>
         </div>
-      </div>
+      </div></div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
+      <div className="max-w-7xl mx-auto px-4 md:px-4 space-y-8">
       {/* Header Section */}
       <div className="mb-6">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
@@ -405,35 +561,179 @@ const MyContent = () => {
             <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-[#171717cc] dark:text-[#fafafa66]" />
             <input
               type="text"
-              placeholder="Search content..."
+              placeholder="Search content, tags, or subjects..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-[#171717] dark:text-[#fafafa] placeholder-[#171717cc] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a] focus:border-transparent transition-all text-sm"
+              className="w-full pl-10 pr-10 py-2.5 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-[#171717] dark:text-[#fafafa] placeholder-[#171717cc] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a] focus:border-transparent transition-all text-sm"
             />
+            {filterLoading && (
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                <div className="w-4 h-4 border-2 border-gray-300 dark:border-[#fafafa66] border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg p-1">
+          <div className="flex items-center gap-2">
             <button
-              onClick={() => setViewMode('grid')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'grid'
-                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-[#fafafa]'
-                  : 'text-gray-400 dark:text-[#fafafa66] hover:text-gray-600 dark:hover:text-[#fafafa99]'
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              className={`flex items-center gap-2 px-4 py-2.5 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm font-semibold transition-colors ${
+                showAdvancedFilters 
+                  ? 'bg-gray-100 dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa]' 
+                  : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1E1E1E]'
               }`}
             >
-              <Grid3x3 className="w-5 h-5" />
+              <Filter className="w-4 h-4" />
+              Filters
+              {showAdvancedFilters ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
             </button>
-            <button
-              onClick={() => setViewMode('list')}
-              className={`p-2 rounded-lg transition-colors ${
-                viewMode === 'list'
-                  ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-[#fafafa]'
-                  : 'text-gray-400 dark:text-[#fafafa66] hover:text-gray-600 dark:hover:text-[#fafafa99]'
-              }`}
-            >
-              <List className="w-5 h-5" />
-            </button>
+            <div className="flex items-center gap-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewMode === 'grid'
+                    ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-[#fafafa]'
+                    : 'text-gray-400 dark:text-[#fafafa66] hover:text-gray-600 dark:hover:text-[#fafafa99]'
+                }`}
+              >
+                <Grid3x3 className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('list')}
+                className={`p-2 rounded-lg transition-colors ${
+                  viewMode === 'list'
+                    ? 'bg-gray-100 dark:bg-[#fafafa1a] text-gray-900 dark:text-[#fafafa]'
+                    : 'text-gray-400 dark:text-[#fafafa66] hover:text-gray-600 dark:hover:text-[#fafafa99]'
+                }`}
+              >
+                <List className="w-5 h-5" />
+              </button>
+            </div>
           </div>
         </div>
+
+        {/* Advanced Filters Panel */}
+        {showAdvancedFilters && (
+          <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-6 mb-4 shadow-sm">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] flex items-center gap-2">
+                <Filter className="w-5 h-5" />
+                Advanced Filters
+              </h3>
+              <button
+                onClick={clearFilters}
+                className="text-sm text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] font-medium"
+              >
+                Clear All
+              </button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Category Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Category</label>
+                <select
+                  value={filterCategory}
+                  onChange={(e) => setFilterCategory(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                >
+                  <option value="">All Categories</option>
+                  <option value="mathematics">Mathematics</option>
+                  <option value="science">Science</option>
+                  <option value="history">History</option>
+                  <option value="literature">Literature</option>
+                  <option value="languages">Languages</option>
+                  <option value="arts">Arts</option>
+                  <option value="technology">Technology</option>
+                  <option value="business">Business</option>
+                  <option value="health">Health</option>
+                  <option value="other">Other</option>
+                </select>
+              </div>
+
+              {/* Subject Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Subject</label>
+                <input
+                  type="text"
+                  placeholder="Filter by subject..."
+                  value={filterSubject}
+                  onChange={(e) => setFilterSubject(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] placeholder-[#171717cc] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                />
+              </div>
+
+              {/* Difficulty Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Difficulty</label>
+                <select
+                  value={filterDifficulty}
+                  onChange={(e) => setFilterDifficulty(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                >
+                  <option value="">All Levels</option>
+                  <option value="beginner">Beginner</option>
+                  <option value="intermediate">Intermediate</option>
+                  <option value="advanced">Advanced</option>
+                </select>
+              </div>
+
+              {/* Tags Filter */}
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Tags</label>
+                <div className="flex flex-wrap gap-2 mb-2">
+                  {selectedTags.map(tag => (
+                    <span
+                      key={tag}
+                      className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] rounded-lg text-xs font-medium border border-gray-200 dark:border-[#fafafa1a]"
+                    >
+                      {tag}
+                      <button
+                        onClick={() => setSelectedTags(selectedTags.filter(t => t !== tag))}
+                        className="hover:text-red-500"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+                <select
+                  value=""
+                  onChange={(e) => {
+                    if (e.target.value && !selectedTags.includes(e.target.value)) {
+                      setSelectedTags([...selectedTags, e.target.value]);
+                    }
+                    e.target.value = '';
+                  }}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                >
+                  <option value="">Select a tag...</option>
+                  {availableTags.filter(tag => !selectedTags.includes(tag)).map(tag => (
+                    <option key={tag} value={tag}>{tag}</option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Date Range Filters */}
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Date From</label>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Date To</label>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="w-full px-3 py-2 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                />
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Tabs */}
         <div className="flex flex-wrap gap-2 mb-4 border-b border-gray-200 dark:border-[#fafafa1a] pb-2">
@@ -498,14 +798,19 @@ const MyContent = () => {
       </div>
 
       {/* Content Display */}
-      {filteredContent.length === 0 ? (
+      {filterLoading && filteredContent.length === 0 && contentList.length === 0 ? (
+        <div className="text-center py-12 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] shadow-lg p-8">
+          <div className="w-8 h-8 border-2 border-gray-300 dark:border-[#fafafa66] border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Loading...</p>
+        </div>
+      ) : filteredContent.length === 0 ? (
         <div className="text-center py-12 bg-white dark:bg-[#171717] rounded-xl border border-gray-200 dark:border-[#fafafa1a] shadow-lg p-8">
           <Folder className="w-12 h-12 text-[#171717cc] dark:text-[#fafafa66] mx-auto mb-4" />
           <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">
-            {searchQuery ? 'No results found' : 'No content found'}
+            {searchQuery || filterCategory || filterSubject || filterDifficulty || selectedTags.length > 0 ? 'No results found' : 'No content found'}
           </h3>
           <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-            {searchQuery ? 'Try adjusting your search query' : 'Start creating content to see it here'}
+            {searchQuery || filterCategory || filterSubject || filterDifficulty || selectedTags.length > 0 ? 'Try adjusting your filters' : 'Start creating content to see it here'}
           </p>
         </div>
       ) : (
@@ -545,6 +850,49 @@ const MyContent = () => {
                       {item.title}
                     </h3>
                   </button>
+
+                  {/* Metadata Display */}
+                  <div className="mb-3 space-y-2">
+                    {(item.category || item.subject || item.difficulty) && (
+                      <div className="flex flex-wrap gap-2 text-xs">
+                        {item.category && (
+                          <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800/50 capitalize">
+                            {item.category}
+                          </span>
+                        )}
+                        {item.subject && (
+                          <span className="px-2 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-800/50">
+                            {item.subject}
+                          </span>
+                        )}
+                        {item.difficulty && (
+                          <span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800/50 capitalize">
+                            {item.difficulty}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    
+                    {/* Tags Display */}
+                    {item.tags && item.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1.5">
+                        {item.tags.slice(0, 3).map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] rounded-lg text-xs font-medium border border-gray-200 dark:border-[#fafafa1a]"
+                          >
+                            <Tag className="w-3 h-3" />
+                            {tag}
+                          </span>
+                        ))}
+                        {item.tags.length > 3 && (
+                          <span className="px-2 py-0.5 text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                            +{item.tags.length - 3} more
+                          </span>
+                        )}
+                      </div>
+                    )}
+                  </div>
 
                   <div className="flex items-center gap-3 text-xs text-[#171717cc] dark:text-[#fafafacc] mb-3">
                     <div className="flex items-center gap-1.5">
@@ -588,6 +936,13 @@ const MyContent = () => {
                     >
                       <Rocket className="w-3.5 h-3.5" />
                     </button>
+                    <button
+                      onClick={() => handleAddTag(item._id, item.tags || [])}
+                      className="p-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                      title="Edit Tags & Metadata"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
                   </div>
                 </div>
               );
@@ -619,6 +974,45 @@ const MyContent = () => {
                           </div>
                         )}
                       </div>
+
+                      {/* Metadata Display */}
+                      {(item.category || item.subject || item.difficulty || (item.tags && item.tags.length > 0)) && (
+                        <div className="flex flex-wrap items-center gap-2 mb-2">
+                          {item.category && (
+                            <span className="px-2 py-1 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 rounded-lg border border-blue-200 dark:border-blue-800/50 text-xs capitalize">
+                              {item.category}
+                            </span>
+                          )}
+                          {item.subject && (
+                            <span className="px-2 py-1 bg-purple-50 dark:bg-purple-900/20 text-purple-700 dark:text-purple-300 rounded-lg border border-purple-200 dark:border-purple-800/50 text-xs">
+                              {item.subject}
+                            </span>
+                          )}
+                          {item.difficulty && (
+                            <span className="px-2 py-1 bg-emerald-50 dark:bg-emerald-900/20 text-emerald-700 dark:text-emerald-300 rounded-lg border border-emerald-200 dark:border-emerald-800/50 text-xs capitalize">
+                              {item.difficulty}
+                            </span>
+                          )}
+                          {item.tags && item.tags.length > 0 && (
+                            <div className="flex flex-wrap gap-1">
+                              {item.tags.slice(0, 3).map((tag, idx) => (
+                                <span
+                                  key={idx}
+                                  className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] rounded-lg text-xs font-medium border border-gray-200 dark:border-[#fafafa1a]"
+                                >
+                                  <Tag className="w-3 h-3" />
+                                  {tag}
+                                </span>
+                              ))}
+                              {item.tags.length > 3 && (
+                                <span className="px-2 py-0.5 text-xs text-[#171717cc] dark:text-[#fafafacc]">
+                                  +{item.tags.length - 3} more
+                                </span>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                      )}
 
                       <div className="flex items-center gap-4 text-xs text-[#171717cc] dark:text-[#fafafacc] mb-3">
                         <span className="capitalize font-medium">{config.title}</span>
@@ -666,6 +1060,14 @@ const MyContent = () => {
                           <Rocket className="w-3.5 h-3.5" />
                           Publish
                         </button>
+                        <button
+                          onClick={() => handleAddTag(item._id, item.tags || [])}
+                          className="inline-flex items-center gap-2 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
+                          title="Edit Tags & Metadata"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                          Edit
+                        </button>
                       </div>
                     </div>
                   </div>
@@ -693,6 +1095,170 @@ const MyContent = () => {
         isOpen={isSidebarOpen}
         onClose={handleCloseSidebar}
       />
+
+      {/* Edit Metadata Modal */}
+      {editingContentId && (() => {
+        const content = contentList.find(c => c._id === editingContentId);
+        if (!content) return null;
+        
+        // Use a separate component for the modal to handle state properly
+        return <EditMetadataModal 
+          content={content}
+          editingTags={editingTags}
+          newTagInput={newTagInput}
+          onClose={() => {
+            setEditingContentId(null);
+            setEditingTags([]);
+            setNewTagInput('');
+          }}
+          onSave={(metadata) => {
+            handleUpdateMetadata(editingContentId, metadata);
+          }}
+          onAddTag={handleAddTagToEditing}
+          onRemoveTag={handleRemoveTagFromEditing}
+          onTagInputChange={setNewTagInput}
+        />;
+      })()}
+      </div>
+    </div>
+  );
+};
+
+// Separate component for the edit modal
+const EditMetadataModal = ({ content, editingTags, newTagInput, onClose, onSave, onAddTag, onRemoveTag, onTagInputChange }) => {
+  const [editCategory, setEditCategory] = useState(content.category || 'other');
+  const [editSubject, setEditSubject] = useState(content.subject || '');
+  const [editDifficulty, setEditDifficulty] = useState(content.difficulty || 'beginner');
+  
+  return (
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden border border-[#fafafa1a]">
+        <div className="flex items-center justify-between p-6 border-b border-[#fafafa1a] bg-gray-50 dark:bg-[#121212]">
+          <h2 className="text-xl font-bold text-[#171717] dark:text-[#fafafa]">Edit Content Metadata</h2>
+          <button
+            onClick={onClose}
+            className="text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors"
+          >
+            <X className="w-5 h-5" />
+          </button>
+        </div>
+        
+        <div className="p-6 overflow-y-auto max-h-[calc(90vh-180px)]">
+          <div className="space-y-6">
+            {/* Category */}
+            <div>
+              <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Category</label>
+              <select
+                value={editCategory}
+                onChange={(e) => setEditCategory(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#171717] border border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+              >
+                <option value="mathematics">Mathematics</option>
+                <option value="science">Science</option>
+                <option value="history">History</option>
+                <option value="literature">Literature</option>
+                <option value="languages">Languages</option>
+                <option value="arts">Arts</option>
+                <option value="technology">Technology</option>
+                <option value="business">Business</option>
+                <option value="health">Health</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+
+            {/* Subject */}
+            <div>
+              <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Subject</label>
+              <input
+                type="text"
+                value={editSubject}
+                onChange={(e) => setEditSubject(e.target.value)}
+                placeholder="e.g., Algebra, Biology, World War II"
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#171717] border border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] placeholder-[#17171766] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+              />
+            </div>
+
+            {/* Difficulty */}
+            <div>
+              <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Difficulty</label>
+              <select
+                value={editDifficulty}
+                onChange={(e) => setEditDifficulty(e.target.value)}
+                className="w-full px-4 py-2.5 bg-white dark:bg-[#171717] border border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+              >
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Tags</label>
+              <div className="flex flex-wrap gap-2 mb-3">
+                {editingTags.map((tag, idx) => (
+                  <span
+                    key={idx}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-gray-100 dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] rounded-lg text-sm font-medium border border-gray-200 dark:border-[#fafafa1a]"
+                  >
+                    <Tag className="w-3.5 h-3.5" />
+                    {tag}
+                    <button
+                      onClick={() => onRemoveTag(tag)}
+                      className="hover:text-red-500 transition-colors"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  </span>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newTagInput}
+                  onChange={(e) => onTagInputChange(e.target.value)}
+                  onKeyPress={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      onAddTag();
+                    }
+                  }}
+                  placeholder="Add a tag..."
+                  className="flex-1 px-4 py-2.5 bg-white dark:bg-[#171717] border border-[#fafafa1a] rounded-lg text-sm text-[#171717] dark:text-[#fafafa] placeholder-[#17171766] dark:placeholder-[#fafafa66] focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#fafafa2a]"
+                />
+                <button
+                  onClick={onAddTag}
+                  className="px-4 py-2.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
+                >
+                  <Plus className="w-4 h-4" />
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-end gap-3 p-6 border-t border-[#fafafa1a] bg-gray-50 dark:bg-[#121212]">
+          <button
+            onClick={onClose}
+            className="px-6 py-2.5 text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] font-semibold transition-colors rounded-lg hover:bg-gray-100 dark:hover:bg-[#1E1E1E]"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              onSave({
+                tags: editingTags,
+                category: editCategory,
+                subject: editSubject,
+                difficulty: editDifficulty
+              });
+            }}
+            className="px-6 py-2.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg hover:opacity-90 transition-opacity font-semibold"
+          >
+            Save Changes
+          </button>
+        </div>
+      </div>
     </div>
   );
 };

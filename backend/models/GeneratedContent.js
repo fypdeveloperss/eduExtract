@@ -63,7 +63,37 @@ const generatedContentSchema = new mongoose.Schema({
     required: false,
     min: 0,
     max: 100
+  },
+  // KnowledgeVault: Advanced tagging and categorization
+  tags: [{
+    type: String,
+    trim: true,
+    maxlength: 50
+  }],
+  category: {
+    type: String,
+    required: false,
+    enum: ['mathematics', 'science', 'history', 'literature', 'languages', 'arts', 'technology', 'business', 'health', 'other'],
+    default: 'other'
+  },
+  subject: {
+    type: String,
+    required: false,
+    trim: true,
+    maxlength: 100
+  },
+  difficulty: {
+    type: String,
+    required: false,
+    enum: ['beginner', 'intermediate', 'advanced'],
+    default: 'beginner'
   }
 });
+
+// Add indexes for better search performance
+generatedContentSchema.index({ userId: 1, createdAt: -1 });
+generatedContentSchema.index({ tags: 1 });
+generatedContentSchema.index({ category: 1, subject: 1 });
+generatedContentSchema.index({ userId: 1, type: 1 });
 
 module.exports = mongoose.model('GeneratedContent', generatedContentSchema); 

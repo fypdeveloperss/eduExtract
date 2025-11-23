@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import api from "../utils/axios";
 import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
@@ -11,9 +12,10 @@ import LoaderSpinner from "../components/LoaderSpinner";
 import ChatBot from "../components/ChatBot";
 import EmbeddedChat from "../components/EmbeddedChat";
 import PasteModal from "../components/PasteModal";
+import FileUploadModal from "../components/FileUploadModal";
 import useContentContext from "../hooks/useContentContext";
 import "./Dashboard.css";
-import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot } from "lucide-react";
+import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
 import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
@@ -103,6 +105,7 @@ function Dashboard() {
   
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   
   // Content context for chatbot
@@ -1410,25 +1413,161 @@ function Dashboard() {
     }
   };
 
+  // Calculate stats for dashboard
+  const totalContent = recentContent.length;
+  const totalSpaces = spaces.length;
+  const recentCount = recentContent.filter(item => {
+    const date = new Date(item.createdAt);
+    const diffDays = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const cardHoverVariants = {
+    rest: { scale: 1, y: 0 },
+    hover: { 
+      scale: 1.02, 
+      y: -4,
+      transition: {
+        duration: 0.2,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212]">
+    <div className="min-h-screen bg-white dark:bg-[#121212] relative">
+
       {/* Main Content */}
-      <div className={`${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
+      <div className={`relative z-10 ${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
         {/* Header */}
         {!showContentLayout && (
           <>
-            <div className="text-center mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
-                What do you want to learn?
-              </h1>
-            </div>
+            <motion.div 
+              className="text-center mb-8"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.h1 
+                className="text-2xl md:text-4xl font-bold text-[#171717] dark:text-[#fafafa] mb-4 relative inline-block"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <span className="relative z-10">What do you want to learn?</span>
+                <motion.div
+                  className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-[#171717]/20 via-[#171717]/40 to-[#171717]/20 dark:from-[#fafafa]/20 dark:via-[#fafafa]/40 dark:to-[#fafafa]/20 rounded-full"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                />
+              </motion.h1>
+              <motion.p 
+                className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-2xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                Transform any content into engaging learning materials with AI-powered tools
+              </motion.p>
+            </motion.div>
+
+            {/* Stats Cards */}
+            {user && (
+              <motion.div 
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">Total Content</p>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{totalContent}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center border border-blue-200 dark:border-blue-800/50">
+                      <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">Collaboration Spaces</p>
+                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{totalSpaces}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center border border-purple-200 dark:border-purple-800/50">
+                      <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">This Week</p>
+                      <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{recentCount}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center border border-emerald-200 dark:border-emerald-800/50">
+                      <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
 
             {/* Input Method Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {/* Upload Card */}
-              <div 
-                className={`relative bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group ${
+                  uploadMode === "file" 
+                    ? "border-blue-500 dark:border-blue-400 shadow-2xl shadow-blue-500/10" 
+                    : "border-gray-200 dark:border-[#fafafa1a] hover:border-blue-300 dark:hover:border-blue-500/50"
                 }`}
                 onClick={() => {
                   if (!user) {
@@ -1436,27 +1575,42 @@ function Dashboard() {
                     return;
                   }
                   setUploadMode("file");
+                  setShowFileUploadModal(true);
                   resetStates();
                 }}
               >
-                <div className="absolute top-3 right-3">
-                  <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs font-semibold px-2 py-1 rounded-full">
+                <div className="absolute inset-0 bg-blue-500/0 dark:bg-blue-400/0 group-hover:bg-blue-500/5 dark:group-hover:bg-blue-400/5 transition-all duration-300"></div>
+                <div className="absolute top-4 right-4">
+                  <motion.span 
+                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 border border-blue-200 dark:border-blue-800/50"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <Zap className="w-3 h-3" />
                     Popular
-                  </span>
+                  </motion.span>
                 </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Upload</h3>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-blue-200 dark:border-blue-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Upload size={36} className="text-blue-600 dark:text-blue-400" />
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Upload</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">File, audio, video</p>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Paste Card */}
-              <div 
-                className={`bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group ${
+                  uploadMode === "youtube" 
+                    ? "border-purple-500 dark:border-purple-400 shadow-2xl shadow-purple-500/10" 
+                    : "border-gray-200 dark:border-[#fafafa1a] hover:border-purple-300 dark:hover:border-purple-500/50"
                 }`}
                 onClick={() => {
                   if (!user) {
@@ -1468,153 +1622,53 @@ function Dashboard() {
                   resetStates();
                 }}
               >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Link size={32} className="text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Paste</h3>
+                <div className="absolute inset-0 bg-purple-500/0 dark:bg-purple-400/0 group-hover:bg-purple-500/5 dark:group-hover:bg-purple-400/5 transition-all duration-300"></div>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-purple-200 dark:border-purple-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Link size={36} className="text-purple-600 dark:text-purple-400" />
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Paste</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">YouTube, website, text</p>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Record Card */}
-              <div 
-                className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className="relative bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group hover:border-orange-300 dark:hover:border-orange-500/50"
                 onClick={() => {
                   if (!user) {
                     toggleAuthModal(true);
                     return;
                   }
-                  // Future feature - recording functionality
                   showInfo("Recording feature coming soon!", { 
                     title: "Feature Coming Soon" 
                   });
                 }}
               >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute inset-0 bg-orange-500/0 dark:bg-orange-400/0 group-hover:bg-orange-500/5 dark:group-hover:bg-orange-400/5 transition-all duration-300"></div>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-orange-200 dark:border-orange-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <svg className="w-9 h-9 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Record</h3>
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Record</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Record class, video call</p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </>
-        )}
-        {/* File Upload Area (shown when file mode is selected) */}
-        {!showContentLayout && uploadMode === "file" && (
-          <div className="max-w-3xl mx-auto mt-6">
-            <div
-              className={`relative border-2 ${
-                dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-dashed border-gray-300 dark:border-[#fafafa1a]"
-              } rounded-xl p-6 text-center transition-all ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-[#1E1E1E]"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => {
-                  if (!user) {
-                    toggleAuthModal(true);
-                    return;
-                  }
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleFileSelect(file);
-                  }
-                }}
-                accept=".pdf,.docx,.txt,.pptx"
-                disabled={isLoading}
-              />
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
-                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!user) {
-                        toggleAuthModal(true);
-                        return;
-                      }
-                      fileInputRef.current?.click();
-                    }}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-base"
-                    disabled={isLoading}
-                  >
-                    Click to upload
-                  </button>
-                  <span className="text-[#171717cc] dark:text-[#fafafacc] text-base">
-                    {" "}or drag and drop
-                  </span>
-                </div>
-                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                  PDF, DOCX, TXT, PPTX (max 10MB)
-                </p>
-                {selectedFile && (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                          Selected: {selectedFile.name}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Generate Button */}
-                    <div className="flex justify-center">
-                      <button
-                        onClick={async () => {
-                          if (!user) {
-                            toggleAuthModal(true);
-                            return;
-                          }
-                          
-                          setIsLoading(true);
-                          setError("");
-                          
-                          try {
-                            // Process the file content
-                            await processFileContent();
-                          } catch (err) {
-                            setError(err.response?.data?.error || "Failed to process file");
-                            setIsLoading(false);
-                          }
-                        }}
-                        disabled={isLoading || isExtractingContent}
-                        className="px-6 py-2.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-sm"
-                      >
-                        {isLoading || isExtractingContent ? (
-                          <>
-                            <LoaderSpinner size="sm" />
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Target size={20} />
-                            <span>Generate Content</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         )}
         
 
@@ -1623,115 +1677,203 @@ function Dashboard() {
           <>
             {user && (
               <div className="space-y-6 mb-6">
-                <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">My Spaces</h2>
-                    <button
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <motion.h2 
+                      className="text-xl font-bold text-[#171717] dark:text-[#fafafa] flex items-center gap-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                      <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      My Spaces
+                    </motion.h2>
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/collaborate')}
-                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                      className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors flex items-center gap-1"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       View all
-                    </button>
+                      <span>→</span>
+                    </motion.button>
                   </div>
                   {spacesError && (
                     <p className="text-xs text-red-600 dark:text-red-400 mb-2">{spacesError}</p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <button
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/collaborate')}
-                      className="h-full min-h-[150px] border-2 border-dashed border-gray-300 dark:border-[#fafafa1a] rounded-xl flex flex-col items-center justify-center text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:border-gray-400 dark:hover:border-[#fafafa2a] transition-colors bg-white dark:bg-[#171717]"
+                      className="h-full min-h-[150px] border-2 border-dashed border-gray-300 dark:border-[#fafafa1a] rounded-xl flex flex-col items-center justify-center text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:border-purple-400 dark:hover:border-purple-500 transition-colors bg-white dark:bg-[#171717] group"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <span className="text-2xl mb-1">+</span>
+                      <motion.span 
+                        className="text-3xl mb-2 text-purple-600 dark:text-purple-400"
+                        whileHover={{ rotate: 90, scale: 1.2 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        +
+                      </motion.span>
                       Create Space
-                    </button>
+                    </motion.button>
 
-                    {spacesLoading
-                      ? Array.from({ length: 3 }).map((_, idx) => (
-                          <div key={idx} className="min-h-[150px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
-                        ))
-                      : spaces.slice(0, 7).map((space) => (
-                          <button
-                            key={space._id}
-                            type="button"
-                            onClick={() => navigate(`/collaborate/space/${space._id}`)}
-                            className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 text-left hover:shadow-lg transition-all duration-200"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] truncate">
-                                {space.title || 'Untitled Space'}
-                              </h3>
-                              <span className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
-                                {space.stats?.totalContent || 0} content
-                              </span>
-                            </div>
-                            <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] line-clamp-2 mb-3">
-                              {space.description || 'Collaborate with your team and manage shared learning content.'}
-                            </p>
-                            <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
-                              <span>{space.ownerName ? `by ${space.ownerName}` : 'Private space'}</span>
-                              <span>{formatRelativeTime(space.stats?.lastActivity || space.updatedAt)}</span>
-                            </div>
-                          </button>
-                        ))}
+                    <AnimatePresence>
+                      {spacesLoading
+                        ? Array.from({ length: 3 }).map((_, idx) => (
+                            <motion.div 
+                              key={idx} 
+                              className="min-h-[150px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            />
+                          ))
+                        : spaces.slice(0, 7).map((space, idx) => (
+                            <motion.button
+                              key={space._id}
+                              type="button"
+                              onClick={() => navigate(`/collaborate/space/${space._id}`)}
+                              className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 text-left hover:shadow-xl transition-all duration-300 group overflow-hidden relative"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: idx * 0.1 }}
+                              whileHover={{ scale: 1.02, y: -4 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <div className="absolute inset-0 bg-purple-500/0 dark:bg-purple-400/0 group-hover:bg-purple-500/5 dark:group-hover:bg-purple-400/5 transition-all duration-300"></div>
+                              <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                    {space.title || 'Untitled Space'}
+                                  </h3>
+                                  <span className="text-xs text-[#171717cc] dark:text-[#fafafacc] bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">
+                                    {space.stats?.totalContent || 0} content
+                                  </span>
+                                </div>
+                                <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] line-clamp-2 mb-3">
+                                  {space.description || 'Collaborate with your team and manage shared learning content.'}
+                                </p>
+                                <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                                  <span>{space.ownerName ? `by ${space.ownerName}` : 'Private space'}</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatRelativeTime(space.stats?.lastActivity || space.updatedAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.button>
+                          ))}
+                    </AnimatePresence>
                   </div>
-                </section>
+                </motion.section>
 
-                <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Recents</h2>
-                    <button
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <motion.h2 
+                      className="text-xl font-bold text-[#171717] dark:text-[#fafafa] flex items-center gap-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.6 }}
+                    >
+                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      Recents
+                    </motion.h2>
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/content')}
-                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                      className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors flex items-center gap-1"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       View all
-                    </button>
+                      <span>→</span>
+                    </motion.button>
                   </div>
                   {recentError && (
                     <p className="text-xs text-red-600 dark:text-red-400 mb-2">{recentError}</p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {recentLoading
-                      ? Array.from({ length: 4 }).map((_, idx) => (
-                          <div key={idx} className="min-h-[140px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
-                        ))
-                      : recentContent.length > 0
-                        ? recentContent.slice(0, 8).map((item) => {
-                            const Icon = typeIcons[item.type] || FileText;
-                            return (
-                              <div
-                                key={item._id || item.title}
-                                className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 hover:shadow-lg transition-all duration-200"
-                              >
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#1E1E1E] flex items-center justify-center">
-                                    <Icon className="w-4 h-4 text-[#171717cc] dark:text-[#fafafacc]" />
+                    <AnimatePresence>
+                      {recentLoading
+                        ? Array.from({ length: 4 }).map((_, idx) => (
+                            <motion.div 
+                              key={idx} 
+                              className="min-h-[140px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            />
+                          ))
+                        : recentContent.length > 0
+                          ? recentContent.slice(0, 8).map((item, idx) => {
+                              const Icon = typeIcons[item.type] || FileText;
+                              return (
+                                <motion.div
+                                  key={item._id || item.title}
+                                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 hover:shadow-xl transition-all duration-300 group overflow-hidden relative cursor-pointer"
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                  whileHover={{ scale: 1.02, y: -4 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => navigate(`/content/${item._id}`)}
+                                >
+                                  <div className="absolute inset-0 bg-blue-500/0 dark:bg-blue-400/0 group-hover:bg-blue-500/5 dark:group-hover:bg-blue-400/5 transition-all duration-300"></div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <motion.div 
+                                        className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shadow-md border border-blue-200 dark:border-blue-800/50"
+                                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                                        transition={{ duration: 0.3 }}
+                                      >
+                                        <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                      </motion.div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-[#171717cc] dark:text-[#fafafacc] mb-1">
+                                          {typeLabels[item.type] || 'Content'}
+                                        </p>
+                                        <p className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                          {item.title || 'Untitled'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatContentDate(item.createdAt)}
+                                      </span>
+                                      {item.source && <span className="truncate max-w-[120px] text-right opacity-70">{item.source}</span>}
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-[#171717cc] dark:text-[#fafafacc]">
-                                      {typeLabels[item.type] || 'Content'}
-                                    </p>
-                                    <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa] line-clamp-1">
-                                      {item.title || 'Untitled'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
-                                  <span>{formatContentDate(item.createdAt)}</span>
-                                  {item.source && <span className="truncate max-w-[120px] text-right">{item.source}</span>}
-                                </div>
+                                </motion.div>
+                              );
+                            })
+                          : (
+                            <motion.div 
+                              className="col-span-full text-sm text-[#171717cc] dark:text-[#fafafacc] bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-6 text-center"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            >
+                              <div className="w-16 h-16 bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto mb-3">
+                                <FileText className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                               </div>
-                            );
-                          })
-                        : (
-                          <div className="col-span-full text-sm text-[#171717cc] dark:text-[#fafafacc] bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4">
-                            You haven't generated any content yet. Start by uploading a document or pasting a link.
-                          </div>
-                        )}
+                              You haven't generated any content yet. Start by uploading a document or pasting a link.
+                            </motion.div>
+                          )}
+                    </AnimatePresence>
                   </div>
-                </section>
+                </motion.section>
               </div>
             )}
           </>
@@ -2318,6 +2460,40 @@ function Dashboard() {
         isOpen={showPasteModal} 
         onClose={() => setShowPasteModal(false)} 
         onSubmit={handleModalSubmit}
+      />
+      
+      <FileUploadModal
+        isOpen={showFileUploadModal}
+        onClose={() => {
+          setShowFileUploadModal(false);
+          setUploadMode("youtube");
+        }}
+        onFileSelect={handleFileSelect}
+        selectedFile={selectedFile}
+        isLoading={isLoading}
+        isExtractingContent={isExtractingContent}
+        onGenerate={async () => {
+          if (!user) {
+            toggleAuthModal(true);
+            return;
+          }
+          
+          setIsLoading(true);
+          setError("");
+          
+          try {
+            await processFileContent();
+            setShowFileUploadModal(false);
+          } catch (err) {
+            setError(err.response?.data?.error || "Failed to process file");
+            setIsLoading(false);
+          }
+        }}
+        dragActive={dragActive}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
       />
       
       {/* Playlist Processing Progress Modal */}

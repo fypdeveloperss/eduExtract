@@ -68,7 +68,7 @@ function Forum() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#121212] py-10 md:py-6">
-      <div className="max-w-7xl mx-auto px-4 md:px-6 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 md:px-4 space-y-8">
         <div className="border border-gray-200 dark:border-[#fafafa1a] bg-white dark:bg-[#171717] rounded-2xl shadow-lg px-6 py-8 text-center">
           <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
             Community Forum

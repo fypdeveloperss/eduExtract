@@ -1,9 +1,13 @@
 .collaborate-hub {
-  max-width: 1200px;
-  margin: 0rem auto;
-  padding: 10px;
+ 
+  max-width: 80rem;
+  margin-left: auto;
+  margin-right: auto;
+  padding-left: 0.5rem; /* equivalent to px-4 */
+  padding-right: 0.5rem; /* equivalent to px-4 */
+  margin-top: 1rem; /* equivalent to space-y-8 */
+  margin-bottom: 2rem;
   font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-  min-height: 100vh;
 }
 
 /* Header Section */
@@ -21,10 +25,16 @@
 }
 
 .header-content h1 {
-  font-size: 1.75rem;
+  font-size: 1.5rem;
   color: #171717cc;
   margin: 0;
   font-weight: 700;
+}
+
+@media (min-width: 768px) {
+  .header-content h1 {
+    font-size: 1.875rem;
+  }
 }
 
 [data-theme="dark"] .header-content h1 {
@@ -32,9 +42,15 @@
 }
 
 .header-content p {
-  font-size: 0.95rem;
+  font-size: 1rem;
   color: #171717cc;
   margin: 3px 0 0 0;
+}
+
+@media (min-width: 768px) {
+  .header-content p {
+    font-size: 1.125rem;
+  }
 }
 
 [data-theme="dark"] .header-content p {
@@ -212,7 +228,7 @@
 .stat-card p {
   color: #6b7280;
   margin: 0;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -241,7 +257,7 @@
 }
 
 [data-theme="dark"] .filter-tabs {
-  background: #171717;
+  background: #171717 !important;
   border-color: rgba(250, 250, 250, 0.1);
 }
 
@@ -254,7 +270,7 @@
   cursor: pointer;
   transition: all 0.3s ease;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 0.875rem;
 }
 
 [data-theme="dark"] .filter-tabs button {
@@ -348,7 +364,13 @@
 .empty-state h3 {
   color: #171717cc;
   margin-bottom: 10px;
-  font-size: 1.5rem;
+  font-size: 1.125rem;
+}
+
+@media (min-width: 768px) {
+  .empty-state h3 {
+    font-size: 1.25rem;
+  }
 }
 
 [data-theme="dark"] .empty-state h3 {
@@ -487,7 +509,7 @@
   }
 
   .header-content h1 {
-    font-size: 2rem;
+    font-size: 1.5rem;
   }
 
   .header-actions {
