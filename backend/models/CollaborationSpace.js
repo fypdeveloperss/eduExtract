@@ -112,6 +112,14 @@ const collaborationSpaceSchema = new mongoose.Schema({
       type: Number,
       default: 0
     },
+    pendingJoinRequests: {
+      type: Number,
+      default: 0
+    },
+    pendingChangeRequests: {
+      type: Number,
+      default: 0
+    },
     lastActivity: {
       type: Date,
       default: Date.now

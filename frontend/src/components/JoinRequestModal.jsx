@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import './JoinRequestModal.css';
 
 const JoinRequestModal = ({ space, currentUser, onClose, onSubmit }) => {
+  const { error } = useCustomAlerts();
   const [message, setMessage] = useState('');
   const [requestedPermission, setRequestedPermission] = useState('view');
   const [submitting, setSubmitting] = useState(false);
@@ -18,9 +20,9 @@ const JoinRequestModal = ({ space, currentUser, onClose, onSubmit }) => {
         requestedPermission
       });
       onClose();
-    } catch (error) {
-      console.error('Error submitting join request:', error);
-      alert(error.message || 'Failed to submit join request');
+    } catch (err) {
+      console.error('Error submitting join request:', err);
+      error(err.message || 'Failed to submit join request', 'Request Failed');
     } finally {
       setSubmitting(false);
     }

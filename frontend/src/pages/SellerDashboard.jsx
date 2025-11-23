@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 import LoaderSpinner from '../components/LoaderSpinner';
 import { 
@@ -25,6 +26,7 @@ import {
 function SellerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { warning } = useCustomAlerts();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -878,7 +880,7 @@ function PayoutRequestModal({ pendingEarnings, onClose, onRequest }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.amount > pendingEarnings) {
-      alert('Amount cannot exceed pending earnings');
+      warning('Amount cannot exceed pending earnings', 'Invalid Amount');
       return;
     }
     onRequest(formData);

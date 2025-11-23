@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { Groq } = require("groq-sdk");
 const { verifyToken } = require('../middleware/auth');
 const CollaborationService = require('../services/collaborationService');
 const SharedContentService = require('../services/sharedContentService');
@@ -1203,6 +1204,248 @@ router.get('/spaces/:spaceId/join-request-status', verifyToken, async (req, res)
     res.status(500).json({
       success: false,
       error: error.message
+    });
+  }
+});
+
+// Collaboration Space AI Chat with RAG
+router.post('/spaces/:spaceId/chat', verifyToken, async (req, res) => {
+  try {
+    const { uid: userId } = req.user;
+    const userName = req.user.name || req.user.email?.split('@')[0] || 'User';
+    const { spaceId } = req.params;
+    const { messages, sessionId } = req.body;
+
+    console.log(`Collaboration space chat request from user ${userId} for space ${spaceId}`);
+
+    // Verify user has access to the space
+    const space = await collaborationService.getCollaborationSpaceById(spaceId, userId);
+    if (!space) {
+      return res.status(403).json({
+        success: false,
+        error: 'Access denied to this collaboration space'
+      });
+    }
+
+    // Get the user's latest message for RAG retrieval
+    const userMessage = messages && messages.length > 0 
+      ? messages[messages.length - 1].content 
+      : '';
+
+    if (!userMessage) {
+      return res.status(400).json({
+        success: false,
+        error: 'No message provided'
+      });
+    }
+
+    // Get or create chat session (space-specific)
+    const ChatHistory = require('../models/ChatHistory');
+    let chatSession = null;
+    if (sessionId) {
+      chatSession = await ChatHistory.findOne({ 
+        userId, 
+        sessionId,
+        'metadata.spaceId': spaceId 
+      });
+    }
+    
+    if (!chatSession) {
+      const newSessionId = sessionId || `space_chat_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      chatSession = new ChatHistory({
+        userId,
+        sessionId: newSessionId,
+        userEmail: req.user.email,
+        userName: userName,
+        isActive: true,
+        metadata: {
+          type: 'collaboration_space',
+          spaceId: spaceId,
+          spaceName: space.title
+        },
+        messages: [],
+        createdAt: new Date(),
+        updatedAt: new Date()
+      });
+      await chatSession.save();
+      console.log(`Created new space chat session: ${newSessionId}`);
+    }
+
+    // Build context using RAG from space content
+    let contextualPrompt = `You are an AI assistant for the "${space.title}" collaboration space. You can ONLY answer questions using the shared content available in this specific collaboration space.
+
+CRITICAL RESTRICTIONS:
+- You MUST ONLY use content that has been shared in "${space.title}"
+- DO NOT use any external knowledge or information from outside this space
+- If a question cannot be answered using the available space content, say "I don't have that information in the current collaboration space content"
+- ONLY reference materials that users have uploaded or shared in this space
+
+Your role is to help users understand and work with the educational materials that are specifically shared in this collaboration space.`;
+    let relevantChunks = []; // Declare outside try block for broader scope
+    
+    try {
+      console.log('Building RAG context for collaboration space chat...');
+      
+      // Get all shared content in this space
+      const SharedContent = require('../models/SharedContent');
+      const spaceContent = await SharedContent.find({ 
+        collaborationSpaceId: spaceId 
+      }).select('title contentType contentData content originalText url createdByName createdAt');
+
+      console.log(`Found ${spaceContent.length} content items in space ${spaceId}`);
+
+      // Retrieve relevant chunks using RAG for this specific space
+      const RAGService = require('../services/ragService');
+      const ragService = new RAGService();
+      if (userMessage && spaceContent.length > 0) {
+        try {
+          // Get content IDs from this space for RAG filtering
+          const spaceContentIds = spaceContent.map(content => content._id.toString());
+          
+          relevantChunks = await ragService.retrieveRelevantChunks(
+            userMessage,
+            {
+              userId: null, // Don't filter by user since it's shared content
+              contentIds: spaceContentIds, // Only search within this space's content
+              limit: 6,
+              minSimilarity: 0.6
+            }
+          );
+          
+          console.log(`Retrieved ${relevantChunks.length} relevant chunks for space query`);
+        } catch (ragError) {
+          console.error('RAG retrieval error for space chat:', ragError);
+          // Continue without RAG if it fails
+        }
+      }
+
+      // Build enhanced context with space content
+      if (relevantChunks.length > 0 || spaceContent.length > 0) {
+        contextualPrompt += `\n\nRELEVANT CONTENT FROM "${space.title}" COLLABORATION SPACE:\n`;
+        
+        if (relevantChunks.length > 0) {
+          // Use RAG chunks if available
+          const chunksByContent = {};
+          relevantChunks.forEach(chunk => {
+            const contentId = chunk.metadata?.contentId || chunk.contentId?.toString();
+            if (!chunksByContent[contentId]) {
+              chunksByContent[contentId] = {
+                contentType: chunk.metadata?.contentType || 'unknown',
+                createdBy: chunk.metadata?.createdBy || 'unknown',
+                chunks: []
+              };
+            }
+            chunksByContent[contentId].chunks.push(chunk);
+          });
+
+          Object.values(chunksByContent).forEach(({ contentType, createdBy, chunks }) => {
+            const similarity = chunks[0]?.similarity || 0;
+            contextualPrompt += `\n${contentType.toUpperCase()} (Created by: ${createdBy}, Relevance: ${(similarity * 100).toFixed(1)}%):\n`;
+            chunks.forEach((chunk, index) => {
+              const chunkText = chunk.text || chunk.document || '';
+              contextualPrompt += `[Section ${index + 1}] ${chunkText.substring(0, 500)}...\n`;
+            });
+          });
+        } else {
+          // Fallback to direct content summary if no RAG chunks
+          contextualPrompt += '\nAVAILABLE CONTENT IN THIS SPACE:\n';
+          spaceContent.slice(0, 3).forEach(content => {
+            contextualPrompt += `\n${content.contentType.toUpperCase()}: "${content.title}" (by ${content.createdByName})\n`;
+            
+            let contentText = '';
+            if (content.contentData) {
+              if (typeof content.contentData === 'string') {
+                contentText = content.contentData;
+              } else if (content.contentData.content) {
+                contentText = content.contentData.content;
+              } else {
+                contentText = JSON.stringify(content.contentData);
+              }
+            } else if (content.content) {
+              contentText = typeof content.content === 'string' ? content.content : JSON.stringify(content.content);
+            } else if (content.originalText) {
+              contentText = content.originalText;
+            }
+            
+            if (contentText) {
+              contextualPrompt += `Summary: ${contentText.substring(0, 300)}...\n`;
+            }
+          });
+        }
+
+        // Add strong restriction reminder
+        contextualPrompt += `\n\n🚫 IMPORTANT RESTRICTIONS:
+- Answer ONLY using the content shown above from "${space.title}" collaboration space
+- DO NOT use external knowledge, general facts, or information from other sources
+- If the answer is not in the provided content, say "I don't have that information in the current space content"
+- Stay focused ONLY on materials shared in this collaboration space`;
+        
+      } else {
+        contextualPrompt += `\n\nThis collaboration space "${space.title}" currently has no content. You can help users understand how to add and share educational materials in this space.
+
+🚫 IMPORTANT: Since there's no content in this space yet, I cannot answer questions about educational materials. Please add content to the space first.`;
+      }
+      
+    } catch (contextError) {
+      console.error('Error building space context:', contextError);
+      // Continue with basic context if there's an error
+      contextualPrompt += `\n\n🚫 RESTRICTION: I can only answer questions about content shared in the "${space.title}" collaboration space. No content is currently available.`;
+    }
+
+    // Generate AI response using Groq
+    const groq = new Groq({ apiKey: process.env.GROQ_API_KEY });
+    
+    const chatMessages = [
+      {
+        role: "system",
+        content: contextualPrompt
+      },
+      {
+        role: "user", 
+        content: `Please answer the following question using ONLY the content from the "${space.title}" collaboration space shown in the system message above. Do not use any external knowledge.
+
+Question: ${userMessage}`
+      }
+    ];
+
+    const completion = await groq.chat.completions.create({
+      messages: chatMessages,
+      model: "meta-llama/llama-4-scout-17b-16e-instruct",
+      temperature: 0.7,
+      max_tokens: 1024,
+    });
+
+    if (!completion.choices?.[0]?.message?.content) {
+      throw new Error("Invalid AI response format");
+    }
+
+    const aiResponse = completion.choices[0].message.content;
+
+    // Save the conversation to chat history
+    chatSession.messages.push(
+      { role: 'user', content: userMessage, timestamp: new Date() },
+      { role: 'assistant', content: aiResponse, timestamp: new Date() }
+    );
+    chatSession.updatedAt = new Date();
+    await chatSession.save();
+
+    res.json({
+      success: true,
+      message: aiResponse,
+      sessionId: chatSession.sessionId,
+      contextLoaded: true,
+      spaceInfo: {
+        id: space._id,
+        title: space.title,
+        contentCount: relevantChunks.length || 0
+      }
+    });
+
+  } catch (error) {
+    console.error('Error in collaboration space chat:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message || 'Failed to process chat request'
     });
   }
 });

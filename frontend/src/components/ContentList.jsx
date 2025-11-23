@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { useCollaboration } from '../context/CollaborationContext';
 import ContentSelectionModal from './ContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 import './ContentList.css';
 
 const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerformAction }) => {
+  const { success, error, warning } = useCustomAlerts();
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showContentModal, setShowContentModal] = useState(false);
@@ -99,18 +101,18 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
       if (result.summary) {
         const { successful, failed, total } = result.summary;
         if (failed > 0) {
-          alert(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`);
+          warning(`Added ${successful} out of ${total} content items. ${failed} items failed to add.`, 'Partial Success');
         } else {
-          alert(`Successfully added ${successful} content items to the space!`);
+          success(`Successfully added ${successful} content items to the space!`, 'Content Added');
         }
       }
 
       // Refresh content list
       fetchContent();
 
-    } catch (error) {
-      console.error('Error adding content:', error);
-      alert(`Failed to add content: ${error.message}`);
+    } catch (err) {
+      console.error('Error adding content:', err);
+      error(`Failed to add content: ${err.message}`, 'Add Content Failed');
     }
   };
 

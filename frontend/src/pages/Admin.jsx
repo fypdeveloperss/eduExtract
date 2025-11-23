@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from "react";
 import { useAuth } from "../context/FirebaseAuthContext";
 import { useNavigate } from "react-router-dom";
+import { useCustomAlerts } from "../hooks/useCustomAlerts";
 import api from "../utils/axios";
 import AdminFeedback from "./AdminFeedback";
 
 const Admin = () => {
   const { user, isAdmin, adminLoading } = useAuth();
   const navigate = useNavigate();
+  const { error } = useCustomAlerts();
   
   // Stats state
   const [stats, setStats] = useState({
@@ -121,9 +123,9 @@ const Admin = () => {
     try {
       await api.post(`/api/admin/content/${contentId}/${action}`);
       fetchDashboardData(); // Refresh data
-    } catch (error) {
-      console.error(`Error ${action}ing content:`, error);
-      alert(`Failed to ${action} content`);
+    } catch (err) {
+      console.error(`Error ${action}ing content:`, err);
+      error(`Failed to ${action} content`, 'Admin Action Failed');
     }
   };
 

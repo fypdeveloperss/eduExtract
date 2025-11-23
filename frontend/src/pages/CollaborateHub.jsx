@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Mail, RotateCcw } from 'lucide-react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import api from '../utils/axios';
 import CollaborationSpaceCard from '../components/CollaborationSpaceCard';
@@ -298,11 +299,22 @@ const CollaborateHub = () => {
         </div>
         <div className="header-actions">
           <button 
+            onClick={() => navigate('/collaborate/invitations')}
+            className="invitations-btn"
+          >
+            <Mail className="w-4 h-4" />
+            <span>Manage Invitations</span>
+            {stats.pendingInvites > 0 && (
+              <span className="notification-badge">{stats.pendingInvites}</span>
+            )}
+          </button>
+          <button 
             className="refresh-btn"
             onClick={() => fetchSpaces()}
             title="Refresh spaces"
           >
-            🔄 Refresh
+            <RotateCcw className="w-4 h-4" />
+            <span>Refresh</span>
           </button>
           {lastRefresh && (
             <span className="last-refresh">
@@ -466,21 +478,7 @@ const CollaborateHub = () => {
         )}
       </div>
 
-      {/* Quick Actions */}
-      <div className="quick-actions">
-        <button 
-          onClick={() => navigate('/collaborate/invitations')}
-          className="invitations-btn"
-        >
-          📧 Manage Invitations
-          {stats.pendingInvites > 0 && (
-            <span className="notification-badge">{stats.pendingInvites}</span>
-          )}
-        </button>
-        <button onClick={() => navigate('/collaborate/requests')}>
-          📝 Change Requests
-        </button>
-      </div>
+
 
       {/* Create Space Modal */}
       {showCreateModal && (

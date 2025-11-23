@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Bell } from 'lucide-react';
 import api from '../utils/axios';
 import JoinRequestModal from './JoinRequestModal';
 import { useCustomAlerts } from '../hooks/useCustomAlerts';
@@ -121,12 +122,49 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
     return colors[category] || colors.other;
   };
 
+  const getTotalPendingCount = () => {
+    const joinRequests = space.stats?.pendingJoinRequests || 0;
+    const changeRequests = space.stats?.pendingChangeRequests || 0;
+    return joinRequests + changeRequests;
+  };
+
+  const getNotificationTooltip = () => {
+    const joinRequests = space.stats?.pendingJoinRequests || 0;
+    const changeRequests = space.stats?.pendingChangeRequests || 0;
+    const parts = [];
+    
+    if (joinRequests > 0) {
+      parts.push(`${joinRequests} join request${joinRequests > 1 ? 's' : ''}`);
+    }
+    if (changeRequests > 0) {
+      parts.push(`${changeRequests} change request${changeRequests > 1 ? 's' : ''}`);
+    }
+    
+    return parts.join(' • ');
+  };
+
+  const hasNotifications = (isOwner || isMember) && getTotalPendingCount() > 0;
+
   return (
     <>
-      <div className="collaboration-space-card" onClick={onClick}>
-        <div className="card-header">
+      <div 
+        className={`collaboration-space-card ${hasNotifications ? 'has-notifications' : ''}`} 
+        onClick={onClick}
+      >
+        {/* iPhone-style Notification Badge */}
+        {hasNotifications && (
+          <div className="iphone-notification-badge" title={getNotificationTooltip()}>
+            {getTotalPendingCount()}
+          </div>
+        )}
+        
+        {/* Card content wrapper to handle overflow */}
+        <div className="card-content-wrapper">
+          <div className="card-header">
           <div className="space-info">
-            <h3 className="space-title">{space.title}</h3>
+            <div className="title-with-notifications">
+              <h3 className="space-title">{space.title}</h3>
+            </div>
             <div className="space-meta">
               <span className="privacy-indicator">
                 {getPrivacyIcon(space.privacy)} {space.privacy}
@@ -241,6 +279,7 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
               </span>
             )}
           </div>
+        </div>
         </div>
 
         {/* Simplified overlay for main card click */}
