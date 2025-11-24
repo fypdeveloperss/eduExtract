@@ -20,9 +20,11 @@ import { useAuth } from "../context/FirebaseAuthContext";
 import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
 
+const PER_VIDEO_SUPPORTED_TABS = new Set(["blog", "summary", "quiz", "flashcards"]);
+
 function Dashboard() {
   const [searchParams] = useSearchParams();
-  const { showInfo } = useNotification();
+  const { showInfo, showError } = useNotification();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -102,6 +104,7 @@ function Dashboard() {
   const [playlistProcessing, setPlaylistProcessing] = useState(false);
   const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const [playlistContentType, setPlaylistContentType] = useState('');
+  const [playlistGenerationMode, setPlaylistGenerationMode] = useState('combined');
   
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
@@ -147,6 +150,122 @@ function Dashboard() {
       month: "short",
       day: "numeric"
     });
+  };
+
+  const formatVideoLabel = (entry, index) => entry?.title || `Video ${index + 1}`;
+
+  const buildPerVideoHtml = (entries, sectionLabel) => {
+    if (!entries || !entries.length) return "";
+    return entries
+      .map((entry, index) => {
+        const label = formatVideoLabel(entry, index);
+        const content = entry?.content?.trim() ? entry.content : "<p>No content generated for this video.</p>";
+        return `
+          <section style="margin-bottom:24px;">
+            <div style="font-weight:600;font-size:18px;margin-bottom:8px;">
+              ${sectionLabel} - ${label}
+            </div>
+            <div>${content}</div>
+          </section>
+        `;
+      })
+      .join('<hr style="margin:32px 0;opacity:0.15;" />');
+  };
+
+  const handlePerVideoGeneration = async (tabId, perVideoTranscripts, playlistUrl) => {
+    const transcriptsToProcess = (perVideoTranscripts || []).filter(
+      (entry) => entry?.text && entry.text.trim().length > 0
+    );
+
+    if (!transcriptsToProcess.length) {
+      throw new Error("No transcripts were available for per-video generation. Try combined mode or refresh the playlist.");
+    }
+
+    const perVideoResults = [];
+    let generatedContentId = null;
+
+    for (let i = 0; i < transcriptsToProcess.length; i++) {
+      const transcript = transcriptsToProcess[i];
+      setPlaylistProgress({
+        current: i + 1,
+        total: transcriptsToProcess.length,
+        percentage: Math.min(85, Math.round(((i + 1) / transcriptsToProcess.length) * 70))
+      });
+
+      let response;
+      if (tabId === "blog") {
+        response = await api.post("/generate-blog", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.blogPost || response.data.blog || ""
+        });
+      } else if (tabId === "summary") {
+        response = await api.post("/generate-summary", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.summary || ""
+        });
+      } else if (tabId === "quiz") {
+        response = await api.post("/generate-quiz", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.quiz || []
+        });
+      } else if (tabId === "flashcards") {
+        response = await api.post("/generate-flashcards", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.flashcards || []
+        });
+      }
+
+      if (!generatedContentId && response?.data?.contentId) {
+        generatedContentId = response.data.contentId;
+      }
+    }
+
+    if (!perVideoResults.length) {
+      throw new Error("Unable to generate per-video content for this playlist.");
+    }
+
+    const sharedMetadata = {
+      contentId: generatedContentId,
+      source: 'youtube-playlist',
+      url: playlistUrl,
+      playlistInfo,
+      playlistMode: 'per-video',
+      perVideoCount: perVideoResults.length
+    };
+
+    if (tabId === "summary") {
+      const html = buildPerVideoHtml(perVideoResults, "Summary");
+      setSummary(html);
+      updateCurrentSessionContent('summary', html, sharedMetadata);
+    } else if (tabId === "blog") {
+      const html = buildPerVideoHtml(perVideoResults, "Blog");
+      setBlog(html);
+      updateCurrentSessionContent('blog', html, sharedMetadata);
+    } else if (tabId === "quiz") {
+      const aggregatedQuiz = perVideoResults.flatMap((entry, index) => {
+        const label = `[${formatVideoLabel(entry, index)}]`;
+        return (entry.content || []).map((question) => ({
+          ...question,
+          question: `${label} ${question.question}`
+        }));
+      });
+      setQuiz(aggregatedQuiz);
+      updateCurrentSessionContent('quiz', aggregatedQuiz, sharedMetadata);
+    } else if (tabId === "flashcards") {
+      const aggregatedFlashcards = perVideoResults.flatMap((entry, index) => {
+        const label = `[${formatVideoLabel(entry, index)}]`;
+        return (entry.content || []).map((card) => ({
+          question: `${label} ${card.question}`,
+          answer: card.answer
+        }));
+      });
+      setFlashcards(aggregatedFlashcards);
+      updateCurrentSessionContent('flashcards', aggregatedFlashcards, sharedMetadata);
+    }
   };
 
   useEffect(() => {
@@ -456,7 +575,70 @@ function Dashboard() {
       return;
     }
     
-    // Check if it's a playlist - if so, handle differently
+    // Check if URL is a playlist URL (contains list= parameter)
+    const isPlaylistUrl = urlToProcess.includes('list=') && (urlToProcess.includes('playlist') || urlToProcess.includes('watch'));
+    
+    // If it looks like a playlist URL, check with backend first
+    if (isPlaylistUrl) {
+      try {
+        const token = user ? await user.getIdToken() : null;
+        const response = await api.post('/check-url-type', 
+          { url: urlToProcess },
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
+
+        if (response.data.type === 'playlist') {
+          // It's a playlist - handle playlist flow
+          setIsPlaylist(true);
+          setPlaylistInfo(response.data);
+          setError("");
+          setIsLoading(false);
+          setBlog("");
+          setPptxBase64("");
+          setSlides([]);
+          setFlashcards([]);
+          setQuiz([]);
+          setSummary("");
+          setVideoId("");
+          setShowVideo(false);
+          setActiveTab("");
+          
+          setLoadingStates({
+            blog: false,
+            slides: false,
+            flashcards: false,
+            quiz: false,
+            summary: false
+          });
+          setErrors({
+            blog: "",
+            slides: "",
+            flashcards: "",
+            quiz: "",
+            summary: ""
+          });
+          setLoaded({
+            blog: false,
+            slides: false,
+            flashcards: false,
+            quiz: false,
+            summary: false
+          });
+          
+          // Create or update user record
+          await createOrUpdateUser();
+          
+          // Show playlist info and wait for user to select content type
+          setShowContentLayout(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking URL type:', error);
+        // If playlist check fails, fall through to single video handling
+      }
+    }
+    
+    // Check if it's a playlist (from async detection) - if so, handle differently
     if (isPlaylist && playlistInfo) {
       // For playlists, don't extract video ID - use playlist handling
       setError("");
@@ -504,7 +686,10 @@ function Dashboard() {
     // Original single video handling
     const extractedVideoId = extractVideoId(urlToProcess);
     if (!extractedVideoId) {
-      setError("Please enter a valid YouTube URL");
+      showError("Please enter a valid YouTube URL", {
+        title: "Invalid URL"
+      });
+      setError(""); // Clear the old error state
       return;
     }
 
@@ -809,9 +994,21 @@ function Dashboard() {
     }
 
     if (uploadMode === "youtube") {
+      // Check if URL is a playlist URL first
+      const isPlaylistUrl = url.includes('list=') && (url.includes('playlist') || url.includes('watch'));
+      
+      if (isPlaylistUrl) {
+        // Trigger playlist detection by calling handleUrlSubmit
+        await handleUrlSubmit(url);
+        return;
+      }
+      
       const extractedVideoId = extractVideoId(url);
       if (!extractedVideoId) {
-        setError("Please enter a valid YouTube URL");
+        showError("Please enter a valid YouTube URL", {
+          title: "Invalid URL"
+        });
+        setError(""); // Clear the old error state
         return;
       }
 
@@ -1119,93 +1316,131 @@ function Dashboard() {
         if (!playlistUrl) {
           throw new Error('Playlist URL not found');
         }
+
+        if (playlistGenerationMode === 'per-video' && !PER_VIDEO_SUPPORTED_TABS.has(tabId)) {
+          const message = "Per-video mode currently supports Blog, Summary, Quiz, and Flashcards. Switch back to Combined overview to generate this content type.";
+          setErrors(prev => ({
+            ...prev,
+            [tabId]: message
+          }));
+          setLoadingStates(prev => ({ ...prev, [tabId]: false }));
+          if (showInfo) {
+            showInfo("Per-video playlists currently support Blog, Summary, Quiz, and Flashcards.");
+          }
+          return;
+        }
         
         // Show progress modal
+        const tabLabel = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+        const modeLabel = playlistGenerationMode === 'per-video' ? `${tabLabel} (Per Video)` : tabLabel;
         setPlaylistProcessing(true);
-        setPlaylistContentType(tabId.charAt(0).toUpperCase() + tabId.slice(1));
+        setPlaylistContentType(modeLabel);
         setPlaylistProgress({ current: 0, total: playlistInfo.video_count, percentage: 0 });
         
-        // Simulate progress (since backend processes all at once, we estimate based on 5 sec per video)
-        const progressInterval = setInterval(() => {
-          setPlaylistProgress(prev => {
-            if (prev.current < prev.total) {
-              const newCurrent = prev.current + 1;
-              const newPercentage = (newCurrent / prev.total) * 85; // Reserve 15% for content generation
-              return { current: newCurrent, total: prev.total, percentage: newPercentage };
-            }
-            return prev;
-          });
-        }, 5000); // Update every 5 seconds (matching backend delay)
+        let progressInterval = null;
+        if (playlistGenerationMode === 'combined') {
+          // Simulate progress (since backend processes all at once, we estimate based on 5 sec per video)
+          progressInterval = setInterval(() => {
+            setPlaylistProgress(prev => {
+              if (prev.current < prev.total) {
+                const newCurrent = prev.current + 1;
+                const newPercentage = (newCurrent / prev.total) * 85; // Reserve 15% for content generation
+                return { current: newCurrent, total: prev.total, percentage: newPercentage };
+              }
+              return prev;
+            });
+          }, 5000); // Update every 5 seconds (matching backend delay)
+        }
         
         try {
-          // First, fetch the combined transcript from all videos in the playlist
+          // First, fetch the transcript data from all videos in the playlist
           const playlistRes = await api.post("/generate-from-playlist", { 
             url: playlistUrl,
-            contentType: tabId
+            contentType: tabId,
+            mode: playlistGenerationMode
           });
           const combinedTranscript = playlistRes.data.combined_transcript;
+          const perVideoTranscripts = playlistRes.data.per_video_transcripts || [];
           
-          // Clear progress interval and update to show generation phase
-          clearInterval(progressInterval);
-          setPlaylistProgress({ 
-            current: playlistInfo.video_count, 
-            total: playlistInfo.video_count, 
-            percentage: 85 
-          });
+          if (playlistGenerationMode === 'combined') {
+            if (progressInterval) {
+              clearInterval(progressInterval);
+              progressInterval = null;
+            }
+            // Update to show generation phase
+            setPlaylistProgress({ 
+              current: playlistInfo.video_count, 
+              total: playlistInfo.video_count, 
+              percentage: 85 
+            });
+            
+            console.log(`Combined transcript from ${playlistRes.data.total_videos} videos (${playlistRes.data.processed_videos} successful)`);
           
-          console.log(`Combined transcript from ${playlistRes.data.total_videos} videos (${playlistRes.data.processed_videos} successful)`);
-        
-          // Now use the combined transcript to generate the requested content type
-          // Update progress to 90% while generating
-          setPlaylistProgress(prev => ({ ...prev, percentage: 90 }));
-          
-          if (tabId === "blog") {
-            res = await api.post("/generate-blog", { textContent: combinedTranscript });
-            setBlog(res.data.blogPost || "");
-            updateCurrentSessionContent('blog', res.data.blogPost, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
+            // Now use the combined transcript to generate the requested content type
+            // Update progress to 90% while generating
+            setPlaylistProgress(prev => ({ ...prev, percentage: 90 }));
+            
+            if (tabId === "blog") {
+              res = await api.post("/generate-blog", { textContent: combinedTranscript });
+              setBlog(res.data.blogPost || "");
+              updateCurrentSessionContent('blog', res.data.blogPost, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "slides") {
+              res = await api.post("/generate-slides", { textContent: combinedTranscript });
+              setPptxBase64(res.data.pptxBase64 || "");
+              setSlides(res.data.slides || []);
+              updateCurrentSessionContent('slides', res.data.slides, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                pptxBase64: res.data.pptxBase64,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "flashcards") {
+              res = await api.post("/generate-flashcards", { textContent: combinedTranscript });
+              setFlashcards(res.data.flashcards || []);
+              updateCurrentSessionContent('flashcards', res.data.flashcards, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "quiz") {
+              res = await api.post("/generate-quiz", { textContent: combinedTranscript });
+              setQuiz(res.data.quiz || []);
+              updateCurrentSessionContent('quiz', res.data.quiz, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "summary") {
+              res = await api.post("/generate-summary", { textContent: combinedTranscript });
+              setSummary(res.data.summary || "");
+              updateCurrentSessionContent('summary', res.data.summary, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            }
+          } else {
+            // Per-video generation flow
+            setPlaylistProgress({
+              current: 0,
+              total: perVideoTranscripts.length || playlistInfo.video_count,
+              percentage: perVideoTranscripts.length ? 10 : 0
             });
-          } else if (tabId === "slides") {
-            res = await api.post("/generate-slides", { textContent: combinedTranscript });
-            setPptxBase64(res.data.pptxBase64 || "");
-            setSlides(res.data.slides || []);
-            updateCurrentSessionContent('slides', res.data.slides, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo,
-              pptxBase64: res.data.pptxBase64
-            });
-          } else if (tabId === "flashcards") {
-            res = await api.post("/generate-flashcards", { textContent: combinedTranscript });
-            setFlashcards(res.data.flashcards || []);
-            updateCurrentSessionContent('flashcards', res.data.flashcards, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
-          } else if (tabId === "quiz") {
-            res = await api.post("/generate-quiz", { textContent: combinedTranscript });
-            setQuiz(res.data.quiz || []);
-            updateCurrentSessionContent('quiz', res.data.quiz, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
-          } else if (tabId === "summary") {
-            res = await api.post("/generate-summary", { textContent: combinedTranscript });
-            setSummary(res.data.summary || "");
-            updateCurrentSessionContent('summary', res.data.summary, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
+            await handlePerVideoGeneration(tabId, perVideoTranscripts, playlistUrl);
           }
           
           // Complete progress
@@ -1218,9 +1453,15 @@ function Dashboard() {
           }, 800);
           
         } catch (playlistError) {
-          clearInterval(progressInterval);
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
           setPlaylistProcessing(false);
           throw playlistError;
+        } finally {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
         }
       } else if (selectedFile) {
         const formData = new FormData();
@@ -1973,6 +2214,62 @@ function Dashboard() {
                           This playlist contains {playlistInfo.video_count} videos. 
                           Click any content type button on the right to generate comprehensive learning materials 
                           from all videos in this playlist.
+                        </p>
+                      </div>
+
+                      <div className="p-4 border border-gray-200 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#1E1E1E]">
+                        <p className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-3">
+                          Choose how you want to process this playlist
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              playlistGenerationMode === 'combined'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-[#fafafa1a]'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="playlist-mode"
+                              value="combined"
+                              className="mt-1"
+                              checked={playlistGenerationMode === 'combined'}
+                              onChange={() => setPlaylistGenerationMode('combined')}
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa]">Combined overview</p>
+                              <p className="text-xs text-[#17171799] dark:text-[#fafafa99]">
+                                Merge every transcript into one master summary, quiz, flashcards set, or slide deck.
+                              </p>
+                            </div>
+                          </label>
+
+                          <label
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              playlistGenerationMode === 'per-video'
+                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                : 'border-gray-200 dark:border-[#fafafa1a]'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="playlist-mode"
+                              value="per-video"
+                              className="mt-1"
+                              checked={playlistGenerationMode === 'per-video'}
+                              onChange={() => setPlaylistGenerationMode('per-video')}
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa]">Per-video outputs</p>
+                              <p className="text-xs text-[#17171799] dark:text-[#fafafa99]">
+                                Generate individual summaries, blogs, quizzes, or flashcards for each video to keep modules scoped.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                        <p className="text-xs text-[#17171799] dark:text-[#fafafa99] mt-3">
+                          * Per-video mode currently supports Blog, Summary, Quiz, and Flashcards. Use Combined overview for Slides or other formats.
                         </p>
                       </div>
 

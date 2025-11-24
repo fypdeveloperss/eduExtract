@@ -121,7 +121,7 @@ const MyContent = () => {
       try {
         // Only show full page loader on initial load
         if (initialLoad) {
-          setLoading(true);
+        setLoading(true);
         } else {
           // For subsequent filter changes, use subtle loading indicator
           setFilterLoading(true);
@@ -516,17 +516,17 @@ const MyContent = () => {
               Manage and organize your generated educational content
             </p>
           </div>
-          {contentList.length > 0 && (
-            <button
-              onClick={() => setShowPublishModal(true)}
+        {contentList.length > 0 && (
+          <button
+            onClick={() => setShowPublishModal(true)}
               className="inline-flex items-center justify-center gap-2 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-6 py-2.5 rounded-lg font-semibold hover:opacity-90 transition-opacity text-sm"
-            >
+          >
               <Rocket className="w-4 h-4" />
-              Publish to Marketplace
-            </button>
-          )}
-        </div>
-
+            Publish to Marketplace
+          </button>
+        )}
+      </div>
+      
         {/* Statistics Cards */}
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
           <div className="bg-white dark:bg-[#171717] rounded-xl p-4 border border-gray-200 dark:border-[#fafafa1a] shadow-sm hover:shadow-md transition-all duration-200">
@@ -607,9 +607,9 @@ const MyContent = () => {
                 <List className="w-5 h-5" />
               </button>
             </div>
-          </div>
-        </div>
-
+                </div>
+              </div>
+              
         {/* Advanced Filters Panel */}
         {showAdvancedFilters && (
           <div className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-6 mb-4 shadow-sm">
@@ -929,8 +929,8 @@ const MyContent = () => {
                       <Download className="w-3.5 h-3.5" />
                       {downloadingItems.has(item._id) ? '...' : 'Download'}
                     </button>
-                    <button
-                      onClick={() => handlePublishToMarketplace(item)}
+                <button
+                  onClick={() => handlePublishToMarketplace(item)}
                       className="p-1.5 bg-gray-100 dark:bg-[#fafafa1a] text-[#171717cc] dark:text-[#fafafacc] rounded-lg hover:bg-gray-200 dark:hover:bg-[#fafafa2a] transition-colors"
                       title="Publish to Marketplace"
                     >
@@ -942,9 +942,9 @@ const MyContent = () => {
                       title="Edit Tags & Metadata"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </div>
+                </button>
+              </div>
+            </div>
               );
             } else {
               return (
@@ -1263,4 +1263,4 @@ const EditMetadataModal = ({ content, editingTags, newTagInput, onClose, onSave,
   );
 };
 
-export default MyContent;
+export default MyContent; 
