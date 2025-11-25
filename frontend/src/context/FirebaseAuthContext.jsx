@@ -9,6 +9,7 @@ import {
   updateProfile
 } from 'firebase/auth';
 import { auth } from '../config/firebase';
+import { validateEmail } from '../utils/auth';
 
 const AuthContext = createContext(null);
 
@@ -139,7 +140,8 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       setError(null);
-      await signInWithEmailAndPassword(auth, email, password);
+      const normalizedEmail = validateEmail(email);
+      await signInWithEmailAndPassword(auth, normalizedEmail, password);
       setShowAuthModal(false);
     } catch (error) {
       setError(error.message);
@@ -150,7 +152,8 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password) => {
     try {
       setError(null);
-      await createUserWithEmailAndPassword(auth, email, password);
+      const normalizedEmail = validateEmail(email);
+      await createUserWithEmailAndPassword(auth, normalizedEmail, password);
       setShowAuthModal(false);
     } catch (error) {
       setError(error.message);

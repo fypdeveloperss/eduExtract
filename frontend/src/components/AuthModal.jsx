@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { validateEmail } from '../utils/auth';
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
 import './AuthModal.css';
 
@@ -15,7 +16,7 @@ const AuthInput = ({ type, placeholder, value, onChange, icon: Icon, showPasswor
       onChange={onChange}
       className="w-full pl-10 pr-10 py-3 bg-[#FFFFFF] dark:bg-[#171717] border border-neutral-300 dark:border-[#2E2E2E] rounded-lg text-[#171717cc] dark:text-[#fafafacc] placeholder-[#171717cc] dark:placeholder-[#fafafacc] focus:outline-none focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] focus:border-transparent transition-all duration-300 hover:border-neutral-400 dark:hover:border-[#4B5563] focus:scale-[1.02] focus:shadow-lg"
     />
-    {type === 'password' && (
+    {typeof togglePassword === 'function' && (
       <button
         type="button"
         onClick={togglePassword}
@@ -104,8 +105,10 @@ const AuthModal = () => {
       setError('Please fill in all fields');
       return false;
     }
-    if (!/\S+@\S+\.\S+/.test(email)) {
-      setError('Please enter a valid email address');
+    try {
+      validateEmail(email);
+    } catch (validationError) {
+      setError(validationError.message);
       return false;
     }
     if (password.length < 6) {

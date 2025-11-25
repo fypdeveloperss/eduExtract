@@ -1,5 +1,7 @@
 import { auth } from '../config/firebase';
 
+const EMAIL_PATTERN = /^[A-Za-z0-9.!#$%&'*+/=?^_`{|}~-]+@[A-Za-z0-9-]+(\.[A-Za-z0-9-]+)+$/;
+
 /**
  * Helper function to get the current Firebase user's ID token
  * @returns {Promise<string>} The Firebase ID token
@@ -59,4 +61,38 @@ export const isAuthenticated = () => {
  */
 export const getCurrentUser = () => {
   return auth.currentUser;
+};
+
+/**
+ * Helper to validate and normalize email addresses
+ * @param {string} email
+ * @returns {string} Normalized email if valid
+ * @throws {Error} If email is invalid
+ */
+export const validateEmail = (email = '') => {
+  const normalizedEmail = email.trim();
+
+  if (!normalizedEmail || !EMAIL_PATTERN.test(normalizedEmail)) {
+    throw new Error('Please enter a valid email address.');
+  }
+
+  const [, domain = ''] = normalizedEmail.split('@');
+
+  if (domain.includes('..')) {
+    throw new Error('Email domain cannot contain consecutive dots.');
+  }
+
+  const domainParts = domain.split('.');
+  const tld = domainParts[domainParts.length - 1];
+  const secondLevel = domainParts[domainParts.length - 2];
+
+  if (!tld || tld.length < 2 || tld.length > 24 || /[^A-Za-z]/.test(tld)) {
+    throw new Error('Please enter a valid email domain.');
+  }
+
+  if (secondLevel && secondLevel.toLowerCase() === tld.toLowerCase()) {
+    throw new Error('Please double-check the email domain spelling.');
+  }
+
+  return normalizedEmail.toLowerCase();
 };
