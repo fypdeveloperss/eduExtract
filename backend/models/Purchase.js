@@ -42,42 +42,6 @@ const purchaseSchema = new mongoose.Schema({
     default: 'USD'
   },
   
-  // Commission and earnings
-  platformCommission: {
-    type: Number,
-    required: false,
-    default: 0,
-    min: 0
-  },
-  
-  commissionRate: {
-    type: Number,
-    required: false,
-    default: 0.15, // 15% default commission
-    min: 0,
-    max: 1
-  },
-  
-  sellerEarnings: {
-    type: Number,
-    required: false,
-    default: 0,
-    min: 0
-  },
-  
-  payoutStatus: {
-    type: String,
-    required: false,
-    enum: ['pending', 'paid', 'processing'],
-    default: 'pending'
-  },
-  
-  payoutId: {
-    type: String,
-    required: false,
-    ref: 'Payout'
-  },
-  
   // Payment method
   paymentMethod: {
     type: String,
