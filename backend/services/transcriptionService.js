@@ -1,4 +1,11 @@
-const { pipeline } = require('@xenova/transformers');
+// const { pipeline } = require('@xenova/transformers');
+let pipeline;
+
+(async () => {
+  const transformers = await import('@xenova/transformers');
+  pipeline = transformers.pipeline;
+})();
+
 const ffmpeg = require('fluent-ffmpeg');
 const ffmpegStatic = require('ffmpeg-static');
 const fs = require('fs');
