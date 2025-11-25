@@ -8,9 +8,11 @@ import SpaceHeader from '../components/SpaceHeader';
 import SpaceContentList from '../components/SpaceContentList';
 import MembersList from '../components/MembersList';
 import ChangeRequestsList from '../components/ChangeRequestsList';
+import JoinRequestsTab from '../components/JoinRequestsTab';
 import SpaceSettings from '../components/SpaceSettings';
 import NotificationPanel from '../components/NotificationPanel';
 import ContentEditor from '../components/ContentEditor';
+import CollaborationSpaceChat from '../components/CollaborationSpaceChat';
 import Spinner from '../components/Spinner';
 import './CollaborationSpace.css';
 
@@ -38,6 +40,10 @@ const CollaborationSpace = () => {
   const [editingContent, setEditingContent] = useState(null);
   const [showContentEditor, setShowContentEditor] = useState(false);
   const [contentRefreshKey, setContentRefreshKey] = useState(0);
+  
+  // Chat state
+  const [showChat, setShowChat] = useState(false);
+  const [chatMinimized, setChatMinimized] = useState(false);
   
   // Refs for managing intervals and preventing race conditions
   const fetchTimeoutRef = useRef(null);
@@ -182,6 +188,48 @@ const CollaborationSpace = () => {
       }
     };
   }, [spaceId]); // Only depend on spaceId for cleanup
+
+  // Socket listeners for join request notifications
+  useEffect(() => {
+    if (!user || !space || !isConnected) return;
+
+    // Only space owners should listen for new join request notifications
+    const isOwner = space.ownerId === user.uid;
+    if (!isOwner) return;
+
+    const handleNewJoinRequest = (data) => {
+      console.log('New join request received:', data);
+      
+      addNotification({
+        type: 'info',
+        message: `New join request from ${data.requesterName} for "${data.spaceName}"`,
+        timestamp: Date.now()
+      });
+
+      // Refresh space data to update badge count
+      debouncedFetch(true);
+    };
+
+    const handleJoinRequestStatusChange = () => {
+      // Refresh space data when any join request status changes
+      debouncedFetch(true);
+    };
+
+    // Set up socket listeners through collaboration context
+    if (window.socket) {
+      window.socket.on('new-join-request', handleNewJoinRequest);
+      window.socket.on('join-request-approved', handleJoinRequestStatusChange);
+      window.socket.on('join-request-rejected', handleJoinRequestStatusChange);
+    }
+
+    return () => {
+      if (window.socket) {
+        window.socket.off('new-join-request', handleNewJoinRequest);
+        window.socket.off('join-request-approved', handleJoinRequestStatusChange);
+        window.socket.off('join-request-rejected', handleJoinRequestStatusChange);
+      }
+    };
+  }, [user?.uid, space?.ownerId, isConnected, addNotification, debouncedFetch]);
 
   // FIX 6: Debounce real-time updates
   const updateTimeoutRef = useRef(null);
@@ -485,6 +533,26 @@ const CollaborationSpace = () => {
             />
             
             <div className="flex items-center gap-3 flex-wrap">
+              {/* AI Chat Button */}
+              <button 
+                className={`px-4 py-2 rounded-lg transition-all text-sm font-semibold ${
+                  showChat 
+                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
+                    : 'border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
+                }`}
+                onClick={() => {
+                  if (showChat) {
+                    setShowChat(false);
+                  } else {
+                    setShowChat(true);
+                    setChatMinimized(false);
+                  }
+                }}
+                title="AI Assistant for this space"
+              >
+                🤖 Space AI
+              </button>
+              
               {canLeaveSpace() && (
                 <button 
                   className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
@@ -558,6 +626,15 @@ const CollaborationSpace = () => {
               space={space}
               onUpdate={handleContentUpdate}
               userPermission={userPermission}
+            />
+          )}
+
+          {activeTab === 'join-requests' && (canUserPerformAction('manage_space') || space?.ownerId === user?.uid) && (
+            <JoinRequestsTab
+              key={`join-requests-${spaceId}`}
+              spaceId={spaceId}
+              space={space}
+              onUpdate={handleSpaceUpdate}
             />
           )}
 
@@ -636,6 +713,16 @@ const CollaborationSpace = () => {
           }}
         />
       )}
+
+      {/* Collaboration Space AI Chat */}
+      <CollaborationSpaceChat
+        spaceId={spaceId}
+        spaceName={space?.title || 'Collaboration Space'}
+        isVisible={showChat}
+        onClose={() => setShowChat(false)}
+        onMinimize={() => setChatMinimized(!chatMinimized)}
+        isMinimized={chatMinimized}
+      />
     </div>
   );
 };

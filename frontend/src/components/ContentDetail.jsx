@@ -1,9 +1,11 @@
 import React, { useState } from "react";
 import { Download } from "lucide-react";
 import api from "../utils/axios";
+import { useCustomAlerts } from "../hooks/useCustomAlerts";
 
 const ContentDetail = ({ content, quizAttempt }) => {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { error, warning } = useCustomAlerts();
 
   if (!content) {
     return <div className="p-4 text-center text-gray-500">No content selected</div>;
@@ -96,12 +98,12 @@ const ContentDetail = ({ content, quizAttempt }) => {
               window.URL.revokeObjectURL(url);
               return;
             } else {
-              alert('No slides data available for download');
+              warning('No slides data available for download', 'Download Unavailable');
               return;
             }
           }
         default:
-          alert(`Download not supported for content type: ${contentType}`);
+          warning(`Download not supported for content type: ${contentType}`, 'Unsupported Content');
           return;
       }
 
@@ -119,9 +121,9 @@ const ContentDetail = ({ content, quizAttempt }) => {
       link.remove();
       window.URL.revokeObjectURL(url);
 
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert(`Failed to download ${contentType}: ${error.message || 'Please try again.'}`);
+    } catch (err) {
+      console.error('Download failed:', err);
+      error(`Failed to download ${contentType}: ${err.message || 'Please try again.'}`, 'Download Error');
     } finally {
       setIsDownloading(false);
     }

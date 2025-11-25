@@ -203,7 +203,7 @@ function MarketplaceUpload() {
 
   return (
     <div className="min-h-screen bg-white dark:bg-[#171717] py-8">
-      <div className="max-w-4xl mx-auto px-4">
+      <div className="max-w-7xl mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-8">
           <h1 className="text-4xl font-bold text-[#171717cc] dark:text-[#fafafacc] mb-4">

@@ -2,16 +2,20 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
-import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb } from "lucide-react";
+import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
+import FeedbackForm from "../components/FeedbackForm";
+import { useAuth } from "../context/FirebaseAuthContext";
 
 export default function Home() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
+  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const featuresRef = useRef(null);
 
   // Interpolate scroll to transform values
@@ -509,6 +513,107 @@ export default function Home() {
         </div>
       </motion.section>
 
+      {/* Feedback Section */}
+      <motion.section
+        className="py-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]"
+        initial={{ opacity: 0 }}
+        whileInView={{ opacity: 1 }}
+        transition={{ duration: 0.8 }}
+        viewport={{ once: true }}
+      >
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 50 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="mb-12"
+          >
+            <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 rounded-full px-4 py-2 mb-6">
+              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">We Value Your Input</span>
+            </div>
+            
+            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6">
+              Help us improve EduExtract
+            </h2>
+            
+            <p className="text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-2xl mx-auto mb-8">
+              Your feedback drives our innovation. Share your thoughts, report issues, or suggest new features 
+              to help us build the best learning platform for everyone.
+            </p>
+
+            {user ? (
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowFeedbackForm(true)}
+                className="bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
+              >
+                <MessageSquare className="w-5 h-5" />
+                Share Your Feedback
+                <ArrowRight className="w-5 h-5" />
+              </motion.button>
+            ) : (
+              <div className="space-y-4">
+                <p className="text-[#171717cc] dark:text-[#fafafacc] text-base">
+                  Sign in to share your feedback and help us improve
+                </p>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => navigate("/dashboard")}
+                  className="bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-8 py-4 rounded-full font-bold text-lg shadow-lg hover:shadow-xl transition-all duration-300 flex items-center gap-3 mx-auto"
+                >
+                  <Users className="w-5 h-5" />
+                  Sign In to Give Feedback
+                  <ArrowRight className="w-5 h-5" />
+                </motion.button>
+              </div>
+            )}
+          </motion.div>
+
+          {/* Feedback Stats or Features */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.2 }}
+            viewport={{ once: true }}
+            className="grid grid-cols-1 md:grid-cols-3 gap-6"
+          >
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+              </div>
+              <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">Feature Requests</h3>
+              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                Suggest new features and improvements you'd like to see
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+              </div>
+              <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">Bug Reports</h3>
+              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                Help us fix issues and improve the platform's stability
+              </p>
+            </div>
+
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
+              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Lightbulb className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              </div>
+              <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">General Feedback</h3>
+              <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                Share your overall experience and thoughts about EduExtract
+              </p>
+            </div>
+          </motion.div>
+        </div>
+      </motion.section>
+
       {/* Footer */}
       <footer className="bg-[#121212] text-white py-12">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -557,6 +662,12 @@ export default function Home() {
           </div>
         </div>
       </footer>
+
+      {/* Feedback Form Modal */}
+      <FeedbackForm 
+        isOpen={showFeedbackForm} 
+        onClose={() => setShowFeedbackForm(false)} 
+      />
     </div>
   );
 }

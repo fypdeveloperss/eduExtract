@@ -90,6 +90,13 @@ function AdminForumModeration() {
     fetchData();
   };
 
+  const formatNumber = (value, fallback = '—') => {
+    if (value === undefined || value === null || Number.isNaN(Number(value))) {
+      return fallback;
+    }
+    return Number(value).toLocaleString();
+  };
+
   const handleDeletePost = async (postId, reason = '') => {
     if (!window.confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
       return;
@@ -159,34 +166,92 @@ function AdminForumModeration() {
     });
   };
 
+  const heroStats = [
+    {
+      label: 'Flagged Posts',
+      value: formatNumber(posts.length),
+      tone: 'from-rose-500/15 to-transparent'
+    },
+    {
+      label: 'Topics in scope',
+      value: formatNumber(topics.length),
+      tone: 'from-sky-500/15 to-transparent'
+    },
+    {
+      label: 'Categories',
+      value: formatNumber(categories.length),
+      tone: 'from-purple-500/15 to-transparent'
+    }
+  ];
+
   if (loading && posts.length === 0 && topics.length === 0) {
     return <PageLoader />;
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-2">
-          Forum Moderation
-        </h1>
-        <p className="text-[#171717cc] dark:text-[#fafafacc]">
-          Manage forum posts and topics, moderate inappropriate content
-        </p>
+    <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+      <div className="grid gap-6 lg:grid-cols-3">
+        <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#171717] via-[#0f0f0f] to-[#050505] text-white p-8 shadow-2xl border border-white/10">
+          <div className="absolute -top-12 -right-12 w-48 h-48 bg-rose-500/20 rounded-full blur-3xl" />
+          <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl" />
+          <div className="relative space-y-4">
+            <p className="text-xs uppercase tracking-[0.3em] text-white/60">Forum Safety</p>
+            <h1 className="text-3xl font-bold">Moderation Console</h1>
+            <p className="text-sm text-white/70">
+              Review reported posts, keep discussions high-signal, and protect the learning community.
+            </p>
+            <div className="grid grid-cols-2 gap-4 pt-2">
+              <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+                <p className="text-xs text-white/60">Active Filter</p>
+                <p className="text-lg font-semibold mt-1 capitalize">{activeTab}</p>
+                <p className="text-xs text-white/70 mt-1">Adjust tabs to switch context</p>
+              </div>
+              <button
+                onClick={() => navigate('/admin')}
+                className="rounded-2xl border border-white/20 bg-white/5 p-4 backdrop-blur text-left text-sm font-semibold text-white hover:bg-white/10 transition"
+              >
+                Back to Admin Hub →
+              </button>
+            </div>
+          </div>
+        </div>
+        <div className="grid gap-4">
+          {heroStats.map((stat) => (
+            <div
+              key={stat.label}
+              className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-4 shadow"
+            >
+              <div className={`absolute inset-0 bg-gradient-to-br ${stat.tone}`} />
+              <div className="relative">
+                <p className="text-xs uppercase tracking-[0.3em] text-[#17171766] dark:text-[#fafafa66]">
+                  {stat.label}
+                </p>
+                <p className="text-xl font-semibold text-[#171717] dark:text-white mt-1">
+                  {stat.value}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+        <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-6 shadow-lg space-y-4">
+          <p className="text-sm font-semibold text-[#171717] dark:text-white">Alerts</p>
+          {error && (
+            <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/10 p-3 text-sm text-red-700 dark:text-red-300">
+              {error}
+            </div>
+          )}
+          {success && (
+            <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/10 p-3 text-sm text-emerald-700 dark:text-emerald-300">
+              {success}
+            </div>
+          )}
+          {!error && !success && (
+            <p className="text-xs text-[#17171799] dark:text-[#fafafacc]">
+              All systems normal. No alerts to show.
+            </p>
+          )}
+        </div>
       </div>
-
-      {/* Success/Error Messages */}
-      {error && (
-        <div className="bg-red-100 dark:bg-red-900/30 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-300 px-4 py-3 rounded-lg mb-6">
-          {error}
-        </div>
-      )}
-
-      {success && (
-        <div className="bg-green-100 dark:bg-green-900/30 border border-green-400 dark:border-green-800 text-green-700 dark:text-green-300 px-4 py-3 rounded-lg mb-6">
-          {success}
-        </div>
-      )}
 
       {/* Main Card */}
       <div className="bg-white dark:bg-[#171717] rounded-lg shadow-lg border border-gray-200 dark:border-[#2E2E2E] overflow-hidden">

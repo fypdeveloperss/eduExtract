@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useNavigate } from 'react-router-dom';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 import LoaderSpinner from '../components/LoaderSpinner';
 import { 
@@ -25,6 +26,7 @@ import {
 function SellerDashboard() {
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { warning } = useCustomAlerts();
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -689,7 +691,7 @@ function EditProductModal({ product, onClose, onSave }) {
 
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto border border-[#fafafa1a]">
+      <div className="bg-white dark:bg-[#171717] rounded-2xl mt-10 shadow-2xl w-full max-w-2xl max-h-[80vh] overflow-y-auto border border-[#fafafa1a]">
         <div className="flex items-center justify-between p-6 border-b border-[#fafafa1a]">
           <h2 className="text-xl font-bold text-[#171717] dark:text-[#fafafa]">Edit Product</h2>
           <button
@@ -878,7 +880,7 @@ function PayoutRequestModal({ pendingEarnings, onClose, onRequest }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (formData.amount > pendingEarnings) {
-      alert('Amount cannot exceed pending earnings');
+      warning('Amount cannot exceed pending earnings', 'Invalid Amount');
       return;
     }
     onRequest(formData);

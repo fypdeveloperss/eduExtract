@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import { Star, ThumbsUp, Flag, Edit, Trash2 } from 'lucide-react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import api from '../utils/axios';
 
 function ReviewSection({ contentId, hasAccess, onReviewSubmitted }) {
   const { user } = useAuth();
+  const { success, error, warning } = useCustomAlerts();
   const [reviews, setReviews] = useState([]);
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [editingReview, setEditingReview] = useState(null);
@@ -57,7 +59,7 @@ function ReviewSection({ contentId, hasAccess, onReviewSubmitted }) {
       setSubmitting(true);
       
       if (categories.length === 0) {
-        alert('Please select at least one category');
+        warning('Please select at least one category', 'Category Required');
         return;
       }
 
@@ -81,10 +83,10 @@ function ReviewSection({ contentId, hasAccess, onReviewSubmitted }) {
         onReviewSubmitted();
       }
 
-      alert('Review submitted successfully!');
-    } catch (error) {
-      console.error('Failed to submit review:', error);
-      alert(error.response?.data?.error || 'Failed to submit review');
+      success('Review submitted successfully!', 'Review Posted');
+    } catch (err) {
+      console.error('Failed to submit review:', err);
+      error(err.response?.data?.error || 'Failed to submit review', 'Submission Failed');
     } finally {
       setSubmitting(false);
     }

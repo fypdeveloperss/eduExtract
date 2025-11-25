@@ -9,6 +9,8 @@ import { AuthProvider } from "./context/FirebaseAuthContext";
 import { CollaborationProvider } from "./context/CollaborationContext";
 import { OnboardingProvider } from "./context/OnboardingContext";
 import { PreferencesProvider } from "./context/PreferencesContext";
+import { NotificationProvider } from "./context/NotificationContext";
+import { DialogProvider } from "./context/DialogContext";
 import OnboardingModal from "./components/OnboardingModal";
 import PreferencesSettings from "./components/PreferencesSettings";
 import Content from "./components/Content";
@@ -31,6 +33,7 @@ import AdminForumModeration from "./pages/AdminForumModeration";
 import ContentQualityHub from "./pages/ContentQualityHub";
 import SmartMentorManagement from "./pages/SmartMentorManagement";
 import UserEngagementAnalytics from "./pages/UserEngagementAnalytics";
+import AdminAIMonitor from "./pages/AdminAIMonitor";
 import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
 import CollaborationInvites from "./pages/CollaborationInvites";
@@ -40,10 +43,12 @@ import SharedContentView from "./pages/SharedContentView";
 function App() {
   return (
     <AuthProvider>
-      <CollaborationProvider>
-        <OnboardingProvider>
-          <PreferencesProvider>
-            <Router>
+      <NotificationProvider>
+        <DialogProvider>
+          <CollaborationProvider>
+            <OnboardingProvider>
+              <PreferencesProvider>
+                <Router>
               <Routes>
                 <Route index element={<Home />} />
                 <Route path="/about" element={<About />} />
@@ -78,13 +83,16 @@ function App() {
                 <Route path="content-quality" element={<ContentQualityHub />} />
                 <Route path="smart-mentor" element={<SmartMentorManagement />} />
                 <Route path="user-engagement" element={<UserEngagementAnalytics />} />
+                <Route path="ai-monitor" element={<AdminAIMonitor />} />
               </Route>
             </Routes>
             <OnboardingModal />
           </Router>
-          </PreferencesProvider>
-        </OnboardingProvider>
-      </CollaborationProvider>
+                </PreferencesProvider>
+              </OnboardingProvider>
+            </CollaborationProvider>
+          </DialogProvider>
+        </NotificationProvider>
     </AuthProvider>
   );
 }

@@ -10,11 +10,10 @@ import {
   ChevronDown,
   Moon,
   Sun,
-  Settings,
-  Copy,
-  Info
+  Settings
 } from 'lucide-react';
 import PreferencesSettings from './PreferencesSettings';
+import api from '../utils/axios';
 
 // Add CSS keyframes for animations
 const animationKeyframes = `
@@ -61,12 +60,16 @@ const SettingsModal = ({ isOpen, onClose }) => {
   const [isDarkMode, setIsDarkMode] = useState(false);
   const [language, setLanguage] = useState('English');
   const [chatModel, setChatModel] = useState('Gemini 2.5 Flash');
-  const [showReferralInfo, setShowReferralInfo] = useState(false);
   
   // Name editing state
   const [isEditingName, setIsEditingName] = useState(false);
   const [editedName, setEditedName] = useState(user?.displayName || '');
   const [isUpdatingName, setIsUpdatingName] = useState(false);
+  
+  // User data state
+  const [userProfile, setUserProfile] = useState(null);
+  const [contentCount, setContentCount] = useState(0);
+  const [loadingUserData, setLoadingUserData] = useState(false);
 
   // Close modal when clicking outside
   useEffect(() => {
@@ -108,6 +111,45 @@ const SettingsModal = ({ isOpen, onClose }) => {
     setIsDarkMode(isDark);
   }, []);
 
+  // Fetch user profile and content count when modal opens
+  useEffect(() => {
+    if (isOpen && user) {
+      fetchUserData();
+    }
+  }, [isOpen, user]);
+
+  const fetchUserData = async () => {
+    setLoadingUserData(true);
+    try {
+      // Fetch user profile
+      const profileResponse = await api.get('/api/users/profile');
+      setUserProfile(profileResponse.data);
+      
+      // Fetch content count
+      const contentResponse = await api.get('/api/content');
+      const content = Array.isArray(contentResponse.data) 
+        ? contentResponse.data 
+        : Array.isArray(contentResponse.data?.content)
+          ? contentResponse.data.content
+          : [];
+      setContentCount(content.length);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    } finally {
+      setLoadingUserData(false);
+    }
+  };
+
+  const formatDate = (dateString) => {
+    if (!dateString) return 'N/A';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'long',
+      day: 'numeric',
+      year: 'numeric'
+    });
+  };
+
   const toggleTheme = () => {
     const newTheme = !isDarkMode;
     setIsDarkMode(newTheme);
@@ -121,11 +163,6 @@ const SettingsModal = ({ isOpen, onClose }) => {
     }
   };
 
-  const copyReferralLink = () => {
-    const referralLink = `https://eduextract.com/ref/${user?.uid || 'user'}`;
-    navigator.clipboard.writeText(referralLink);
-    // You could add a toast notification here
-  };
 
   // Name editing functions
   const handleEditName = () => {
@@ -295,7 +332,9 @@ const SettingsModal = ({ isOpen, onClose }) => {
                   <div className="flex items-center justify-between py-2">
                     <div>
                       <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Date Created</label>
-                      <p className="text-gray-900 dark:text-white">March 30, 2025</p>
+                      <p className="text-gray-900 dark:text-white">
+                        {loadingUserData ? 'Loading...' : formatDate(userProfile?.createdAt)}
+                      </p>
                     </div>
                   </div>
 
@@ -303,7 +342,9 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     <div className="flex items-center gap-2">
                       <div>
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Streaks</label>
-                        <p className="text-gray-900 dark:text-white">1</p>
+                        <p className="text-gray-900 dark:text-white">
+                          {loadingUserData ? 'Loading...' : '0'}
+                        </p>
                       </div>
                       <svg className="w-4 h-4 text-orange-500" fill="currentColor" viewBox="0 0 24 24">
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
@@ -315,35 +356,14 @@ const SettingsModal = ({ isOpen, onClose }) => {
                     <div className="flex items-center gap-2">
                       <div>
                         <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Content Count</label>
-                        <p className="text-gray-900 dark:text-white">9</p>
+                        <p className="text-gray-900 dark:text-white">
+                          {loadingUserData ? 'Loading...' : contentCount}
+                        </p>
                       </div>
                       <svg className="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                       </svg>
                     </div>
-                  </div>
-                  {/* Referral Section */}
-                  <div className="mt-8 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <h4 className="font-medium text-blue-900 dark:text-blue-100">15% Off - Referral Link</h4>
-                      <p className="text-sm text-blue-700 dark:text-blue-300">Invite friends, get 15% off for 1 month per referral</p>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => setShowReferralInfo(!showReferralInfo)}
-                        className="p-1 hover:bg-blue-100 dark:hover:bg-blue-800 rounded"
-                      >
-                        <Info className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                      </button>
-                      <button
-                        onClick={copyReferralLink}
-                        className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                      >
-                        Copy Link
-                      </button>
-                    </div>
-                  </div>
                   </div>
                 </div>
               </div>

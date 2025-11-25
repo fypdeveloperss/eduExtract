@@ -5,10 +5,12 @@
 
 import { useState, useEffect } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { useCustomAlerts } from '../hooks/useCustomAlerts';
 import io from 'socket.io-client';
 
 function PlaylistProcessor() {
   const { user } = useAuth();
+  const { success, error } = useCustomAlerts();
   const [url, setUrl] = useState('');
   const [jobId, setJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState(null);
@@ -88,13 +90,13 @@ function PlaylistProcessor() {
           estimatedTime: data.estimated_time
         });
         
-        alert(`Processing started! Job ID: ${data.jobId}\nEstimated time: ${data.estimated_time} minutes`);
+        success(`Processing started! Job ID: ${data.jobId}. Estimated time: ${data.estimated_time} minutes`, 'Processing Started');
       } else {
-        alert('Failed to start processing: ' + data.error);
+        error('Failed to start processing: ' + data.error, 'Processing Failed');
       }
-    } catch (error) {
-      console.error('Error:', error);
-      alert('Failed to start processing');
+    } catch (err) {
+      console.error('Error:', err);
+      error('Failed to start processing', 'Connection Error');
     }
   };
 

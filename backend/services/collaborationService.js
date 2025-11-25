@@ -130,10 +130,28 @@ class CollaborationService {
         return false;
       });
 
+      // Update stats for each space to ensure accurate notification badges
+      const spacesWithUpdatedStats = await Promise.all(
+        validSpaces.map(async (spaceData) => {
+          try {
+            // Convert lean document back to mongoose document for updateSpaceStats
+            const space = await CollaborationSpace.findById(spaceData._id);
+            if (space) {
+              await this.updateSpaceStats(space);
+              return space.toObject(); // Convert back to plain object
+            }
+            return spaceData;
+          } catch (error) {
+            console.error(`Error updating stats for space ${spaceData._id}:`, error);
+            return spaceData; // Return original data if stats update fails
+          }
+        })
+      );
+
       const total = await CollaborationSpace.countDocuments(query);
 
       return {
-        spaces: validSpaces, // Return filtered spaces instead of all spaces
+        spaces: spacesWithUpdatedStats, // Return spaces with updated stats
         pagination: {
           currentPage: page,
           totalPages: Math.ceil(total / limit),
@@ -191,6 +209,18 @@ class CollaborationService {
       const totalViews = contentWithViews.reduce((total, content) => {
         return total + (content.stats?.views || 0);
       }, 0);
+
+      // Calculate pending join requests count
+      const pendingJoinRequests = await JoinRequest.countDocuments({
+        spaceId: space._id,
+        status: 'pending'
+      });
+
+      // Calculate pending change requests count
+      const pendingChangeRequests = await ChangeRequest.countDocuments({
+        collaborationSpaceId: space._id,
+        status: 'pending'
+      });
       
       // Update space stats
       space.stats = {
@@ -198,6 +228,8 @@ class CollaborationService {
         totalCollaborators,
         totalContent,
         totalViews,
+        pendingJoinRequests,
+        pendingChangeRequests,
         lastActivity: space.stats?.lastActivity || space.updatedAt || space.createdAt
       };
       
@@ -1645,9 +1677,26 @@ class CollaborationService {
       } else {
         // Notify space owner of new request
         await NotificationService.notifyJoinRequestCreated(joinRequest, space);
+        
+        // Real-time notification to space owner via socket
+        if (this.socketManager) {
+          this.socketManager.notifyUser(space.ownerId, 'new-join-request', {
+            spaceId: space._id,
+            spaceName: space.title,
+            requesterName: requesterName,
+            requesterEmail: requesterEmail,
+            requestedPermission: requestedPermission || 'view',
+            message: message || '',
+            requestId: joinRequest._id
+          });
+        }
       }
 
       await joinRequest.save();
+      
+      // Update space stats to reflect new pending request count
+      await this.updateSpaceStats(space);
+      
       return joinRequest;
     } catch (error) {
       throw new Error(`Failed to create join request: ${error.message}`);
@@ -1739,12 +1788,25 @@ class CollaborationService {
       // Notify the requester of approval
       await NotificationService.notifyJoinRequestApproved(joinRequest, space, reviewMessage);
 
+      // Real-time notification to requester via socket
+      if (this.socketManager) {
+        this.socketManager.notifyUser(joinRequest.requesterId, 'join-request-approved', {
+          spaceId: space._id,
+          spaceName: space.title,
+          permission: joinRequest.requestedPermission,
+          reviewMessage: reviewMessage || ''
+        });
+      }
+
       // Notify all space members of new collaborator
       await NotificationService.notifyNewMemberJoined(space, {
         userId: joinRequest.requesterId,
         name: joinRequest.requesterName,
         permission: joinRequest.requestedPermission
       });
+      
+      // Update space stats to reflect change in pending request count
+      await this.updateSpaceStats(space);
 
       return { joinRequest, space };
     } catch (error) {
@@ -1783,6 +1845,18 @@ class CollaborationService {
 
       // Notify the requester of rejection
       await NotificationService.notifyJoinRequestRejected(joinRequest, space, reviewMessage);
+
+      // Real-time notification to requester via socket
+      if (this.socketManager) {
+        this.socketManager.notifyUser(joinRequest.requesterId, 'join-request-rejected', {
+          spaceId: space._id,
+          spaceName: space.title,
+          reviewMessage: reviewMessage || ''
+        });
+      }
+      
+      // Update space stats to reflect change in pending request count
+      await this.updateSpaceStats(space);
 
       return joinRequest;
     } catch (error) {

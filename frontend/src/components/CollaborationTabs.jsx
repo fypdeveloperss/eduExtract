@@ -10,7 +10,24 @@ const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, curr
   // Add requests tab only for admins and owners
   const isOwner = space?.ownerId === currentUser?.uid;
   if (userPermission === 'admin' || isOwner) {
-    tabs.push({ id: 'requests', label: 'Change Requests', icon: '📝', description: 'Content change requests' });
+    tabs.push({ 
+      id: 'requests', 
+      label: 'Change Requests', 
+      icon: '📝', 
+      description: 'Content change requests',
+      badgeCount: space?.stats?.pendingChangeRequests || 0
+    });
+  }
+
+  // Add join requests tab only for owners and admins
+  if (isOwner || userPermission === 'admin') {
+    tabs.push({ 
+      id: 'join-requests', 
+      label: 'Join Requests', 
+      icon: '🚪', 
+      description: 'Pending join requests',
+      badgeCount: space?.stats?.pendingJoinRequests || 0
+    });
   }
 
   // Add settings tab only for admins
@@ -35,9 +52,9 @@ const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, curr
           >
             <span className="tab-icon">{tab.icon}</span>
             <span className="tab-label">{tab.label}</span>
-            {tab.id === 'requests' && space?.stats?.pendingRequests > 0 && (
+            {tab.badgeCount > 0 && (
               <span className="notification-badge">
-                {space.stats.pendingRequests}
+                {tab.badgeCount}
               </span>
             )}
           </button>

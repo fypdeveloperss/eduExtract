@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { Download } from "lucide-react";
 import api from "../utils/axios";
+import { useCustomAlerts } from "../hooks/useCustomAlerts";
 
 function QuizView({ quiz, quizId }) {
   const [currentQuestion, setCurrentQuestion] = useState(0);
@@ -9,6 +10,7 @@ function QuizView({ quiz, quizId }) {
   const [startTime, setStartTime] = useState(Date.now());
   const [elapsedTime, setElapsedTime] = useState(0);
   const [isDownloading, setIsDownloading] = useState(false);
+  const { error } = useCustomAlerts();
 
   // Start timer and stop when results are shown
   useEffect(() => {
@@ -115,9 +117,9 @@ function QuizView({ quiz, quizId }) {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download quiz. Please try again.');
+    } catch (err) {
+      console.error('Download failed:', err);
+      error('Failed to download quiz. Please try again.', 'Download Error');
     } finally {
       setIsDownloading(false);
     }

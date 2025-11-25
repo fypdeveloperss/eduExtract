@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
+import { motion, AnimatePresence } from "framer-motion";
 import api from "../utils/axios";
 import BlogView from "../components/BlogView";
 import SlidesView from "../components/SlidesView";
@@ -11,14 +12,19 @@ import LoaderSpinner from "../components/LoaderSpinner";
 import ChatBot from "../components/ChatBot";
 import EmbeddedChat from "../components/EmbeddedChat";
 import PasteModal from "../components/PasteModal";
+import FileUploadModal from "../components/FileUploadModal";
 import useContentContext from "../hooks/useContentContext";
 import "./Dashboard.css";
-import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot } from "lucide-react";
+import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
+import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
+
+const PER_VIDEO_SUPPORTED_TABS = new Set(["blog", "summary", "quiz", "flashcards"]);
 
 function Dashboard() {
   const [searchParams] = useSearchParams();
+  const { showInfo, showError } = useNotification();
   const [url, setUrl] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [blog, setBlog] = useState("");
@@ -98,9 +104,11 @@ function Dashboard() {
   const [playlistProcessing, setPlaylistProcessing] = useState(false);
   const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const [playlistContentType, setPlaylistContentType] = useState('');
+  const [playlistGenerationMode, setPlaylistGenerationMode] = useState('combined');
   
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
+  const [showFileUploadModal, setShowFileUploadModal] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   
   // Content context for chatbot
@@ -142,6 +150,122 @@ function Dashboard() {
       month: "short",
       day: "numeric"
     });
+  };
+
+  const formatVideoLabel = (entry, index) => entry?.title || `Video ${index + 1}`;
+
+  const buildPerVideoHtml = (entries, sectionLabel) => {
+    if (!entries || !entries.length) return "";
+    return entries
+      .map((entry, index) => {
+        const label = formatVideoLabel(entry, index);
+        const content = entry?.content?.trim() ? entry.content : "<p>No content generated for this video.</p>";
+        return `
+          <section style="margin-bottom:24px;">
+            <div style="font-weight:600;font-size:18px;margin-bottom:8px;">
+              ${sectionLabel} - ${label}
+            </div>
+            <div>${content}</div>
+          </section>
+        `;
+      })
+      .join('<hr style="margin:32px 0;opacity:0.15;" />');
+  };
+
+  const handlePerVideoGeneration = async (tabId, perVideoTranscripts, playlistUrl) => {
+    const transcriptsToProcess = (perVideoTranscripts || []).filter(
+      (entry) => entry?.text && entry.text.trim().length > 0
+    );
+
+    if (!transcriptsToProcess.length) {
+      throw new Error("No transcripts were available for per-video generation. Try combined mode or refresh the playlist.");
+    }
+
+    const perVideoResults = [];
+    let generatedContentId = null;
+
+    for (let i = 0; i < transcriptsToProcess.length; i++) {
+      const transcript = transcriptsToProcess[i];
+      setPlaylistProgress({
+        current: i + 1,
+        total: transcriptsToProcess.length,
+        percentage: Math.min(85, Math.round(((i + 1) / transcriptsToProcess.length) * 70))
+      });
+
+      let response;
+      if (tabId === "blog") {
+        response = await api.post("/generate-blog", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.blogPost || response.data.blog || ""
+        });
+      } else if (tabId === "summary") {
+        response = await api.post("/generate-summary", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.summary || ""
+        });
+      } else if (tabId === "quiz") {
+        response = await api.post("/generate-quiz", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.quiz || []
+        });
+      } else if (tabId === "flashcards") {
+        response = await api.post("/generate-flashcards", { textContent: transcript.text });
+        perVideoResults.push({
+          ...transcript,
+          content: response.data.flashcards || []
+        });
+      }
+
+      if (!generatedContentId && response?.data?.contentId) {
+        generatedContentId = response.data.contentId;
+      }
+    }
+
+    if (!perVideoResults.length) {
+      throw new Error("Unable to generate per-video content for this playlist.");
+    }
+
+    const sharedMetadata = {
+      contentId: generatedContentId,
+      source: 'youtube-playlist',
+      url: playlistUrl,
+      playlistInfo,
+      playlistMode: 'per-video',
+      perVideoCount: perVideoResults.length
+    };
+
+    if (tabId === "summary") {
+      const html = buildPerVideoHtml(perVideoResults, "Summary");
+      setSummary(html);
+      updateCurrentSessionContent('summary', html, sharedMetadata);
+    } else if (tabId === "blog") {
+      const html = buildPerVideoHtml(perVideoResults, "Blog");
+      setBlog(html);
+      updateCurrentSessionContent('blog', html, sharedMetadata);
+    } else if (tabId === "quiz") {
+      const aggregatedQuiz = perVideoResults.flatMap((entry, index) => {
+        const label = `[${formatVideoLabel(entry, index)}]`;
+        return (entry.content || []).map((question) => ({
+          ...question,
+          question: `${label} ${question.question}`
+        }));
+      });
+      setQuiz(aggregatedQuiz);
+      updateCurrentSessionContent('quiz', aggregatedQuiz, sharedMetadata);
+    } else if (tabId === "flashcards") {
+      const aggregatedFlashcards = perVideoResults.flatMap((entry, index) => {
+        const label = `[${formatVideoLabel(entry, index)}]`;
+        return (entry.content || []).map((card) => ({
+          question: `${label} ${card.question}`,
+          answer: card.answer
+        }));
+      });
+      setFlashcards(aggregatedFlashcards);
+      updateCurrentSessionContent('flashcards', aggregatedFlashcards, sharedMetadata);
+    }
   };
 
   useEffect(() => {
@@ -451,7 +575,70 @@ function Dashboard() {
       return;
     }
     
-    // Check if it's a playlist - if so, handle differently
+    // Check if URL is a playlist URL (contains list= parameter)
+    const isPlaylistUrl = urlToProcess.includes('list=') && (urlToProcess.includes('playlist') || urlToProcess.includes('watch'));
+    
+    // If it looks like a playlist URL, check with backend first
+    if (isPlaylistUrl) {
+      try {
+        const token = user ? await user.getIdToken() : null;
+        const response = await api.post('/check-url-type', 
+          { url: urlToProcess },
+          token ? { headers: { Authorization: `Bearer ${token}` } } : {}
+        );
+
+        if (response.data.type === 'playlist') {
+          // It's a playlist - handle playlist flow
+          setIsPlaylist(true);
+          setPlaylistInfo(response.data);
+          setError("");
+          setIsLoading(false);
+          setBlog("");
+          setPptxBase64("");
+          setSlides([]);
+          setFlashcards([]);
+          setQuiz([]);
+          setSummary("");
+          setVideoId("");
+          setShowVideo(false);
+          setActiveTab("");
+          
+          setLoadingStates({
+            blog: false,
+            slides: false,
+            flashcards: false,
+            quiz: false,
+            summary: false
+          });
+          setErrors({
+            blog: "",
+            slides: "",
+            flashcards: "",
+            quiz: "",
+            summary: ""
+          });
+          setLoaded({
+            blog: false,
+            slides: false,
+            flashcards: false,
+            quiz: false,
+            summary: false
+          });
+          
+          // Create or update user record
+          await createOrUpdateUser();
+          
+          // Show playlist info and wait for user to select content type
+          setShowContentLayout(true);
+          return;
+        }
+      } catch (error) {
+        console.error('Error checking URL type:', error);
+        // If playlist check fails, fall through to single video handling
+      }
+    }
+    
+    // Check if it's a playlist (from async detection) - if so, handle differently
     if (isPlaylist && playlistInfo) {
       // For playlists, don't extract video ID - use playlist handling
       setError("");
@@ -499,7 +686,10 @@ function Dashboard() {
     // Original single video handling
     const extractedVideoId = extractVideoId(urlToProcess);
     if (!extractedVideoId) {
-      setError("Please enter a valid YouTube URL");
+      showError("Please enter a valid YouTube URL", {
+        title: "Invalid URL"
+      });
+      setError(""); // Clear the old error state
       return;
     }
 
@@ -804,9 +994,21 @@ function Dashboard() {
     }
 
     if (uploadMode === "youtube") {
+      // Check if URL is a playlist URL first
+      const isPlaylistUrl = url.includes('list=') && (url.includes('playlist') || url.includes('watch'));
+      
+      if (isPlaylistUrl) {
+        // Trigger playlist detection by calling handleUrlSubmit
+        await handleUrlSubmit(url);
+        return;
+      }
+      
       const extractedVideoId = extractVideoId(url);
       if (!extractedVideoId) {
-        setError("Please enter a valid YouTube URL");
+        showError("Please enter a valid YouTube URL", {
+          title: "Invalid URL"
+        });
+        setError(""); // Clear the old error state
         return;
       }
 
@@ -1114,93 +1316,131 @@ function Dashboard() {
         if (!playlistUrl) {
           throw new Error('Playlist URL not found');
         }
+
+        if (playlistGenerationMode === 'per-video' && !PER_VIDEO_SUPPORTED_TABS.has(tabId)) {
+          const message = "Per-video mode currently supports Blog, Summary, Quiz, and Flashcards. Switch back to Combined overview to generate this content type.";
+          setErrors(prev => ({
+            ...prev,
+            [tabId]: message
+          }));
+          setLoadingStates(prev => ({ ...prev, [tabId]: false }));
+          if (showInfo) {
+            showInfo("Per-video playlists currently support Blog, Summary, Quiz, and Flashcards.");
+          }
+          return;
+        }
         
         // Show progress modal
+        const tabLabel = tabId.charAt(0).toUpperCase() + tabId.slice(1);
+        const modeLabel = playlistGenerationMode === 'per-video' ? `${tabLabel} (Per Video)` : tabLabel;
         setPlaylistProcessing(true);
-        setPlaylistContentType(tabId.charAt(0).toUpperCase() + tabId.slice(1));
+        setPlaylistContentType(modeLabel);
         setPlaylistProgress({ current: 0, total: playlistInfo.video_count, percentage: 0 });
         
-        // Simulate progress (since backend processes all at once, we estimate based on 5 sec per video)
-        const progressInterval = setInterval(() => {
-          setPlaylistProgress(prev => {
-            if (prev.current < prev.total) {
-              const newCurrent = prev.current + 1;
-              const newPercentage = (newCurrent / prev.total) * 85; // Reserve 15% for content generation
-              return { current: newCurrent, total: prev.total, percentage: newPercentage };
-            }
-            return prev;
-          });
-        }, 5000); // Update every 5 seconds (matching backend delay)
+        let progressInterval = null;
+        if (playlistGenerationMode === 'combined') {
+          // Simulate progress (since backend processes all at once, we estimate based on 5 sec per video)
+          progressInterval = setInterval(() => {
+            setPlaylistProgress(prev => {
+              if (prev.current < prev.total) {
+                const newCurrent = prev.current + 1;
+                const newPercentage = (newCurrent / prev.total) * 85; // Reserve 15% for content generation
+                return { current: newCurrent, total: prev.total, percentage: newPercentage };
+              }
+              return prev;
+            });
+          }, 5000); // Update every 5 seconds (matching backend delay)
+        }
         
         try {
-          // First, fetch the combined transcript from all videos in the playlist
+          // First, fetch the transcript data from all videos in the playlist
           const playlistRes = await api.post("/generate-from-playlist", { 
             url: playlistUrl,
-            contentType: tabId
+            contentType: tabId,
+            mode: playlistGenerationMode
           });
           const combinedTranscript = playlistRes.data.combined_transcript;
+          const perVideoTranscripts = playlistRes.data.per_video_transcripts || [];
           
-          // Clear progress interval and update to show generation phase
-          clearInterval(progressInterval);
-          setPlaylistProgress({ 
-            current: playlistInfo.video_count, 
-            total: playlistInfo.video_count, 
-            percentage: 85 
-          });
+          if (playlistGenerationMode === 'combined') {
+            if (progressInterval) {
+              clearInterval(progressInterval);
+              progressInterval = null;
+            }
+            // Update to show generation phase
+            setPlaylistProgress({ 
+              current: playlistInfo.video_count, 
+              total: playlistInfo.video_count, 
+              percentage: 85 
+            });
+            
+            console.log(`Combined transcript from ${playlistRes.data.total_videos} videos (${playlistRes.data.processed_videos} successful)`);
           
-          console.log(`Combined transcript from ${playlistRes.data.total_videos} videos (${playlistRes.data.processed_videos} successful)`);
-        
-          // Now use the combined transcript to generate the requested content type
-          // Update progress to 90% while generating
-          setPlaylistProgress(prev => ({ ...prev, percentage: 90 }));
-          
-          if (tabId === "blog") {
-            res = await api.post("/generate-blog", { textContent: combinedTranscript });
-            setBlog(res.data.blogPost || "");
-            updateCurrentSessionContent('blog', res.data.blogPost, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
+            // Now use the combined transcript to generate the requested content type
+            // Update progress to 90% while generating
+            setPlaylistProgress(prev => ({ ...prev, percentage: 90 }));
+            
+            if (tabId === "blog") {
+              res = await api.post("/generate-blog", { textContent: combinedTranscript });
+              setBlog(res.data.blogPost || "");
+              updateCurrentSessionContent('blog', res.data.blogPost, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "slides") {
+              res = await api.post("/generate-slides", { textContent: combinedTranscript });
+              setPptxBase64(res.data.pptxBase64 || "");
+              setSlides(res.data.slides || []);
+              updateCurrentSessionContent('slides', res.data.slides, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                pptxBase64: res.data.pptxBase64,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "flashcards") {
+              res = await api.post("/generate-flashcards", { textContent: combinedTranscript });
+              setFlashcards(res.data.flashcards || []);
+              updateCurrentSessionContent('flashcards', res.data.flashcards, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "quiz") {
+              res = await api.post("/generate-quiz", { textContent: combinedTranscript });
+              setQuiz(res.data.quiz || []);
+              updateCurrentSessionContent('quiz', res.data.quiz, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            } else if (tabId === "summary") {
+              res = await api.post("/generate-summary", { textContent: combinedTranscript });
+              setSummary(res.data.summary || "");
+              updateCurrentSessionContent('summary', res.data.summary, {
+                contentId: res.data.contentId,
+                source: 'youtube-playlist',
+                url: playlistUrl,
+                playlistInfo: playlistInfo,
+                playlistMode: playlistGenerationMode
+              });
+            }
+          } else {
+            // Per-video generation flow
+            setPlaylistProgress({
+              current: 0,
+              total: perVideoTranscripts.length || playlistInfo.video_count,
+              percentage: perVideoTranscripts.length ? 10 : 0
             });
-          } else if (tabId === "slides") {
-            res = await api.post("/generate-slides", { textContent: combinedTranscript });
-            setPptxBase64(res.data.pptxBase64 || "");
-            setSlides(res.data.slides || []);
-            updateCurrentSessionContent('slides', res.data.slides, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo,
-              pptxBase64: res.data.pptxBase64
-            });
-          } else if (tabId === "flashcards") {
-            res = await api.post("/generate-flashcards", { textContent: combinedTranscript });
-            setFlashcards(res.data.flashcards || []);
-            updateCurrentSessionContent('flashcards', res.data.flashcards, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
-          } else if (tabId === "quiz") {
-            res = await api.post("/generate-quiz", { textContent: combinedTranscript });
-            setQuiz(res.data.quiz || []);
-            updateCurrentSessionContent('quiz', res.data.quiz, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
-          } else if (tabId === "summary") {
-            res = await api.post("/generate-summary", { textContent: combinedTranscript });
-            setSummary(res.data.summary || "");
-            updateCurrentSessionContent('summary', res.data.summary, {
-              contentId: res.data.contentId,
-              source: 'youtube-playlist',
-              url: playlistUrl,
-              playlistInfo: playlistInfo
-            });
+            await handlePerVideoGeneration(tabId, perVideoTranscripts, playlistUrl);
           }
           
           // Complete progress
@@ -1213,9 +1453,15 @@ function Dashboard() {
           }, 800);
           
         } catch (playlistError) {
-          clearInterval(progressInterval);
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
           setPlaylistProcessing(false);
           throw playlistError;
+        } finally {
+          if (progressInterval) {
+            clearInterval(progressInterval);
+          }
         }
       } else if (selectedFile) {
         const formData = new FormData();
@@ -1408,25 +1654,161 @@ function Dashboard() {
     }
   };
 
+  // Calculate stats for dashboard
+  const totalContent = recentContent.length;
+  const totalSpaces = spaces.length;
+  const recentCount = recentContent.filter(item => {
+    const date = new Date(item.createdAt);
+    const diffDays = (Date.now() - date.getTime()) / (1000 * 60 * 60 * 24);
+    return diffDays <= 7;
+  }).length;
+
+  const containerVariants = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: {
+        staggerChildren: 0.1
+      }
+    }
+  };
+
+  const itemVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: {
+      opacity: 1,
+      y: 0,
+      transition: {
+        duration: 0.5,
+        ease: "easeOut"
+      }
+    }
+  };
+
+  const cardHoverVariants = {
+    rest: { scale: 1, y: 0 },
+    hover: { 
+      scale: 1.02, 
+      y: -4,
+      transition: {
+        duration: 0.2,
+        ease: "easeOut"
+      }
+    }
+  };
+
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212]">
+    <div className="min-h-screen bg-white dark:bg-[#121212] relative">
+
       {/* Main Content */}
-      <div className={`${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
+      <div className={`relative z-10 ${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
         {/* Header */}
         {!showContentLayout && (
           <>
-            <div className="text-center mb-6">
-              <h1 className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-3">
-                What do you want to learn?
-              </h1>
-            </div>
+            <motion.div 
+              className="text-center mb-8"
+              initial={{ opacity: 0, y: -20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+            >
+              <motion.h1 
+                className="text-2xl md:text-4xl font-bold text-[#171717] dark:text-[#fafafa] mb-4 relative inline-block"
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.5, delay: 0.2 }}
+              >
+                <span className="relative z-10">What do you want to learn?</span>
+                <motion.div
+                  className="absolute -bottom-2 left-0 right-0 h-1 bg-gradient-to-r from-[#171717]/20 via-[#171717]/40 to-[#171717]/20 dark:from-[#fafafa]/20 dark:via-[#fafafa]/40 dark:to-[#fafafa]/20 rounded-full"
+                  initial={{ scaleX: 0 }}
+                  animate={{ scaleX: 1 }}
+                  transition={{ duration: 0.8, delay: 0.5 }}
+                />
+              </motion.h1>
+              <motion.p 
+                className="text-base md:text-lg text-[#171717cc] dark:text-[#fafafacc] max-w-2xl mx-auto"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.6, delay: 0.4 }}
+              >
+                Transform any content into engaging learning materials with AI-powered tools
+              </motion.p>
+            </motion.div>
+
+            {/* Stats Cards */}
+            {user && (
+              <motion.div 
+                className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-8"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+              >
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">Total Content</p>
+                      <p className="text-3xl font-bold text-blue-600 dark:text-blue-400">{totalContent}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-blue-50 dark:bg-blue-900/20 rounded-xl flex items-center justify-center border border-blue-200 dark:border-blue-800/50">
+                      <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">Collaboration Spaces</p>
+                      <p className="text-3xl font-bold text-purple-600 dark:text-purple-400">{totalSpaces}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-purple-50 dark:bg-purple-900/20 rounded-xl flex items-center justify-center border border-purple-200 dark:border-purple-800/50">
+                      <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+                    </div>
+                  </div>
+                </motion.div>
+
+                <motion.div
+                  variants={itemVariants}
+                  whileHover={{ scale: 1.05, y: -4 }}
+                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-5 shadow-lg hover:shadow-xl transition-shadow"
+                >
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium mb-1">This Week</p>
+                      <p className="text-3xl font-bold text-emerald-600 dark:text-emerald-400">{recentCount}</p>
+                    </div>
+                    <div className="w-12 h-12 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl flex items-center justify-center border border-emerald-200 dark:border-emerald-800/50">
+                      <TrendingUp className="w-6 h-6 text-emerald-600 dark:text-emerald-400" />
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
 
             {/* Input Method Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+            <motion.div 
+              className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+              variants={containerVariants}
+              initial="hidden"
+              animate="visible"
+            >
               {/* Upload Card */}
-              <div 
-                className={`relative bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  uploadMode === "file" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group ${
+                  uploadMode === "file" 
+                    ? "border-blue-500 dark:border-blue-400 shadow-2xl shadow-blue-500/10" 
+                    : "border-gray-200 dark:border-[#fafafa1a] hover:border-blue-300 dark:hover:border-blue-500/50"
                 }`}
                 onClick={() => {
                   if (!user) {
@@ -1434,27 +1816,42 @@ function Dashboard() {
                     return;
                   }
                   setUploadMode("file");
+                  setShowFileUploadModal(true);
                   resetStates();
                 }}
               >
-                <div className="absolute top-3 right-3">
-                  <span className="bg-green-100 dark:bg-green-900/20 text-green-800 dark:text-green-400 text-xs font-semibold px-2 py-1 rounded-full">
+                <div className="absolute inset-0 bg-blue-500/0 dark:bg-blue-400/0 group-hover:bg-blue-500/5 dark:group-hover:bg-blue-400/5 transition-all duration-300"></div>
+                <div className="absolute top-4 right-4">
+                  <motion.span 
+                    className="bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 text-xs font-semibold px-2.5 py-1 rounded-full flex items-center gap-1 border border-blue-200 dark:border-blue-800/50"
+                    whileHover={{ scale: 1.1 }}
+                  >
+                    <Zap className="w-3 h-3" />
                     Popular
-                  </span>
+                  </motion.span>
                 </div>
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Upload</h3>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-blue-200 dark:border-blue-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Upload size={36} className="text-blue-600 dark:text-blue-400" />
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Upload</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">File, audio, video</p>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Paste Card */}
-              <div 
-                className={`bg-white dark:bg-[#171717] border-2 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
-                  uploadMode === "youtube" ? "border-blue-500 shadow-lg" : "border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className={`relative bg-white dark:bg-[#171717] border-2 rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group ${
+                  uploadMode === "youtube" 
+                    ? "border-purple-500 dark:border-purple-400 shadow-2xl shadow-purple-500/10" 
+                    : "border-gray-200 dark:border-[#fafafa1a] hover:border-purple-300 dark:hover:border-purple-500/50"
                 }`}
                 onClick={() => {
                   if (!user) {
@@ -1466,151 +1863,53 @@ function Dashboard() {
                   resetStates();
                 }}
               >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-purple-100 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <Link size={32} className="text-purple-600 dark:text-purple-400" />
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Paste</h3>
+                <div className="absolute inset-0 bg-purple-500/0 dark:bg-purple-400/0 group-hover:bg-purple-500/5 dark:group-hover:bg-purple-400/5 transition-all duration-300"></div>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-purple-200 dark:border-purple-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <Link size={36} className="text-purple-600 dark:text-purple-400" />
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Paste</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">YouTube, website, text</p>
                 </div>
-              </div>
+              </motion.div>
 
               {/* Record Card */}
-              <div 
-                className="bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-lg hover:border-gray-300 dark:hover:border-[#fafafa2a]"
+              <motion.div
+                variants={cardHoverVariants}
+                initial="rest"
+                whileHover="hover"
+                className="relative bg-white dark:bg-[#171717] border-2 border-gray-200 dark:border-[#fafafa1a] rounded-2xl p-6 cursor-pointer transition-all duration-300 overflow-hidden group hover:border-orange-300 dark:hover:border-orange-500/50"
                 onClick={() => {
                   if (!user) {
                     toggleAuthModal(true);
                     return;
                   }
-                  // Future feature - recording functionality
-                  alert("Recording feature coming soon!");
+                  showInfo("Recording feature coming soon!", { 
+                    title: "Feature Coming Soon" 
+                  });
                 }}
               >
-                <div className="text-center">
-                  <div className="w-16 h-16 bg-red-100 dark:bg-red-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                    <svg className="w-8 h-8 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <div className="absolute inset-0 bg-orange-500/0 dark:bg-orange-400/0 group-hover:bg-orange-500/5 dark:group-hover:bg-orange-400/5 transition-all duration-300"></div>
+                <div className="text-center relative z-10">
+                  <motion.div 
+                    className="w-20 h-20 bg-orange-50 dark:bg-orange-900/20 rounded-2xl flex items-center justify-center mx-auto mb-4 shadow-lg border border-orange-200 dark:border-orange-800/50"
+                    whileHover={{ rotate: [0, -10, 10, -10, 0], scale: 1.1 }}
+                    transition={{ duration: 0.5 }}
+                  >
+                    <svg className="w-9 h-9 text-orange-600 dark:text-orange-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
                     </svg>
-                  </div>
-                  <h3 className="text-base font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Record</h3>
+                  </motion.div>
+                  <h3 className="text-lg font-bold text-[#171717] dark:text-[#fafafa] mb-2">Record</h3>
                   <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Record class, video call</p>
                 </div>
-              </div>
-            </div>
+              </motion.div>
+            </motion.div>
           </>
-        )}
-        {/* File Upload Area (shown when file mode is selected) */}
-        {!showContentLayout && uploadMode === "file" && (
-          <div className="max-w-3xl mx-auto mt-6">
-            <div
-              className={`relative border-2 ${
-                dragActive ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20" : "border-dashed border-gray-300 dark:border-[#fafafa1a]"
-              } rounded-xl p-6 text-center transition-all ${
-                isLoading ? "opacity-50 cursor-not-allowed" : "hover:border-blue-400 dark:hover:border-blue-500 hover:bg-gray-50 dark:hover:bg-[#1E1E1E]"
-              }`}
-              onDragEnter={handleDrag}
-              onDragLeave={handleDrag}
-              onDragOver={handleDrag}
-              onDrop={handleDrop}
-            >
-              <input
-                ref={fileInputRef}
-                type="file"
-                className="hidden"
-                onChange={(e) => {
-                  if (!user) {
-                    toggleAuthModal(true);
-                    return;
-                  }
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    handleFileSelect(file);
-                  }
-                }}
-                accept=".pdf,.docx,.txt,.pptx"
-                disabled={isLoading}
-              />
-              <div className="space-y-4">
-                <div className="flex justify-center">
-                  <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center">
-                    <Upload size={32} className="text-blue-600 dark:text-blue-400" />
-                  </div>
-                </div>
-                <div>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (!user) {
-                        toggleAuthModal(true);
-                        return;
-                      }
-                      fileInputRef.current?.click();
-                    }}
-                    className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-semibold text-base"
-                    disabled={isLoading}
-                  >
-                    Click to upload
-                  </button>
-                  <span className="text-[#171717cc] dark:text-[#fafafacc] text-base">
-                    {" "}or drag and drop
-                  </span>
-                </div>
-                <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
-                  PDF, DOCX, TXT, PPTX (max 10MB)
-                </p>
-                {selectedFile && (
-                  <div className="space-y-4">
-                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
-                      <div className="flex items-center justify-center space-x-2">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <p className="text-sm text-green-700 dark:text-green-400 font-medium">
-                          Selected: {selectedFile.name}
-                        </p>
-                      </div>
-                    </div>
-                    
-                    {/* Generate Button */}
-                    <div className="flex justify-center">
-                      <button
-                        onClick={async () => {
-                          if (!user) {
-                            toggleAuthModal(true);
-                            return;
-                          }
-                          
-                          setIsLoading(true);
-                          setError("");
-                          
-                          try {
-                            // Process the file content
-                            await processFileContent();
-                          } catch (err) {
-                            setError(err.response?.data?.error || "Failed to process file");
-                            setIsLoading(false);
-                          }
-                        }}
-                        disabled={isLoading || isExtractingContent}
-                        className="px-6 py-2.5 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 text-sm"
-                      >
-                        {isLoading || isExtractingContent ? (
-                          <>
-                            <LoaderSpinner size="sm" />
-                            <span>Processing...</span>
-                          </>
-                        ) : (
-                          <>
-                            <Target size={20} />
-                            <span>Generate Content</span>
-                          </>
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
         )}
         
 
@@ -1619,115 +1918,203 @@ function Dashboard() {
           <>
             {user && (
               <div className="space-y-6 mb-6">
-                <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">My Spaces</h2>
-                    <button
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.3 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <motion.h2 
+                      className="text-xl font-bold text-[#171717] dark:text-[#fafafa] flex items-center gap-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.4 }}
+                    >
+                      <Sparkles className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                      My Spaces
+                    </motion.h2>
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/collaborate')}
-                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                      className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors flex items-center gap-1"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       View all
-                    </button>
+                      <span>→</span>
+                    </motion.button>
                   </div>
                   {spacesError && (
                     <p className="text-xs text-red-600 dark:text-red-400 mb-2">{spacesError}</p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    <button
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/collaborate')}
-                      className="h-full min-h-[150px] border-2 border-dashed border-gray-300 dark:border-[#fafafa1a] rounded-xl flex flex-col items-center justify-center text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:border-gray-400 dark:hover:border-[#fafafa2a] transition-colors bg-white dark:bg-[#171717]"
+                      className="h-full min-h-[150px] border-2 border-dashed border-gray-300 dark:border-[#fafafa1a] rounded-xl flex flex-col items-center justify-center text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:border-purple-400 dark:hover:border-purple-500 transition-colors bg-white dark:bg-[#171717] group"
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
                     >
-                      <span className="text-2xl mb-1">+</span>
+                      <motion.span 
+                        className="text-3xl mb-2 text-purple-600 dark:text-purple-400"
+                        whileHover={{ rotate: 90, scale: 1.2 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        +
+                      </motion.span>
                       Create Space
-                    </button>
+                    </motion.button>
 
-                    {spacesLoading
-                      ? Array.from({ length: 3 }).map((_, idx) => (
-                          <div key={idx} className="min-h-[150px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
-                        ))
-                      : spaces.slice(0, 7).map((space) => (
-                          <button
-                            key={space._id}
-                            type="button"
-                            onClick={() => navigate(`/collaborate/space/${space._id}`)}
-                            className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 text-left hover:shadow-lg transition-all duration-200"
-                          >
-                            <div className="flex items-center justify-between mb-2">
-                              <h3 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] truncate">
-                                {space.title || 'Untitled Space'}
-                              </h3>
-                              <span className="text-xs text-[#171717cc] dark:text-[#fafafacc]">
-                                {space.stats?.totalContent || 0} content
-                              </span>
-                            </div>
-                            <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] line-clamp-2 mb-3">
-                              {space.description || 'Collaborate with your team and manage shared learning content.'}
-                            </p>
-                            <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
-                              <span>{space.ownerName ? `by ${space.ownerName}` : 'Private space'}</span>
-                              <span>{formatRelativeTime(space.stats?.lastActivity || space.updatedAt)}</span>
-                            </div>
-                          </button>
-                        ))}
+                    <AnimatePresence>
+                      {spacesLoading
+                        ? Array.from({ length: 3 }).map((_, idx) => (
+                            <motion.div 
+                              key={idx} 
+                              className="min-h-[150px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            />
+                          ))
+                        : spaces.slice(0, 7).map((space, idx) => (
+                            <motion.button
+                              key={space._id}
+                              type="button"
+                              onClick={() => navigate(`/collaborate/space/${space._id}`)}
+                              className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 text-left hover:shadow-xl transition-all duration-300 group overflow-hidden relative"
+                              initial={{ opacity: 0, y: 20 }}
+                              animate={{ opacity: 1, y: 0 }}
+                              transition={{ duration: 0.3, delay: idx * 0.1 }}
+                              whileHover={{ scale: 1.02, y: -4 }}
+                              whileTap={{ scale: 0.98 }}
+                            >
+                              <div className="absolute inset-0 bg-purple-500/0 dark:bg-purple-400/0 group-hover:bg-purple-500/5 dark:group-hover:bg-purple-400/5 transition-all duration-300"></div>
+                              <div className="relative z-10">
+                                <div className="flex items-center justify-between mb-2">
+                                  <h3 className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] truncate group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors">
+                                    {space.title || 'Untitled Space'}
+                                  </h3>
+                                  <span className="text-xs text-[#171717cc] dark:text-[#fafafacc] bg-purple-50 dark:bg-purple-900/20 px-2 py-0.5 rounded-full border border-purple-200 dark:border-purple-800/50">
+                                    {space.stats?.totalContent || 0} content
+                                  </span>
+                                </div>
+                                <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] line-clamp-2 mb-3">
+                                  {space.description || 'Collaborate with your team and manage shared learning content.'}
+                                </p>
+                                <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                                  <span>{space.ownerName ? `by ${space.ownerName}` : 'Private space'}</span>
+                                  <span className="flex items-center gap-1">
+                                    <Clock className="w-3 h-3" />
+                                    {formatRelativeTime(space.stats?.lastActivity || space.updatedAt)}
+                                  </span>
+                                </div>
+                              </div>
+                            </motion.button>
+                          ))}
+                    </AnimatePresence>
                   </div>
-                </section>
+                </motion.section>
 
-                <section>
-                  <div className="flex items-center justify-between mb-3">
-                    <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Recents</h2>
-                    <button
+                <motion.section
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: 0.5 }}
+                >
+                  <div className="flex items-center justify-between mb-4">
+                    <motion.h2 
+                      className="text-xl font-bold text-[#171717] dark:text-[#fafafa] flex items-center gap-2"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ duration: 0.5, delay: 0.6 }}
+                    >
+                      <Clock className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                      Recents
+                    </motion.h2>
+                    <motion.button
                       type="button"
                       onClick={() => navigate('/content')}
-                      className="text-xs font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:underline"
+                      className="text-sm font-semibold text-[#171717cc] dark:text-[#fafafacc] hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors flex items-center gap-1"
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
                     >
                       View all
-                    </button>
+                      <span>→</span>
+                    </motion.button>
                   </div>
                   {recentError && (
                     <p className="text-xs text-red-600 dark:text-red-400 mb-2">{recentError}</p>
                   )}
                   <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-                    {recentLoading
-                      ? Array.from({ length: 4 }).map((_, idx) => (
-                          <div key={idx} className="min-h-[140px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse" />
-                        ))
-                      : recentContent.length > 0
-                        ? recentContent.slice(0, 8).map((item) => {
-                            const Icon = typeIcons[item.type] || FileText;
-                            return (
-                              <div
-                                key={item._id || item.title}
-                                className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 hover:shadow-lg transition-all duration-200"
-                              >
-                                <div className="flex items-center gap-3 mb-3">
-                                  <div className="w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#1E1E1E] flex items-center justify-center">
-                                    <Icon className="w-4 h-4 text-[#171717cc] dark:text-[#fafafacc]" />
+                    <AnimatePresence>
+                      {recentLoading
+                        ? Array.from({ length: 4 }).map((_, idx) => (
+                            <motion.div 
+                              key={idx} 
+                              className="min-h-[140px] bg-gray-100 dark:bg-[#1E1E1E] rounded-xl animate-pulse"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                              exit={{ opacity: 0 }}
+                            />
+                          ))
+                        : recentContent.length > 0
+                          ? recentContent.slice(0, 8).map((item, idx) => {
+                              const Icon = typeIcons[item.type] || FileText;
+                              return (
+                                <motion.div
+                                  key={item._id || item.title}
+                                  className="bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4 hover:shadow-xl transition-all duration-300 group overflow-hidden relative cursor-pointer"
+                                  initial={{ opacity: 0, y: 20 }}
+                                  animate={{ opacity: 1, y: 0 }}
+                                  transition={{ duration: 0.3, delay: idx * 0.05 }}
+                                  whileHover={{ scale: 1.02, y: -4 }}
+                                  whileTap={{ scale: 0.98 }}
+                                  onClick={() => navigate(`/content/${item._id}`)}
+                                >
+                                  <div className="absolute inset-0 bg-blue-500/0 dark:bg-blue-400/0 group-hover:bg-blue-500/5 dark:group-hover:bg-blue-400/5 transition-all duration-300"></div>
+                                  <div className="relative z-10">
+                                    <div className="flex items-center gap-3 mb-3">
+                                      <motion.div 
+                                        className="w-10 h-10 rounded-lg bg-blue-50 dark:bg-blue-900/20 flex items-center justify-center shadow-md border border-blue-200 dark:border-blue-800/50"
+                                        whileHover={{ rotate: [0, -10, 10, 0], scale: 1.1 }}
+                                        transition={{ duration: 0.3 }}
+                                      >
+                                        <Icon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                                      </motion.div>
+                                      <div className="flex-1 min-w-0">
+                                        <p className="text-xs font-semibold uppercase tracking-wide text-[#171717cc] dark:text-[#fafafacc] mb-1">
+                                          {typeLabels[item.type] || 'Content'}
+                                        </p>
+                                        <p className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] line-clamp-1 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                                          {item.title || 'Untitled'}
+                                        </p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
+                                      <span className="flex items-center gap-1">
+                                        <Clock className="w-3 h-3" />
+                                        {formatContentDate(item.createdAt)}
+                                      </span>
+                                      {item.source && <span className="truncate max-w-[120px] text-right opacity-70">{item.source}</span>}
+                                    </div>
                                   </div>
-                                  <div>
-                                    <p className="text-xs font-semibold uppercase tracking-wide text-[#171717cc] dark:text-[#fafafacc]">
-                                      {typeLabels[item.type] || 'Content'}
-                                    </p>
-                                    <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa] line-clamp-1">
-                                      {item.title || 'Untitled'}
-                                    </p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center justify-between text-[11px] text-[#171717cc] dark:text-[#fafafacc]">
-                                  <span>{formatContentDate(item.createdAt)}</span>
-                                  {item.source && <span className="truncate max-w-[120px] text-right">{item.source}</span>}
-                                </div>
+                                </motion.div>
+                              );
+                            })
+                          : (
+                            <motion.div 
+                              className="col-span-full text-sm text-[#171717cc] dark:text-[#fafafacc] bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-6 text-center"
+                              initial={{ opacity: 0 }}
+                              animate={{ opacity: 1 }}
+                            >
+                              <div className="w-16 h-16 bg-gray-100 dark:bg-[#1E1E1E] rounded-full flex items-center justify-center mx-auto mb-3">
+                                <FileText className="w-8 h-8 text-gray-400 dark:text-gray-600" />
                               </div>
-                            );
-                          })
-                        : (
-                          <div className="col-span-full text-sm text-[#171717cc] dark:text-[#fafafacc] bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#fafafa1a] rounded-xl p-4">
-                            You haven't generated any content yet. Start by uploading a document or pasting a link.
-                          </div>
-                        )}
+                              You haven't generated any content yet. Start by uploading a document or pasting a link.
+                            </motion.div>
+                          )}
+                    </AnimatePresence>
                   </div>
-                </section>
+                </motion.section>
               </div>
             )}
           </>
@@ -1827,6 +2214,62 @@ function Dashboard() {
                           This playlist contains {playlistInfo.video_count} videos. 
                           Click any content type button on the right to generate comprehensive learning materials 
                           from all videos in this playlist.
+                        </p>
+                      </div>
+
+                      <div className="p-4 border border-gray-200 dark:border-[#fafafa1a] rounded-lg bg-white dark:bg-[#1E1E1E]">
+                        <p className="text-sm font-semibold text-[#171717] dark:text-[#fafafa] mb-3">
+                          Choose how you want to process this playlist
+                        </p>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                          <label
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              playlistGenerationMode === 'combined'
+                                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20'
+                                : 'border-gray-200 dark:border-[#fafafa1a]'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="playlist-mode"
+                              value="combined"
+                              className="mt-1"
+                              checked={playlistGenerationMode === 'combined'}
+                              onChange={() => setPlaylistGenerationMode('combined')}
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa]">Combined overview</p>
+                              <p className="text-xs text-[#17171799] dark:text-[#fafafa99]">
+                                Merge every transcript into one master summary, quiz, flashcards set, or slide deck.
+                              </p>
+                            </div>
+                          </label>
+
+                          <label
+                            className={`flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-all ${
+                              playlistGenerationMode === 'per-video'
+                                ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20'
+                                : 'border-gray-200 dark:border-[#fafafa1a]'
+                            }`}
+                          >
+                            <input
+                              type="radio"
+                              name="playlist-mode"
+                              value="per-video"
+                              className="mt-1"
+                              checked={playlistGenerationMode === 'per-video'}
+                              onChange={() => setPlaylistGenerationMode('per-video')}
+                            />
+                            <div>
+                              <p className="text-sm font-medium text-[#171717] dark:text-[#fafafa]">Per-video outputs</p>
+                              <p className="text-xs text-[#17171799] dark:text-[#fafafa99]">
+                                Generate individual summaries, blogs, quizzes, or flashcards for each video to keep modules scoped.
+                              </p>
+                            </div>
+                          </label>
+                        </div>
+                        <p className="text-xs text-[#17171799] dark:text-[#fafafa99] mt-3">
+                          * Per-video mode currently supports Blog, Summary, Quiz, and Flashcards. Use Combined overview for Slides or other formats.
                         </p>
                       </div>
 
@@ -2314,6 +2757,40 @@ function Dashboard() {
         isOpen={showPasteModal} 
         onClose={() => setShowPasteModal(false)} 
         onSubmit={handleModalSubmit}
+      />
+      
+      <FileUploadModal
+        isOpen={showFileUploadModal}
+        onClose={() => {
+          setShowFileUploadModal(false);
+          setUploadMode("youtube");
+        }}
+        onFileSelect={handleFileSelect}
+        selectedFile={selectedFile}
+        isLoading={isLoading}
+        isExtractingContent={isExtractingContent}
+        onGenerate={async () => {
+          if (!user) {
+            toggleAuthModal(true);
+            return;
+          }
+          
+          setIsLoading(true);
+          setError("");
+          
+          try {
+            await processFileContent();
+            setShowFileUploadModal(false);
+          } catch (err) {
+            setError(err.response?.data?.error || "Failed to process file");
+            setIsLoading(false);
+          }
+        }}
+        dragActive={dragActive}
+        onDragEnter={handleDrag}
+        onDragLeave={handleDrag}
+        onDragOver={handleDrag}
+        onDrop={handleDrop}
       />
       
       {/* Playlist Processing Progress Modal */}

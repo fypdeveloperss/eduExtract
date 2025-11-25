@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { Download } from "lucide-react";
 import api from "../utils/axios";
+import { useCustomAlerts } from "../hooks/useCustomAlerts";
 import "./SummaryView.css";
 
 function SummaryView({ summary }) {
   const [isDownloading, setIsDownloading] = useState(false);
+  const { error } = useCustomAlerts();
 
   const handleDownload = async () => {
     if (!summary) return;
@@ -27,9 +29,9 @@ function SummaryView({ summary }) {
       link.click();
       link.remove();
       window.URL.revokeObjectURL(url);
-    } catch (error) {
-      console.error('Download failed:', error);
-      alert('Failed to download summary. Please try again.');
+    } catch (err) {
+      console.error('Download failed:', err);
+      error('Failed to download summary. Please try again.', 'Download Error');
     } finally {
       setIsDownloading(false);
     }

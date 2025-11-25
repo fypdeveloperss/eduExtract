@@ -26,6 +26,11 @@ function AdminMarketplace() {
     limit: 20
   });
   const [payoutStatusFilter, setPayoutStatusFilter] = useState('');
+  const [transactionModal, setTransactionModal] = useState({
+    open: false,
+    payoutId: null,
+    transactionId: ''
+  });
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState('');
   const [analyticsData, setAnalyticsData] = useState({
@@ -93,6 +98,26 @@ function AdminMarketplace() {
       setFilteredContent(filtered);
     }
   }, [searchQuery, pendingContent]);
+
+  const formatNumber = (value, fallback = '—') => {
+    if (value === undefined || value === null || Number.isNaN(Number(value))) {
+      return fallback;
+    }
+    return Number(value).toLocaleString();
+  };
+
+  const formatCurrencyCompact = (value = 0, currency = 'USD') => {
+    try {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency,
+        notation: 'compact',
+        maximumFractionDigits: 1
+      }).format(value || 0);
+    } catch {
+      return `$${Number(value || 0).toLocaleString()}`;
+    }
+  };
 
   const fetchAnalytics = async () => {
     try {
@@ -198,6 +223,28 @@ function AdminMarketplace() {
     } finally {
       setActionLoading(prev => ({ ...prev, [payoutId]: null }));
     }
+  };
+
+  const closeTransactionModal = () => {
+    setTransactionModal({
+      open: false,
+      payoutId: null,
+      transactionId: ''
+    });
+  };
+
+  const openTransactionModal = (payoutId) => {
+    setTransactionModal({
+      open: true,
+      payoutId,
+      transactionId: ''
+    });
+  };
+
+  const submitTransactionModal = () => {
+    if (!transactionModal.payoutId) return;
+    handlePayoutComplete(transactionModal.payoutId, transactionModal.transactionId.trim());
+    closeTransactionModal();
   };
 
   const handlePayoutReject = async (payoutId, reason = '') => {
@@ -321,6 +368,33 @@ function AdminMarketplace() {
     if (!value) return 'N/A';
     return new Date(value).toLocaleString();
   };
+
+  const pendingReviewsCount = pendingContent.length;
+  const pendingPayoutsCount = payouts.filter((p) => p.status === 'pending').length;
+  const processingPayoutsCount = payouts.filter((p) => p.status === 'processing').length;
+  const revenue30d = analyticsData.metrics?.revenue30d || 0;
+  const heroStats = [
+    {
+      label: 'Pending Reviews',
+      value: formatNumber(pendingReviewsCount),
+      tone: 'from-emerald-500/15 to-transparent'
+    },
+    {
+      label: 'Pending Payouts',
+      value: formatNumber(pendingPayoutsCount),
+      tone: 'from-amber-500/15 to-transparent'
+    },
+    {
+      label: '30d Revenue',
+      value: formatCurrencyCompact(revenue30d),
+      tone: 'from-sky-500/15 to-transparent'
+    },
+    {
+      label: 'Processing Payouts',
+      value: formatNumber(processingPayoutsCount),
+      tone: 'from-purple-500/15 to-transparent'
+    }
+  ];
 
   if (adminLoading) {
     return (
@@ -1111,10 +1185,7 @@ function AdminMarketplace() {
                     )}
                     {payout.status === 'processing' && (
                       <button
-                        onClick={() => {
-                          const transactionId = prompt('Enter transaction ID (optional):');
-                          handlePayoutComplete(payout.payoutId, transactionId || '');
-                        }}
+                        onClick={() => openTransactionModal(payout.payoutId)}
                         disabled={actionLoading[payout.payoutId] === 'completing'}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -1165,65 +1236,146 @@ function AdminMarketplace() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center justify-between mb-4">
-          <div>
-            <h1 className="text-3xl font-bold text-[#171717] dark:text-[#fafafa] mb-2">
-              Marketplace Operations
-            </h1>
-            <p className="text-[#171717cc] dark:text-[#fafafacc]">
-              Monitor marketplace health and review premium submissions
-            </p>
+    <>
+      <div className="max-w-7xl mx-auto px-4 py-8 space-y-8">
+        <div className="grid gap-6 lg:grid-cols-3">
+          <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#171717] via-[#0f0f0f] to-[#050505] text-white p-8 shadow-2xl border border-white/10">
+            <div className="absolute -top-12 -right-12 w-48 h-48 bg-emerald-500/20 rounded-full blur-3xl" />
+            <div className="absolute -bottom-12 -left-12 w-56 h-56 bg-indigo-500/20 rounded-full blur-3xl" />
+            <div className="relative space-y-4">
+              <p className="text-xs uppercase tracking-[0.3em] text-white/60">Marketplace Ops</p>
+              <h1 className="text-3xl font-bold">Marketplace Command</h1>
+              <p className="text-sm text-white/70">
+                Oversee premium submissions, payouts, and marketplace health from a single console.
+              </p>
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+                  <p className="text-xs text-white/60">Pending Reviews</p>
+                  <p className="text-3xl font-bold mt-1">{formatNumber(pendingReviewsCount)}</p>
+                  <p className="text-xs text-emerald-300 mt-1">Content awaiting approval</p>
+                </div>
+                <div className="rounded-2xl border border-white/10 bg-white/5 p-4 backdrop-blur">
+                  <p className="text-xs text-white/60">Open Payouts</p>
+                  <p className="text-3xl font-bold mt-1">{formatNumber(pendingPayoutsCount)}</p>
+                  <p className="text-xs text-white/70 mt-1">Creator payouts in queue</p>
+                </div>
+              </div>
+              <button
+                onClick={() => navigate('/admin')}
+                className="inline-flex items-center gap-2 rounded-lg border border-white/20 px-4 py-2 text-sm font-semibold text-white/90 hover:text-white hover:bg-white/10 transition"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back to Admin
+              </button>
+            </div>
           </div>
-          <button
-            onClick={() => navigate('/admin')}
-            className="flex items-center px-4 py-2.5 bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717] dark:text-[#fafafa] rounded-lg hover:bg-gray-50 dark:hover:bg-[#1f1f1f] transition-colors font-medium"
-          >
-            <ArrowLeft className="w-4 h-4 mr-2" />
-            Back to Admin
-          </button>
+
+          <div className="grid gap-4">
+            {heroStats.map((stat) => (
+              <div
+                key={stat.label}
+                className="relative overflow-hidden rounded-2xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-4 shadow"
+              >
+                <div className={`absolute inset-0 bg-gradient-to-br ${stat.tone}`} />
+                <div className="relative">
+                  <p className="text-xs uppercase tracking-[0.3em] text-[#17171766] dark:text-[#fafafa66]">
+                    {stat.label}
+                  </p>
+                  <p className="text-xl font-semibold text-[#171717] dark:text-white mt-1">
+                    {stat.value}
+                  </p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-6 shadow-lg space-y-4">
+            <p className="text-sm font-semibold text-[#171717] dark:text-white">Quick Navigation</p>
+            <div className="flex flex-col gap-2">
+              <button
+                onClick={() => setActiveTab('analytics')}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === 'analytics'
+                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                    : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
+                }`}
+              >
+                Analytics Dashboard
+              </button>
+              <button
+                onClick={() => setActiveTab('moderation')}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === 'moderation'
+                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                    : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
+                }`}
+              >
+                Review Queue
+              </button>
+              <button
+                onClick={() => setActiveTab('payouts')}
+                className={`w-full rounded-lg px-4 py-2 text-sm font-semibold transition ${
+                  activeTab === 'payouts'
+                    ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
+                    : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
+                }`}
+              >
+                Payout Requests
+              </button>
+            </div>
+          </div>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            onClick={() => setActiveTab('analytics')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              activeTab === 'analytics'
-                ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
-                : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
-            }`}
-          >
-            Analytics Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('moderation')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              activeTab === 'moderation'
-                ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
-                : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
-            }`}
-          >
-            Review Queue
-          </button>
-          <button
-            onClick={() => setActiveTab('payouts')}
-            className={`px-4 py-2 rounded-lg text-sm font-semibold transition-colors ${
-              activeTab === 'payouts'
-                ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717]'
-                : 'bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc]'
-            }`}
-          >
-            Payout Requests
-          </button>
-        </div>
+        {error && (
+          <div className="rounded-2xl border border-red-200 dark:border-red-900/40 bg-red-50 dark:bg-red-900/10 p-4 text-sm text-red-700 dark:text-red-300">
+            {error}
+          </div>
+        )}
+        {success && (
+          <div className="rounded-2xl border border-emerald-200 dark:border-emerald-900/40 bg-emerald-50 dark:bg-emerald-900/10 p-4 text-sm text-emerald-700 dark:text-emerald-300">
+            {success}
+          </div>
+        )}
+
+        {activeTab === 'analytics' && renderAnalyticsTab()}
+        {activeTab === 'moderation' && renderModerationTab()}
+        {activeTab === 'payouts' && renderPayoutsTab()}
       </div>
 
-      {activeTab === 'analytics' && renderAnalyticsTab()}
-      {activeTab === 'moderation' && renderModerationTab()}
-      {activeTab === 'payouts' && renderPayoutsTab()}
-    </div>
+      {transactionModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">
+              Mark Payout as Completed
+            </h3>
+            <p className="text-sm text-[#17171799] dark:text-[#fafafacc99] mb-4">
+              Optionally add a transaction/reference ID. Leave blank if not applicable.
+            </p>
+            <input
+              type="text"
+              value={transactionModal.transactionId}
+              onChange={(e) => setTransactionModal(prev => ({ ...prev, transactionId: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] mb-4"
+              placeholder="Transaction ID (optional)"
+            />
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={closeTransactionModal}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-[#2E2E2E] text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1f1f1f]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitTransactionModal}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+              >
+                Mark Complete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 

@@ -2358,7 +2358,7 @@ router.post("/check-url-type", verifyToken, async (req, res) => {
  */
 router.post("/generate-from-playlist", verifyToken, async (req, res) => {
   try {
-    const { url, contentType, selectedVideoIds } = req.body;
+    const { url, contentType, selectedVideoIds, mode = 'combined' } = req.body;
     const userId = req.user.uid;
 
     if (!url || !contentType) {
@@ -2375,6 +2375,20 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
         error: playlistInfo.error || 'Failed to get playlist information' 
       });
     }
+
+    const playlistVideos = Array.isArray(playlistInfo.videos) ? playlistInfo.videos : [];
+    const videoMetaMap = new Map();
+    playlistVideos.forEach((video, index) => {
+      const key = video.id || video.video_id;
+      if (key && !videoMetaMap.has(key)) {
+        videoMetaMap.set(key, {
+          title: video.title || `Video ${index + 1}`,
+          index,
+          url: video.url || video.webpage_url || null,
+          duration: video.duration || null
+        });
+      }
+    });
 
     // Determine which videos to process
     let videoIdsToProcess;
@@ -2397,12 +2411,27 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
     // Combine all successful transcripts
     let combinedTranscript = '';
     let processedCount = 0;
+    const perVideoTranscripts = [];
     
     for (const videoId of videoIdsToProcess) {
       const result = transcriptResults.transcripts[videoId];
       if (result && result.success) {
-        combinedTranscript += `\n\n--- Video ${processedCount + 1}: ${result.video_id} ---\n\n`;
-        combinedTranscript += result.text;
+        const videoMeta = videoMetaMap.get(videoId) || {};
+        const videoTitle = videoMeta.title || `Video ${processedCount + 1}`;
+        const transcriptText = result.text || '';
+        
+        combinedTranscript += `\n\n--- Video ${processedCount + 1}: ${videoTitle} (${videoId}) ---\n\n`;
+        combinedTranscript += transcriptText;
+
+        perVideoTranscripts.push({
+          videoId,
+          title: videoTitle,
+          position: processedCount + 1,
+          duration: videoMeta.duration || null,
+          url: videoMeta.url || null,
+          text: transcriptText
+        });
+
         processedCount++;
       }
     }
@@ -2416,15 +2445,15 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
     console.log(`Successfully combined transcripts from ${processedCount} videos`);
     console.log(`Combined transcript length: ${combinedTranscript.length} characters`);
 
-    // Return the combined transcript for the frontend to process
-    // The frontend will call the appropriate generate endpoint
+    // Return transcript information for the frontend to process
     res.json({
       success: true,
       playlist_title: playlistInfo.playlist_title,
       processed_videos: processedCount,
       total_videos: videoIdsToProcess.length,
       combined_transcript: combinedTranscript,
-      failed_videos: transcriptResults.failed
+      failed_videos: transcriptResults.failed,
+      per_video_transcripts: perVideoTranscripts
     });
 
   } catch (error) {
