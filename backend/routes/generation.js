@@ -11,6 +11,7 @@ const fs = require("fs");
 const path = require("path");
 const { verifyToken } = require('../middleware/auth');
 const upload = require('../middleware/upload');
+const audioUpload = require('../middleware/audioUpload');
 
 // Import models
 const User = require('../models/User');
@@ -21,6 +22,7 @@ const ChatContext = require('../models/ChatContext');
 // Import services
 const ChatContextService = require('../services/chatContextService');
 const RAGService = require('../services/ragService');
+const TranscriptionService = require('../services/transcriptionService');
 
 // Import prompt builder utility
 const {
@@ -2358,7 +2360,7 @@ router.post("/check-url-type", verifyToken, async (req, res) => {
  */
 router.post("/generate-from-playlist", verifyToken, async (req, res) => {
   try {
-    const { url, contentType, selectedVideoIds, mode = 'combined' } = req.body;
+    const { url, contentType, selectedVideoIds } = req.body;
     const userId = req.user.uid;
 
     if (!url || !contentType) {
@@ -2375,20 +2377,6 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
         error: playlistInfo.error || 'Failed to get playlist information' 
       });
     }
-
-    const playlistVideos = Array.isArray(playlistInfo.videos) ? playlistInfo.videos : [];
-    const videoMetaMap = new Map();
-    playlistVideos.forEach((video, index) => {
-      const key = video.id || video.video_id;
-      if (key && !videoMetaMap.has(key)) {
-        videoMetaMap.set(key, {
-          title: video.title || `Video ${index + 1}`,
-          index,
-          url: video.url || video.webpage_url || null,
-          duration: video.duration || null
-        });
-      }
-    });
 
     // Determine which videos to process
     let videoIdsToProcess;
@@ -2411,27 +2399,12 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
     // Combine all successful transcripts
     let combinedTranscript = '';
     let processedCount = 0;
-    const perVideoTranscripts = [];
     
     for (const videoId of videoIdsToProcess) {
       const result = transcriptResults.transcripts[videoId];
       if (result && result.success) {
-        const videoMeta = videoMetaMap.get(videoId) || {};
-        const videoTitle = videoMeta.title || `Video ${processedCount + 1}`;
-        const transcriptText = result.text || '';
-        
-        combinedTranscript += `\n\n--- Video ${processedCount + 1}: ${videoTitle} (${videoId}) ---\n\n`;
-        combinedTranscript += transcriptText;
-
-        perVideoTranscripts.push({
-          videoId,
-          title: videoTitle,
-          position: processedCount + 1,
-          duration: videoMeta.duration || null,
-          url: videoMeta.url || null,
-          text: transcriptText
-        });
-
+        combinedTranscript += `\n\n--- Video ${processedCount + 1}: ${result.video_id} ---\n\n`;
+        combinedTranscript += result.text;
         processedCount++;
       }
     }
@@ -2445,21 +2418,107 @@ router.post("/generate-from-playlist", verifyToken, async (req, res) => {
     console.log(`Successfully combined transcripts from ${processedCount} videos`);
     console.log(`Combined transcript length: ${combinedTranscript.length} characters`);
 
-    // Return transcript information for the frontend to process
+    // Return the combined transcript for the frontend to process
+    // The frontend will call the appropriate generate endpoint
     res.json({
       success: true,
       playlist_title: playlistInfo.playlist_title,
       processed_videos: processedCount,
       total_videos: videoIdsToProcess.length,
       combined_transcript: combinedTranscript,
-      failed_videos: transcriptResults.failed,
-      per_video_transcripts: perVideoTranscripts
+      failed_videos: transcriptResults.failed
     });
 
   } catch (error) {
     console.error("Playlist generation error:", error);
     res.status(500).json({ 
       error: `Failed to process playlist: ${error.message}` 
+    });
+  }
+});
+
+/**
+ * TRANSCRIBE AUDIO (Speech-to-Text)
+ * Transcribe audio using local Whisper model (Xenova/whisper-base)
+ * More accurate than cloud API for local recordings
+ */
+router.post("/transcribe-audio", verifyToken, audioUpload.single('audio'), async (req, res) => {
+  const audioFilePath = req.file?.path;
+  
+  try {
+    if (!req.file) {
+      return res.status(400).json({ 
+        error: 'No audio file provided',
+        details: 'Please upload an audio file in WebM, WAV, MP3, M4A, OGG, or FLAC format'
+      });
+    }
+
+    console.log(`Processing audio transcription: ${req.file.originalname}`);
+    console.log(`File size: ${(req.file.size / 1024 / 1024).toFixed(2)} MB`);
+    console.log(`MIME type: ${req.file.mimetype}`);
+    console.log(`Saved to: ${audioFilePath}`);
+
+    // Use local Whisper model for transcription
+    const result = await TranscriptionService.transcribeAudio(audioFilePath, {
+      language: req.body.language || 'english'
+    });
+
+    // Clean up the uploaded file after successful transcription
+    try {
+      if (fs.existsSync(audioFilePath)) {
+        fs.unlinkSync(audioFilePath);
+        console.log('Cleaned up temporary audio file');
+      }
+    } catch (cleanupError) {
+      console.warn('Failed to clean up audio file:', cleanupError.message);
+    }
+
+    // Return the transcription result
+    res.json({
+      success: true,
+      transcript: result.transcript,
+      language: result.language,
+      processingTime: result.processingTime,
+      chunks: result.chunks || [],
+      metadata: {
+        model: result.model,
+        originalFileName: req.file.originalname,
+        fileSize: req.file.size,
+        processingTimestamp: new Date().toISOString()
+      }
+    });
+
+  } catch (error) {
+    console.error("Audio transcription error:", error);
+    
+    // Clean up the file on error
+    if (audioFilePath && fs.existsSync(audioFilePath)) {
+      try {
+        fs.unlinkSync(audioFilePath);
+        console.log('Cleaned up audio file after error');
+      } catch (cleanupError) {
+        console.warn('Failed to clean up audio file:', cleanupError.message);
+      }
+    }
+
+    // Handle specific errors
+    if (error.message?.includes('Audio file is empty')) {
+      return res.status(400).json({
+        error: 'Empty audio file',
+        details: 'The recorded audio file is empty. Please try recording again.'
+      });
+    }
+
+    if (error.message?.includes('conversion failed')) {
+      return res.status(400).json({
+        error: 'Audio conversion failed',
+        details: 'Failed to convert audio format. Please try a different recording.'
+      });
+    }
+
+    res.status(500).json({ 
+      error: 'Failed to transcribe audio',
+      details: error.message || 'An unexpected error occurred during transcription'
     });
   }
 });

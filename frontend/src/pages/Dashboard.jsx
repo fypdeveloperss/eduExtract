@@ -19,6 +19,7 @@ import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Yout
 import { useAuth } from "../context/FirebaseAuthContext";
 import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
+import VoiceRecorder from "../components/VoiceRecorder";
 
 const PER_VIDEO_SUPPORTED_TABS = new Set(["blog", "summary", "quiz", "flashcards"]);
 
@@ -109,6 +110,7 @@ function Dashboard() {
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
   const [showFileUploadModal, setShowFileUploadModal] = useState(false);
+  const [showVoiceRecorder, setShowVoiceRecorder] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   
   // Content context for chatbot
@@ -533,7 +535,7 @@ function Dashboard() {
   };
 
   // Handle modal submission
-  const handleModalSubmit = ({ type, content }) => {
+  const handleModalSubmit = async ({ type, content }) => {
     // Check if user is authenticated
     if (!user) {
       toggleAuthModal(true);
@@ -561,6 +563,28 @@ function Dashboard() {
         content: content,
         fileName: 'Pasted Text'
       });
+      
+      // Store context in database for chat component
+      try {
+        const context = {
+          currentSession: {},
+          originalSource: {
+            type: 'text',
+            content: content,
+            fileName: 'Pasted Text'
+          },
+          metadata: {
+            hasCurrentSession: false,
+            hasOriginalSource: true,
+            totalHistoryItems: 0
+          }
+        };
+        
+        await api.post('/api/chat/context/store', { context });
+        console.log('Pasted text context stored in database for chat');
+      } catch (contextError) {
+        console.error('Error storing pasted text context:', contextError);
+      }
       
       // Process the text content immediately
       handleTextSubmit(content);
@@ -792,6 +816,100 @@ function Dashboard() {
       setIsLoading(false);
       setIsFileValidated(false);  // Disable the tabs on error
     }
+  };
+
+  // Handle voice recorder transcript - same flow as pasted text
+  const handleVoiceTranscript = async (transcript) => {
+    setShowVoiceRecorder(false);
+    
+    // Check if user is authenticated
+    if (!user) {
+      toggleAuthModal(true);
+      return;
+    }
+    
+    // Clear previous session and set up new content
+    clearCurrentSession();
+    
+    // Store the transcript as text content (using 'text' type for compatibility)
+    setOriginalSourceContent({
+      type: 'text',
+      content: transcript,
+      fileName: 'Voice Recording'
+    });
+    
+    // Store context in database for chat component
+    try {
+      const context = {
+        currentSession: {},
+        originalSource: {
+          type: 'text',
+          content: transcript,
+          fileName: 'Voice Recording'
+        },
+        metadata: {
+          hasCurrentSession: false,
+          hasOriginalSource: true,
+          totalHistoryItems: 0
+        }
+      };
+      
+      await api.post('/api/chat/context/store', { context });
+      console.log('Voice transcript context stored in database for chat');
+    } catch (contextError) {
+      console.error('Error storing voice transcript context:', contextError);
+    }
+    
+    // Reset all content states
+    setError("");
+    setBlog("");
+    setPptxBase64("");
+    setSlides([]);
+    setFlashcards([]);
+    setQuiz([]);
+    setSummary("");
+    setVideoId("");
+    setShowVideo(false);
+    setActiveTab("");
+    setSelectedFile(null);
+    setUrl("");
+    setIsPlaylist(false);
+    setPlaylistInfo(null);
+    
+    setLoadingStates({
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
+    });
+    setErrors({
+      blog: "",
+      slides: "",
+      flashcards: "",
+      quiz: "",
+      summary: ""
+    });
+    setLoaded({
+      blog: false,
+      slides: false,
+      flashcards: false,
+      quiz: false,
+      summary: false
+    });
+    
+    // Create or update user record
+    try {
+      await createOrUpdateUser();
+    } catch (err) {
+      console.error('Error creating user:', err);
+    }
+    
+    // Enable tabs and show content layout
+    setIsFileValidated(true);
+    setShowContentLayout(true);
+    
+    console.log('Voice transcript ready for content generation:', transcript.substring(0, 100) + '...');
   };
 
   // Handle file content processing
@@ -1888,9 +2006,7 @@ function Dashboard() {
                     toggleAuthModal(true);
                     return;
                   }
-                  showInfo("Recording feature coming soon!", { 
-                    title: "Feature Coming Soon" 
-                  });
+                  setShowVoiceRecorder(true);
                 }}
               >
                 <div className="absolute inset-0 bg-orange-500/0 dark:bg-orange-400/0 group-hover:bg-orange-500/5 dark:group-hover:bg-orange-400/5 transition-all duration-300"></div>
@@ -2792,6 +2908,16 @@ function Dashboard() {
         onDragOver={handleDrag}
         onDrop={handleDrop}
       />
+      
+      {/* Voice Recorder Modal */}
+      <AnimatePresence>
+        {showVoiceRecorder && (
+          <VoiceRecorder
+            onTranscriptReady={handleVoiceTranscript}
+            onClose={() => setShowVoiceRecorder(false)}
+          />
+        )}
+      </AnimatePresence>
       
       {/* Playlist Processing Progress Modal */}
       {playlistProcessing && (

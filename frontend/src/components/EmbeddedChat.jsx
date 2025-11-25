@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
 import { Send, Loader2 } from 'lucide-react';
+import ReactMarkdown from 'react-markdown';
 import api from '../utils/axios';
 import useContentContext from '../hooks/useContentContext';
 import ChatContextDisplay from './ChatContextDisplay';
@@ -35,15 +36,8 @@ const EmbeddedChat = () => {
     scrollToBottom();
   }, [messages]);
 
-  // Cleanup: Delete context when component unmounts
-  useEffect(() => {
-    return () => {
-      // Delete context from database when chat component unmounts
-      api.delete('/api/chat/context/delete').catch(error => {
-        console.error('Error deleting context on unmount:', error);
-      });
-    };
-  }, []);
+  // NOTE: Context cleanup removed - context should persist during session
+  // and only be cleared when starting a new content session (handled in Dashboard)
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -151,7 +145,35 @@ const EmbeddedChat = () => {
                   : 'bg-gray-100 dark:bg-[#2E2E2E] text-gray-900 dark:text-[#fafafacc]'
               }`}
             >
-              {message.content}
+              {message.role === 'assistant' ? (
+                <div className="prose prose-sm dark:prose-invert max-w-none prose-headings:my-2 prose-p:my-1 prose-ul:my-1 prose-ol:my-1 prose-li:my-0.5 prose-strong:text-inherit">
+                  <ReactMarkdown
+                    components={{
+                      // Custom heading styles
+                      h1: ({children}) => <h1 className="text-lg font-bold mt-3 mb-2">{children}</h1>,
+                      h2: ({children}) => <h2 className="text-base font-bold mt-2 mb-1">{children}</h2>,
+                      h3: ({children}) => <h3 className="text-sm font-semibold mt-2 mb-1">{children}</h3>,
+                      // List styles
+                      ul: ({children}) => <ul className="list-disc list-inside my-2 space-y-1">{children}</ul>,
+                      ol: ({children}) => <ol className="list-decimal list-inside my-2 space-y-1">{children}</ol>,
+                      li: ({children}) => <li className="ml-2">{children}</li>,
+                      // Paragraph spacing
+                      p: ({children}) => <p className="my-1.5">{children}</p>,
+                      // Bold text
+                      strong: ({children}) => <strong className="font-semibold">{children}</strong>,
+                      // Code blocks
+                      code: ({inline, children}) => 
+                        inline 
+                          ? <code className="bg-gray-200 dark:bg-[#404040] px-1 py-0.5 rounded text-sm">{children}</code>
+                          : <pre className="bg-gray-200 dark:bg-[#404040] p-2 rounded my-2 overflow-x-auto"><code>{children}</code></pre>,
+                    }}
+                  >
+                    {message.content}
+                  </ReactMarkdown>
+                </div>
+              ) : (
+                message.content
+              )}
             </div>
           </div>
         ))}
