@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
-import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare } from "lucide-react";
+import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare, Chrome, MousePointer, Video, FileText, Download, ExternalLink, Puzzle } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import FeedbackForm from "../components/FeedbackForm";
@@ -289,7 +289,7 @@ export default function Home() {
       {/* Features Section */}
       <motion.section
         ref={containerRef}
-        className="py-20 bg-[#FAFAFA] dark:bg-[#121212]"
+        className="py-20 bg-[#F3F4F6] dark:bg-[#0A0A0A]"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -406,9 +406,268 @@ export default function Home() {
         </div>
       </motion.section>
 
+      {/* Chrome Extension Section */}
+      <motion.section
+        ref={featuresRef}
+        className="py-20 bg-white dark:bg-[#121212] overflow-hidden"
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+            {/* Left Content */}
+            <motion.div
+              initial={{ opacity: 0, x: -50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                transition={{ duration: 0.6 }}
+                viewport={{ once: true }}
+                className="inline-flex items-center gap-2 bg-[#EEEEEE] dark:bg-[#171717] border border-gray-200 dark:border-gray-700 rounded-full px-4 py-2 mb-6"
+              >
+                <Chrome className="w-4 h-4 text-[#171717] dark:text-[#fafafacc]" />
+                <span className="text-sm font-semibold text-[#171717] dark:text-[#fafafacc]">Chrome Extension</span>
+              </motion.div>
+
+              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6 leading-tight">
+                Learn directly from
+                <br />
+                <span className="text-[#171717cc] dark:text-[#fafafacc]">
+                  YouTube videos
+                </span>
+              </h2>
+
+              <p className="text-lg text-[#171717cc] dark:text-[#fafafacc] mb-8 leading-relaxed">
+                Install our Chrome extension and transform any YouTube video into comprehensive study materials 
+                with just one click. No more switching between tabs!
+              </p>
+
+              {/* Extension Features List */}
+              <div className="space-y-4 mb-8">
+                {[
+                  { icon: Video, text: "One-click generation from any YouTube video" },
+                  { icon: MousePointer, text: "Right-click context menu for quick actions" },
+                  { icon: Zap, text: "Instant summaries, quizzes & flashcards" },
+                  { icon: Puzzle, text: "Seamless integration with your dashboard" },
+                ].map((item, index) => (
+                  <motion.div
+                    key={item.text}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    transition={{ duration: 0.5, delay: index * 0.1 }}
+                    viewport={{ once: true }}
+                    className="flex items-center gap-3"
+                  >
+                    <div className="w-10 h-10 bg-[#171717] dark:bg-[#fafafa] rounded-lg flex items-center justify-center flex-shrink-0">
+                      <item.icon className="w-5 h-5 text-white dark:text-[#171717]" />
+                    </div>
+                    <span className="text-[#171717cc] dark:text-[#fafafacc] font-medium">{item.text}</span>
+                  </motion.div>
+                ))}
+              </div>
+
+              {/* CTA Buttons */}
+              <div className="flex flex-col sm:flex-row gap-4">
+                <motion.a
+                  href="https://chrome.google.com/webstore"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group bg-[#171717] dark:bg-[#fafafa] hover:bg-[#2E2E2E] dark:hover:bg-[#E5E7EB] text-white dark:text-[#171717] px-6 py-3 rounded-full font-semibold shadow-lg hover:shadow-xl transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  <Chrome className="w-5 h-5" />
+                  Add to Chrome
+                  <span className="text-xs bg-white/20 dark:bg-black/10 px-2 py-0.5 rounded-full">Free</span>
+                </motion.a>
+                
+                <motion.a
+                  href="https://github.com/fypdeveloperss/eduExtract/tree/main/chrome-extension"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group bg-white dark:bg-[#171717] border border-gray-200 dark:border-gray-700 text-[#171717cc] dark:text-[#fafafacc] px-6 py-3 rounded-full font-semibold hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-all duration-300 flex items-center justify-center gap-2"
+                >
+                  <Github className="w-5 h-5" />
+                  View Source
+                  <ExternalLink className="w-4 h-4 opacity-50" />
+                </motion.a>
+              </div>
+            </motion.div>
+
+            {/* Right - Browser Mockup */}
+            <motion.div
+              initial={{ opacity: 0, x: 50 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="relative"
+            >
+              {/* Browser Window */}
+              <div className="relative bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700">
+                {/* Browser Header */}
+                <div className="bg-gray-200 dark:bg-gray-800 px-4 py-3 flex items-center gap-3 border-b border-gray-300 dark:border-gray-700">
+                  <div className="flex gap-2">
+                    <div className="w-3 h-3 rounded-full bg-red-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-yellow-400"></div>
+                    <div className="w-3 h-3 rounded-full bg-green-400"></div>
+                  </div>
+                  <div className="flex-1 bg-white dark:bg-gray-700 rounded-lg px-4 py-1.5 text-sm text-gray-500 dark:text-gray-400 flex items-center gap-2">
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    youtube.com/watch?v=...
+                  </div>
+                  {/* Extension Icon */}
+                  <motion.div
+                    animate={{ scale: [1, 1.1, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                    className="w-8 h-8 bg-[#171717] dark:bg-[#fafafa] rounded-lg flex items-center justify-center cursor-pointer shadow-lg"
+                  >
+                    <span className="text-white dark:text-[#171717] text-xs font-bold">EE</span>
+                  </motion.div>
+                </div>
+
+                {/* YouTube Video Mockup */}
+                <div className="relative aspect-video bg-gray-900">
+                  {/* Fake Video Player */}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="text-center">
+                      <div className="w-20 h-20 bg-red-600 rounded-full flex items-center justify-center mb-4 mx-auto">
+                        <Play className="w-10 h-10 text-white ml-1" fill="white" />
+                      </div>
+                      <p className="text-white font-medium">Introduction to Machine Learning</p>
+                      <p className="text-gray-400 text-sm mt-1">45:32 • 1.2M views</p>
+                    </div>
+                  </div>
+
+                  {/* EduExtract Button Overlay */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6, delay: 0.8 }}
+                    viewport={{ once: true }}
+                    className="absolute bottom-4 right-4"
+                  >
+                    <motion.div
+                      animate={{ y: [0, -5, 0] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                      className="bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] px-4 py-2 rounded-lg shadow-lg flex items-center gap-2 text-sm font-medium"
+                    >
+                      <Sparkles className="w-4 h-4" />
+                      Generate with EduExtract
+                    </motion.div>
+                  </motion.div>
+                </div>
+
+                {/* Extension Popup Preview */}
+                <motion.div
+                  initial={{ opacity: 0, scale: 0.8, y: 20 }}
+                  whileInView={{ opacity: 1, scale: 1, y: 0 }}
+                  transition={{ duration: 0.6, delay: 1 }}
+                  viewport={{ once: true }}
+                  className="absolute top-16 right-4 w-72 bg-white dark:bg-[#1a1a1a] rounded-xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden"
+                >
+                  {/* Popup Header */}
+                  <div className="bg-[#171717] dark:bg-[#fafafa] px-4 py-3">
+                    <div className="flex items-center gap-2">
+                      <div className="w-8 h-8 bg-white/20 dark:bg-black/10 rounded-lg flex items-center justify-center">
+                        <span className="text-white dark:text-[#171717] text-sm font-bold">EE</span>
+                      </div>
+                      <div>
+                        <h4 className="text-white dark:text-[#171717] font-semibold text-sm">EduExtract</h4>
+                        <p className="text-white/70 dark:text-[#171717]/70 text-xs">AI Learning Assistant</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Video Detected */}
+                  <div className="px-4 py-3 border-b border-gray-100 dark:border-gray-800">
+                    <div className="flex items-center gap-2 text-green-600 dark:text-green-400 text-sm">
+                      <CheckCircle className="w-4 h-4" />
+                      <span className="font-medium">YouTube Video Detected</span>
+                    </div>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 truncate">
+                      Introduction to Machine Learning
+                    </p>
+                  </div>
+
+                  {/* Quick Actions */}
+                  <div className="p-4">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mb-3 font-medium">Quick Actions</p>
+                    <div className="grid grid-cols-3 gap-2">
+                      {[
+                        { icon: FileText, label: "Summary", color: "bg-[#171717] dark:bg-[#2E2E2E]" },
+                        { icon: Target, label: "Quiz", color: "bg-[#171717] dark:bg-[#2E2E2E]" },
+                        { icon: Zap, label: "Cards", color: "bg-[#171717] dark:bg-[#2E2E2E]" },
+                      ].map((action) => (
+                        <motion.div
+                          key={action.label}
+                          whileHover={{ scale: 1.05 }}
+                          className="flex flex-col items-center gap-1 p-2 rounded-lg bg-gray-50 dark:bg-gray-800 cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        >
+                          <div className={`w-8 h-8 ${action.color} rounded-lg flex items-center justify-center`}>
+                            <action.icon className="w-4 h-4 text-white" />
+                          </div>
+                          <span className="text-xs text-gray-600 dark:text-gray-300">{action.label}</span>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              </div>
+
+              {/* Decorative Elements */}
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                className="absolute -top-10 -right-10 w-40 h-40 bg-gradient-to-br from-gray-200/30 to-gray-300/30 dark:from-gray-700/30 dark:to-gray-600/30 rounded-full blur-2xl"
+              />
+              <motion.div
+                animate={{ rotate: -360 }}
+                transition={{ duration: 25, repeat: Infinity, ease: "linear" }}
+                className="absolute -bottom-10 -left-10 w-40 h-40 bg-gradient-to-br from-gray-100/30 to-gray-200/30 dark:from-gray-800/30 dark:to-gray-700/30 rounded-full blur-2xl"
+              />
+            </motion.div>
+          </div>
+
+          {/* Extension Stats */}
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8, delay: 0.4 }}
+            viewport={{ once: true }}
+            className="mt-16 grid grid-cols-2 md:grid-cols-4 gap-6"
+          >
+            {[
+              { value: "10K+", label: "Active Users", icon: Users },
+              { value: "50K+", label: "Videos Processed", icon: Video },
+              { value: "4.8", label: "Chrome Store Rating", icon: Star },
+              { value: "100%", label: "Free Forever", icon: CheckCircle },
+            ].map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.5 + index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center p-6 bg-[#F3F4F6] dark:bg-[#0A0A0A] rounded-xl border border-gray-200 dark:border-gray-800"
+              >
+                <stat.icon className="w-6 h-6 text-[#171717] dark:text-[#fafafacc] mx-auto mb-2" />
+                <div className="text-2xl md:text-3xl font-bold text-[#171717] dark:text-[#fafafacc]">{stat.value}</div>
+                <div className="text-sm text-[#171717cc] dark:text-[#fafafacc]">{stat.label}</div>
+              </motion.div>
+            ))}
+          </motion.div>
+        </div>
+      </motion.section>
+
       {/* Testimonials Section */}
       <motion.section
-        className="py-20 bg-white dark:bg-[#121212]"
+        className="py-20 bg-[#F3F4F6] dark:bg-[#0A0A0A]"
       >
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -434,7 +693,7 @@ export default function Home() {
                 animate={{ opacity: 1, x: 0 }}
                 exit={{ opacity: 0, x: -50 }}
                 transition={{ duration: 0.5 }}
-                className="bg-white dark:bg-[#171717] rounded-2xl p-8 shadow-xl max-w-4xl mx-auto"
+                className="bg-white dark:bg-[#171717] rounded-2xl p-8 shadow-xl max-w-4xl mx-auto border border-gray-200 dark:border-gray-800"
               >
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 bg-[#171717] rounded-full flex items-center justify-center text-white font-bold text-lg">
@@ -515,7 +774,7 @@ export default function Home() {
 
       {/* Feedback Section */}
       <motion.section
-        className="py-20 bg-[#FAFAFA] dark:bg-[#0A0A0A]"
+        className="py-20 bg-[#F3F4F6] dark:bg-[#0A0A0A]"
         initial={{ opacity: 0 }}
         whileInView={{ opacity: 1 }}
         transition={{ duration: 0.8 }}
@@ -529,9 +788,9 @@ export default function Home() {
             viewport={{ once: true }}
             className="mb-12"
           >
-            <div className="inline-flex items-center gap-2 bg-blue-100 dark:bg-blue-900/30 rounded-full px-4 py-2 mb-6">
-              <MessageSquare className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-              <span className="text-sm font-medium text-blue-600 dark:text-blue-400">We Value Your Input</span>
+            <div className="inline-flex items-center gap-2 bg-[#EEEEEE] dark:bg-[#171717] rounded-full px-4 py-2 mb-6">
+              <MessageSquare className="w-4 h-4 text-[#171717] dark:text-[#fafafacc]" />
+              <span className="text-sm font-medium text-[#171717] dark:text-[#fafafacc]">We Value Your Input</span>
             </div>
             
             <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-[#171717] dark:text-[#fafafacc] mb-6">
@@ -581,9 +840,9 @@ export default function Home() {
             viewport={{ once: true }}
             className="grid grid-cols-1 md:grid-cols-3 gap-6"
           >
-            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
-              <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Target className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
+              <div className="w-12 h-12 bg-[#171717] dark:bg-[#fafafa] rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Target className="w-6 h-6 text-white dark:text-[#171717]" />
               </div>
               <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">Feature Requests</h3>
               <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
@@ -591,9 +850,9 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
-              <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-6 h-6 text-green-600 dark:text-green-400" />
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
+              <div className="w-12 h-12 bg-[#171717] dark:bg-[#fafafa] rounded-lg flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-6 h-6 text-white dark:text-[#171717]" />
               </div>
               <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">Bug Reports</h3>
               <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">
@@ -601,9 +860,9 @@ export default function Home() {
               </p>
             </div>
 
-            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg">
-              <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mx-auto mb-4">
-                <Lightbulb className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+            <div className="bg-white dark:bg-[#171717] rounded-xl p-6 shadow-lg border border-gray-200 dark:border-gray-800">
+              <div className="w-12 h-12 bg-[#171717] dark:bg-[#fafafa] rounded-lg flex items-center justify-center mx-auto mb-4">
+                <Lightbulb className="w-6 h-6 text-white dark:text-[#171717]" />
               </div>
               <h3 className="font-semibold text-[#171717] dark:text-[#fafafacc] mb-2">General Feedback</h3>
               <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">

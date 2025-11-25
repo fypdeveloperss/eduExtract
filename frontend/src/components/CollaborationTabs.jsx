@@ -1,10 +1,11 @@
 import React from 'react';
+import { FileText, Users, FilePen, DoorOpen, Settings } from 'lucide-react';
 import './CollaborationTabs.css';
 
 const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, currentUser }) => {
   const tabs = [
-    { id: 'content', label: 'Content', icon: '📄', description: 'Shared educational content' },
-    { id: 'members', label: 'Members', icon: '👥', description: 'Collaboration members' },
+    { id: 'content', label: 'Content', icon: <FileText className="w-4 h-4" />, description: 'Shared educational content' },
+    { id: 'members', label: 'Members', icon: <Users className="w-4 h-4" />, description: 'Collaboration members' },
   ];
 
   // Add requests tab only for admins and owners
@@ -13,7 +14,7 @@ const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, curr
     tabs.push({ 
       id: 'requests', 
       label: 'Change Requests', 
-      icon: '📝', 
+      icon: <FilePen className="w-4 h-4" />, 
       description: 'Content change requests',
       badgeCount: space?.stats?.pendingChangeRequests || 0
     });
@@ -24,7 +25,7 @@ const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, curr
     tabs.push({ 
       id: 'join-requests', 
       label: 'Join Requests', 
-      icon: '🚪', 
+      icon: <DoorOpen className="w-4 h-4" />, 
       description: 'Pending join requests',
       badgeCount: space?.stats?.pendingJoinRequests || 0
     });
@@ -35,7 +36,7 @@ const CollaborationTabs = ({ activeTab, onTabChange, userPermission, space, curr
     tabs.push({ 
       id: 'settings', 
       label: 'Settings', 
-      icon: '⚙️', 
+      icon: <Settings className="w-4 h-4" />, 
       description: 'Space configuration' 
     });
   }

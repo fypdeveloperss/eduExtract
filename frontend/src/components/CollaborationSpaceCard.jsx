@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Bell } from 'lucide-react';
+import { Bell, Globe, Lock, Users, FileText, Eye, ClipboardList, RefreshCw, UserPlus } from 'lucide-react';
 import api from '../utils/axios';
 import JoinRequestModal from './JoinRequestModal';
 import { useCustomAlerts } from '../hooks/useCustomAlerts';
@@ -104,10 +104,10 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
 
   const getPrivacyIcon = (privacy) => {
     switch (privacy) {
-      case 'public': return '🌐';
-      case 'private': return '🔒';
-      case 'restricted': return '👥';
-      default: return '🔒';
+      case 'public': return <Globe className="w-3.5 h-3.5" />;
+      case 'private': return <Lock className="w-3.5 h-3.5" />;
+      case 'restricted': return <Users className="w-3.5 h-3.5" />;
+      default: return <Lock className="w-3.5 h-3.5" />;
     }
   };
 
@@ -215,19 +215,19 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
         <div className="card-footer">
           <div className="stats-row">
             <div className="stat">
-              <span className="stat-icon">👥</span>
+              <span className="stat-icon"><Users className="w-4 h-4" /></span>
               <span className="stat-value">{space.stats?.totalCollaborators || 0}</span>
               <span className="stat-label">Members</span>
             </div>
             
             <div className="stat">
-              <span className="stat-icon">📄</span>
+              <span className="stat-icon"><FileText className="w-4 h-4" /></span>
               <span className="stat-value">{space.stats?.totalContent || 0}</span>
               <span className="stat-label">Content</span>
             </div>
             
             <div className="stat">
-              <span className="stat-icon">👀</span>
+              <span className="stat-icon"><Eye className="w-4 h-4" /></span>
               <span className="stat-value">{space.stats?.totalViews || 0}</span>
               <span className="stat-label">Views</span>
             </div>
@@ -251,26 +251,26 @@ const CollaborationSpaceCard = ({ space, currentUser, onClick, onJoinSpace }) =>
                 onClick={handleJoinSpace}
                 disabled={joining}
               >
-                {joining ? 'Joining...' : '👥 Join Space'}
+                {joining ? 'Joining...' : <><UserPlus className="w-4 h-4" /> Join Space</>}
               </button>
             ) : canRequestToJoin ? (
               (joinRequestStatus?.hasRequest && joinRequestStatus.status === 'pending') ? (
                 <div className="request-status-inline">
-                  <span className="status-pending">📋 Request Pending</span>
+                  <span className="status-pending"><ClipboardList className="w-4 h-4 inline mr-1" />Request Pending</span>
                 </div>
               ) : (joinRequestStatus?.hasRequest && joinRequestStatus.status === 'rejected') ? (
                 <button 
                   className="action-btn request-btn"
                   onClick={handleRequestToJoin}
                 >
-                  🔄 Request Again
+                  <RefreshCw className="w-4 h-4" /> Request Again
                 </button>
               ) : (
                 <button 
                   className="action-btn request-btn"
                   onClick={handleRequestToJoin}
                 >
-                  📋 Request to Join
+                  <ClipboardList className="w-4 h-4" /> Request to Join
                 </button>
               )
             ) : (

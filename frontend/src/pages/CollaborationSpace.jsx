@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Bot, LogOut, Bell } from 'lucide-react';
 import { useAuth } from '../context/FirebaseAuthContext';
 import { useCollaboration } from '../context/CollaborationContext';
 import api from '../utils/axios';
@@ -535,7 +536,7 @@ const CollaborationSpace = () => {
             <div className="flex items-center gap-3 flex-wrap">
               {/* AI Chat Button */}
               <button 
-                className={`px-4 py-2 rounded-lg transition-all text-sm font-semibold ${
+                className={`px-4 py-2 rounded-lg transition-all text-sm font-semibold flex items-center gap-1.5 ${
                   showChat 
                     ? 'bg-blue-600 hover:bg-blue-700 text-white' 
                     : 'border border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20'
@@ -550,12 +551,12 @@ const CollaborationSpace = () => {
                 }}
                 title="AI Assistant for this space"
               >
-                🤖 Space AI
+                <Bot className="w-4 h-4" /> Space AI
               </button>
               
               {canLeaveSpace() && (
                 <button 
-                  className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed"
+                  className="px-4 py-2 rounded-lg bg-red-500 hover:bg-red-600 text-white transition-all text-sm font-semibold disabled:opacity-60 disabled:cursor-not-allowed flex items-center gap-1.5"
                   onClick={() => {
                     console.log('Leave space button clicked');
                     setShowLeaveConfirm(true);
@@ -563,7 +564,7 @@ const CollaborationSpace = () => {
                   title="Leave this space"
                   disabled={leaving}
                 >
-                  🚪 Leave Space
+                  <LogOut className="w-4 h-4" /> Leave Space
                 </button>
               )}
               
@@ -579,7 +580,7 @@ const CollaborationSpace = () => {
                 onClick={() => setShowNotifications(!showNotifications)}
                 title="Toggle notifications"
               >
-                🔔
+                <Bell className="w-4 h-4" />
                 {notifications.length > 0 && (
                   <span className="absolute -top-1 -right-1 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
                     {notifications.length}
