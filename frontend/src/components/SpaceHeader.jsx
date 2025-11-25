@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Globe, Lock, Users, FileText, Eye, Clock } from 'lucide-react';
 import InviteModal from './InviteModal';
 import ContentSelectionModal from './ContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
@@ -56,10 +57,10 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
 
   const getPrivacyIcon = (privacy) => {
     switch (privacy) {
-      case 'public': return '🌐';
-      case 'private': return '🔒';
-      case 'restricted': return '👥';
-      default: return '🔒';
+      case 'public': return <Globe className="w-3.5 h-3.5" />;
+      case 'private': return <Lock className="w-3.5 h-3.5" />;
+      case 'restricted': return <Users className="w-3.5 h-3.5" />;
+      default: return <Lock className="w-3.5 h-3.5" />;
     }
   };
 
@@ -155,7 +156,7 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
       <div className="header-stats">
         <div className="stats-grid">
           <div className="stat">
-            <span className="stat-icon">👥</span>
+            <span className="stat-icon"><Users className="w-5 h-5" /></span>
             <div className="stat-content">
               <span className="stat-value">{space.stats?.totalCollaborators || 0}</span>
               <span className="stat-label">Members</span>
@@ -163,7 +164,7 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
           </div>
           
           <div className="stat">
-            <span className="stat-icon">📄</span>
+            <span className="stat-icon"><FileText className="w-5 h-5" /></span>
             <div className="stat-content">
               <span className="stat-value">{space.stats?.totalContent || 0}</span>
               <span className="stat-label">Content Items</span>
@@ -171,7 +172,7 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
           </div>
           
           <div className="stat">
-            <span className="stat-icon">👀</span>
+            <span className="stat-icon"><Eye className="w-5 h-5" /></span>
             <div className="stat-content">
               <span className="stat-value">{space.stats?.totalViews || 0}</span>
               <span className="stat-label">Total Views</span>
@@ -179,7 +180,7 @@ const SpaceHeader = ({ space, currentUser, userPermission, canUserPerformAction,
           </div>
           
           <div className="stat">
-            <span className="stat-icon">🕒</span>
+            <span className="stat-icon"><Clock className="w-5 h-5" /></span>
             <div className="stat-content">
               <span className="stat-value">
                 {space.stats?.lastActivity 
