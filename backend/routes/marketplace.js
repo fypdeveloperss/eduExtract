@@ -1439,14 +1439,31 @@ router.put('/content/:id', verifyToken, upload.single('document'), async (req, r
     
     // Update allowed fields
     allowedFields.forEach(field => {
-      if (req.body[field] !== undefined) {
-        if (field === 'tags' && Array.isArray(req.body[field])) {
-          updates[field] = req.body[field];
-        } else if (field === 'price') {
-          updates[field] = Math.max(0, parseFloat(req.body[field]) || 0);
-        } else {
-          updates[field] = req.body[field];
+      if (req.body[field] === undefined) {
+        return;
+      }
+
+      if (field === 'tags') {
+        if (Array.isArray(req.body[field])) {
+          updates[field] = req.body[field].filter(tag => typeof tag === 'string' && tag.trim() !== '').map(tag => tag.trim());
         }
+        return;
+      }
+
+      if (field === 'price') {
+        updates[field] = Math.max(0, parseFloat(req.body[field]) || 0);
+        return;
+      }
+
+      const value = req.body[field];
+      if (typeof value === 'string') {
+        const trimmed = value.trim();
+        if (trimmed === '') {
+          return;
+        }
+        updates[field] = trimmed;
+      } else {
+        updates[field] = value;
       }
     });
     

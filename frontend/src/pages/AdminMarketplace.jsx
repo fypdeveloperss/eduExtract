@@ -26,6 +26,11 @@ function AdminMarketplace() {
     limit: 20
   });
   const [payoutStatusFilter, setPayoutStatusFilter] = useState('');
+  const [transactionModal, setTransactionModal] = useState({
+    open: false,
+    payoutId: null,
+    transactionId: ''
+  });
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
   const [analyticsError, setAnalyticsError] = useState('');
   const [analyticsData, setAnalyticsData] = useState({
@@ -198,6 +203,28 @@ function AdminMarketplace() {
     } finally {
       setActionLoading(prev => ({ ...prev, [payoutId]: null }));
     }
+  };
+
+  const closeTransactionModal = () => {
+    setTransactionModal({
+      open: false,
+      payoutId: null,
+      transactionId: ''
+    });
+  };
+
+  const openTransactionModal = (payoutId) => {
+    setTransactionModal({
+      open: true,
+      payoutId,
+      transactionId: ''
+    });
+  };
+
+  const submitTransactionModal = () => {
+    if (!transactionModal.payoutId) return;
+    handlePayoutComplete(transactionModal.payoutId, transactionModal.transactionId.trim());
+    closeTransactionModal();
   };
 
   const handlePayoutReject = async (payoutId, reason = '') => {
@@ -1111,10 +1138,7 @@ function AdminMarketplace() {
                     )}
                     {payout.status === 'processing' && (
                       <button
-                        onClick={() => {
-                          const transactionId = prompt('Enter transaction ID (optional):');
-                          handlePayoutComplete(payout.payoutId, transactionId || '');
-                        }}
+                        onClick={() => openTransactionModal(payout.payoutId)}
                         disabled={actionLoading[payout.payoutId] === 'completing'}
                         className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                       >
@@ -1165,7 +1189,8 @@ function AdminMarketplace() {
   };
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-8">
+    <>
+      <div className="max-w-7xl mx-auto px-4 py-8">
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -1220,10 +1245,45 @@ function AdminMarketplace() {
         </div>
       </div>
 
-      {activeTab === 'analytics' && renderAnalyticsTab()}
-      {activeTab === 'moderation' && renderModerationTab()}
-      {activeTab === 'payouts' && renderPayoutsTab()}
-    </div>
+        {activeTab === 'analytics' && renderAnalyticsTab()}
+        {activeTab === 'moderation' && renderModerationTab()}
+        {activeTab === 'payouts' && renderPayoutsTab()}
+      </div>
+
+      {transactionModal.open && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+          <div className="w-full max-w-md bg-white dark:bg-[#171717] border border-gray-200 dark:border-[#2E2E2E] rounded-2xl shadow-2xl p-6">
+            <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">
+              Mark Payout as Completed
+            </h3>
+            <p className="text-sm text-[#17171799] dark:text-[#fafafacc99] mb-4">
+              Optionally add a transaction/reference ID. Leave blank if not applicable.
+            </p>
+            <input
+              type="text"
+              value={transactionModal.transactionId}
+              onChange={(e) => setTransactionModal(prev => ({ ...prev, transactionId: e.target.value }))}
+              className="w-full px-4 py-2.5 rounded-lg border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-[#171717] dark:focus:ring-[#fafafa] mb-4"
+              placeholder="Transaction ID (optional)"
+            />
+            <div className="flex items-center justify-end gap-3">
+              <button
+                onClick={closeTransactionModal}
+                className="px-4 py-2 rounded-lg border border-gray-200 dark:border-[#2E2E2E] text-sm font-medium text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#1f1f1f]"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={submitTransactionModal}
+                className="px-4 py-2 rounded-lg bg-blue-600 hover:bg-blue-700 text-white text-sm font-semibold"
+              >
+                Mark Complete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
 
