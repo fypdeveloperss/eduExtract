@@ -33,6 +33,7 @@ import AdminForumModeration from "./pages/AdminForumModeration";
 import ContentQualityHub from "./pages/ContentQualityHub";
 import SmartMentorManagement from "./pages/SmartMentorManagement";
 import UserEngagementAnalytics from "./pages/UserEngagementAnalytics";
+import AdminAIMonitor from "./pages/AdminAIMonitor";
 import CollaborateHub from "./pages/CollaborateHub";
 import CollaborationSpace from "./pages/CollaborationSpace";
 import CollaborationInvites from "./pages/CollaborationInvites";
@@ -82,6 +83,7 @@ function App() {
                 <Route path="content-quality" element={<ContentQualityHub />} />
                 <Route path="smart-mentor" element={<SmartMentorManagement />} />
                 <Route path="user-engagement" element={<UserEngagementAnalytics />} />
+                <Route path="ai-monitor" element={<AdminAIMonitor />} />
               </Route>
             </Routes>
             <OnboardingModal />

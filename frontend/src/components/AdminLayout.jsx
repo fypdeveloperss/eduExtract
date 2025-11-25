@@ -187,30 +187,9 @@ const AdminLayout = () => {
             </li>
             <li>
               <Link
-                to="/admin/content"
+                to="/admin/ai-monitor"
                 className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
-                title="Content Management"
-              >
-                {!sidebarCollapsed && (
-                  <svg className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc] opacity-0" style={{ animation: 'fadeIn 0.5s ease-in-out 0.2s forwards' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                )}
-                {sidebarCollapsed && (
-                  <svg className="w-6 h-6 text-[#171717cc] dark:text-[#fafafacc]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                )}
-                {!sidebarCollapsed && (
-                  <span className="ml-3 group-hover:text-[#171717] dark:group-hover:text-[#fafafa] opacity-0" style={{ animation: 'fadeIn 0.5s ease-in-out 0.2s forwards' }}>Content</span>
-                )}
-              </Link>
-            </li>
-            <li>
-              <Link
-                to="/admin/ai-monitoring"
-                className={`flex items-center ${sidebarCollapsed ? 'justify-center' : 'px-2'} py-4 rounded-2xl hover:bg-gray-200 dark:hover:bg-[#fafafa1a] transition-colors group`}
-                title="AI Monitoring"
+                title="AI Monitor"
               >
                 {!sidebarCollapsed && (
                   <svg className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc] opacity-0" style={{ animation: 'fadeIn 0.5s ease-in-out 0.2s forwards' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
