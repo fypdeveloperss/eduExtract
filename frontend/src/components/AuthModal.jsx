@@ -106,7 +106,7 @@ const AuthInput = ({ type, placeholder, value, onChange, icon: Icon, showPasswor
             : 'border-neutral-300 dark:border-[#2E2E2E] focus:ring-[#171717] dark:focus:ring-[#fafafa] hover:border-neutral-400 dark:hover:border-[#4B5563]'
       }`}
     />
-    {type === 'password' ? (
+    {togglePassword ? (
       <button
         type="button"
         onClick={togglePassword}
