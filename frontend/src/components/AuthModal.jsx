@@ -1,11 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/FirebaseAuthContext';
-<<<<<<< HEAD
-import { validateEmail } from '../utils/auth';
-import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles } from 'lucide-react';
-=======
 import { Eye, EyeOff, Mail, Lock, User, ArrowRight, Sparkles, CheckCircle, XCircle, AlertCircle } from 'lucide-react';
->>>>>>> e8184c71aac94ecf4de359ad08db1bbaa6a67d4d
 import './AuthModal.css';
 
 // Comprehensive email validation
@@ -111,11 +106,7 @@ const AuthInput = ({ type, placeholder, value, onChange, icon: Icon, showPasswor
             : 'border-neutral-300 dark:border-[#2E2E2E] focus:ring-[#171717] dark:focus:ring-[#fafafa] hover:border-neutral-400 dark:hover:border-[#4B5563]'
       }`}
     />
-<<<<<<< HEAD
-    {typeof togglePassword === 'function' && (
-=======
     {type === 'password' ? (
->>>>>>> e8184c71aac94ecf4de359ad08db1bbaa6a67d4d
       <button
         type="button"
         onClick={togglePassword}
@@ -255,17 +246,10 @@ const AuthModal = () => {
       setError('Please fill in all fields');
       return false;
     }
-<<<<<<< HEAD
-    try {
-      validateEmail(email);
-    } catch (validationError) {
-      setError(validationError.message);
-=======
     
     const emailCheck = validateEmail(email);
     if (!emailCheck.valid) {
       setError(emailCheck.message);
->>>>>>> e8184c71aac94ecf4de359ad08db1bbaa6a67d4d
       return false;
     }
     
