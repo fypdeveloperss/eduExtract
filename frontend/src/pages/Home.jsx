@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
 import sectionImage from "../assets/section_image.jpg";
-import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare, Chrome, MousePointer, Video, FileText, Download, ExternalLink, Puzzle, Bell } from "lucide-react";
+import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare, Chrome, MousePointer, Video, FileText, Download, ExternalLink, Puzzle, Bell, HelpCircle, X, Mic } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
 import Header from "../components/Header";
 import FeedbackForm from "../components/FeedbackForm";
@@ -110,6 +110,7 @@ export default function Home() {
   const [hoveredFeature, setHoveredFeature] = useState(null);
   const [currentTestimonial, setCurrentTestimonial] = useState(0);
   const [showFeedbackForm, setShowFeedbackForm] = useState(false);
+  const [showTutorial, setShowTutorial] = useState(false);
   const { scrollY } = useScroll();
   const navigate = useNavigate();
   const { user } = useAuth();
@@ -274,11 +275,11 @@ export default function Home() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              onClick={() => featuresRef.current?.scrollIntoView({ behavior: "smooth" })}
+              onClick={() => setShowTutorial(true)}
               className="group bg-white dark:bg-[#171717] border border-[#EEEEEE] dark:border-gray-700 text-[#171717cc] dark:text-[#fafafacc] px-8 py-4 rounded-full font-semibold text-lg hover:bg-[#FAFAFA] dark:hover:bg-[#2E2E2E] transition-all duration-300 flex items-center justify-center gap-2"
             >
-              <Play className="w-5 h-5" />
-              Watch Demo
+              <HelpCircle className="w-5 h-5" />
+              How to Use
             </motion.button>
           </motion.div>
 
@@ -1473,6 +1474,219 @@ export default function Home() {
         isOpen={showFeedbackForm} 
         onClose={() => setShowFeedbackForm(false)} 
       />
+
+      {/* How to Use Tutorial Modal */}
+      <AnimatePresence>
+        {showTutorial && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            onClick={() => setShowTutorial(false)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.9, y: 20 }}
+              transition={{ type: "spring", duration: 0.5 }}
+              className="bg-white dark:bg-[#171717] rounded-2xl max-w-3xl w-full max-h-[90vh] overflow-hidden shadow-2xl border border-gray-200 dark:border-[#2E2E2E] flex flex-col"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Modal Header */}
+              <div className="flex-shrink-0 flex items-center justify-between p-5 border-b border-gray-200 dark:border-[#2E2E2E] bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center">
+                    <HelpCircle className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className="text-xl font-bold text-[#171717] dark:text-[#fafafa]">How to Generate Content</h3>
+                    <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Follow these simple steps</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowTutorial(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors"
+                >
+                  <X className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="flex-1 p-6 overflow-y-auto">
+                <div className="space-y-6">
+                  {/* Step 1 */}
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+                      <span className="text-lg font-bold text-blue-600 dark:text-blue-400">1</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Go to Dashboard</h4>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
+                        Click on "Start Learning Now" or navigate to the Dashboard from the navigation menu. This is your central hub for generating content.
+                      </p>
+                      <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-lg p-3 border border-gray-200 dark:border-[#2E2E2E]">
+                        <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] flex items-center gap-2">
+                          <Rocket className="w-4 h-4 text-blue-500" />
+                          Quick tip: Bookmark the dashboard for easy access!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
+                      <span className="text-lg font-bold text-purple-600 dark:text-purple-400">2</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Choose Your Source</h4>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
+                        Select how you want to provide content:
+                      </p>
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-lg p-3 border border-gray-200 dark:border-[#2E2E2E]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Video className="w-4 h-4 text-red-500" />
+                            <span className="font-medium text-[#171717] dark:text-[#fafafa]">YouTube URL</span>
+                          </div>
+                          <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">Paste any YouTube video link</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-lg p-3 border border-gray-200 dark:border-[#2E2E2E]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <FileText className="w-4 h-4 text-blue-500" />
+                            <span className="font-medium text-[#171717] dark:text-[#fafafa]">Upload File</span>
+                          </div>
+                          <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">PDF, DOCX, or TXT files</p>
+                        </div>
+                        <div className="bg-gray-50 dark:bg-[#1E1E1E] rounded-lg p-3 border border-gray-200 dark:border-[#2E2E2E]">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Mic className="w-4 h-4 text-green-500" />
+                            <span className="font-medium text-[#171717] dark:text-[#fafafa]">Record Audio</span>
+                          </div>
+                          <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">Record voice or upload audio</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+                      <span className="text-lg font-bold text-green-600 dark:text-green-400">3</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Select Content Type</h4>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
+                        Choose what type of educational content you want to generate:
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {[
+                          { name: "Summary", icon: "📝", color: "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300" },
+                          { name: "Blog Post", icon: "📰", color: "bg-purple-100 dark:bg-purple-900/30 text-purple-700 dark:text-purple-300" },
+                          { name: "Flashcards", icon: "🃏", color: "bg-orange-100 dark:bg-orange-900/30 text-orange-700 dark:text-orange-300" },
+                          { name: "Quiz", icon: "❓", color: "bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300" },
+                          { name: "Slides", icon: "📊", color: "bg-pink-100 dark:bg-pink-900/30 text-pink-700 dark:text-pink-300" },
+                          { name: "AI Chat", icon: "💬", color: "bg-cyan-100 dark:bg-cyan-900/30 text-cyan-700 dark:text-cyan-300" }
+                        ].map((type) => (
+                          <span key={type.name} className={`px-3 py-1.5 rounded-full text-sm font-medium ${type.color}`}>
+                            {type.icon} {type.name}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 4 */}
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                      <span className="text-lg font-bold text-orange-600 dark:text-orange-400">4</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Generate & Review</h4>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
+                        Click the "Generate" button and wait for the AI to process your content. Review the generated material and make any edits if needed.
+                      </p>
+                      <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-3 border border-green-200 dark:border-green-800">
+                        <p className="text-sm text-green-700 dark:text-green-300 flex items-center gap-2">
+                          <CheckCircle className="w-4 h-4" />
+                          Generation typically takes 10-30 seconds depending on content length
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Step 5 */}
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0 w-10 h-10 rounded-full bg-pink-100 dark:bg-pink-900/30 flex items-center justify-center">
+                      <span className="text-lg font-bold text-pink-600 dark:text-pink-400">5</span>
+                    </div>
+                    <div className="flex-1">
+                      <h4 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa] mb-2">Save & Access Your Content</h4>
+                      <p className="text-[#171717cc] dark:text-[#fafafacc] mb-3">
+                        All generated content is automatically saved to "My Content" in your dashboard. You can view, edit, download, or share your materials anytime.
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] flex items-center gap-1">
+                          <Download className="w-3 h-3" /> Download
+                        </span>
+                        <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] flex items-center gap-1">
+                          <ExternalLink className="w-3 h-3" /> Share
+                        </span>
+                        <span className="px-3 py-1.5 rounded-lg text-sm font-medium bg-gray-100 dark:bg-[#2E2E2E] text-[#171717cc] dark:text-[#fafafacc] flex items-center gap-1">
+                          <FileText className="w-3 h-3" /> Edit
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Pro Tips Section */}
+                <div className="mt-8 p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-xl border border-amber-200 dark:border-amber-800">
+                  <h4 className="text-lg font-semibold text-amber-800 dark:text-amber-200 mb-3 flex items-center gap-2">
+                    <Lightbulb className="w-5 h-5" />
+                    Pro Tips
+                  </h4>
+                  <ul className="space-y-2 text-sm text-amber-700 dark:text-amber-300">
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>Use videos with clear audio for better transcript accuracy</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>Longer content generates more comprehensive study materials</span>
+                    </li>
+                    <li className="flex items-start gap-2">
+                      <CheckCircle className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                      <span>Try generating multiple content types from the same source</span>
+                    </li>
+                  </ul>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex-shrink-0 flex gap-3 p-5 border-t border-gray-200 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#1E1E1E]">
+                <button
+                  onClick={() => setShowTutorial(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] font-medium hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
+                >
+                  Close
+                </button>
+                <button
+                  onClick={() => {
+                    setShowTutorial(false);
+                    navigate("/dashboard");
+                  }}
+                  className="flex-1 px-4 py-3 rounded-xl bg-gradient-to-r from-blue-600 to-purple-600 text-white font-medium hover:from-blue-700 hover:to-purple-700 transition-colors flex items-center justify-center gap-2"
+                >
+                  <Rocket className="w-4 h-4" />
+                  Start Generating
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
