@@ -3,6 +3,7 @@ import { useCollaboration } from '../context/CollaborationContext';
 import ContentSelectionModal from './ContentSelectionModal';
 import { authenticatedFetch } from '../utils/auth';
 import { useCustomAlerts } from '../hooks/useCustomAlerts';
+import { Trash2, AlertTriangle, X } from 'lucide-react';
 import api from '../utils/axios';
 import './ContentList.css';
 
@@ -11,6 +12,9 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
   const [content, setContent] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showContentModal, setShowContentModal] = useState(false);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [contentToDelete, setContentToDelete] = useState(null);
+  const [deleting, setDeleting] = useState(false);
   const [filters, setFilters] = useState({
     contentType: '',
     status: '',
@@ -132,6 +136,61 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
       'published': '#2196f3'
     };
     return colors[status] || colors.draft;
+  };
+
+  // Check if user can delete specific content
+  // Space owner/admin can delete any content, editors can only delete their own
+  const canDeleteContent = (contentItem) => {
+    if (!currentUser || !space) return false;
+    
+    // Space owner can delete any content
+    if (space.ownerId === currentUser.uid) return true;
+    
+    // Admin permission can delete any content
+    if (canUserPerformAction('delete_content')) return true;
+    
+    // Editors can delete their own content
+    if (contentItem.createdBy === currentUser.uid) return true;
+    
+    return false;
+  };
+
+  const handleDeleteClick = (contentItem) => {
+    setContentToDelete(contentItem);
+    setDeleteModalOpen(true);
+  };
+
+  const handleDeleteConfirm = async () => {
+    if (!contentToDelete) return;
+    
+    try {
+      setDeleting(true);
+      
+      const response = await api.delete(`/api/collaborate/content/${contentToDelete._id}`);
+      
+      if (response.data.success) {
+        // Remove from local state
+        setContent(prevContent => prevContent.filter(item => item._id !== contentToDelete._id));
+        success('Content deleted successfully!', 'Deleted');
+        
+        addNotification({
+          type: 'success',
+          message: `Content "${contentToDelete.title}" has been deleted`,
+        });
+      }
+    } catch (err) {
+      console.error('Error deleting content:', err);
+      error(err.response?.data?.error || 'Failed to delete content', 'Delete Failed');
+    } finally {
+      setDeleting(false);
+      setDeleteModalOpen(false);
+      setContentToDelete(null);
+    }
+  };
+
+  const handleDeleteCancel = () => {
+    setDeleteModalOpen(false);
+    setContentToDelete(null);
   };
 
   const handleEditContent = async (contentId) => {
@@ -319,6 +378,22 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
                       {lockStatus?.isOwn ? 'Continue Editing' : 'Edit'}
                     </button>
                   )}
+                  {canDeleteContent(item) && (
+                    <button 
+                      className="action-btn delete"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDeleteClick(item);
+                      }}
+                      title={
+                        space?.ownerId === currentUser?.uid || canUserPerformAction('delete_content')
+                          ? 'Delete this content (Admin)'
+                          : 'Delete your content'
+                      }
+                    >
+                      <Trash2 size={16} />
+                    </button>
+                  )}
                 </div>
               </div>
             );
@@ -351,6 +426,66 @@ const ContentList = ({ spaceId, space, currentUser, userPermission, canUserPerfo
         onClose={() => setShowContentModal(false)}
         onConfirm={handleAddContent}
       />
+
+      {/* Delete Confirmation Modal */}
+      {deleteModalOpen && contentToDelete && (
+        <div className="delete-content-modal-overlay" onClick={handleDeleteCancel}>
+          <div className="delete-content-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="delete-modal-header">
+              <div className="delete-modal-icon">
+                <AlertTriangle size={32} className="warning-icon" />
+              </div>
+              <button className="close-modal-btn" onClick={handleDeleteCancel}>
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="delete-modal-content">
+              <h3>Delete Content</h3>
+              <p className="delete-warning-text">
+                Are you sure you want to delete <strong>"{contentToDelete.title}"</strong>?
+              </p>
+              
+              <div className="delete-content-info">
+                <div className="info-row">
+                  <span className="info-label">Type:</span>
+                  <span className="info-value type-badge">{contentToDelete.contentType}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Created by:</span>
+                  <span className="info-value">{contentToDelete.createdByName}</span>
+                </div>
+                <div className="info-row">
+                  <span className="info-label">Version:</span>
+                  <span className="info-value">v{contentToDelete.version}</span>
+                </div>
+              </div>
+
+              <div className="delete-warning-box">
+                <AlertTriangle size={16} />
+                <span>This action cannot be undone. All associated data will be permanently removed.</span>
+              </div>
+            </div>
+            
+            <div className="delete-modal-actions">
+              <button 
+                className="cancel-delete-btn" 
+                onClick={handleDeleteCancel}
+                disabled={deleting}
+              >
+                Cancel
+              </button>
+              <button 
+                className="confirm-delete-btn" 
+                onClick={handleDeleteConfirm}
+                disabled={deleting}
+              >
+                {deleting ? 'Deleting...' : 'Delete Content'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

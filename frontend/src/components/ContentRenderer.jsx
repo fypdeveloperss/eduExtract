@@ -115,8 +115,12 @@ const ContentRenderer = ({ content, quizAttempt }) => {
           </div>
         );
       case 'summary':
+        // For HTML content, use dangerouslySetInnerHTML
         return (
-          <p className="text-[#171717cc] dark:text-[#fafafacc] leading-relaxed text-lg">{contentData}</p>
+          <div 
+            className="summary-content prose prose-lg dark:prose-invert max-w-none text-[#171717cc] dark:text-[#fafafacc] leading-relaxed"
+            dangerouslySetInnerHTML={{ __html: contentData }} 
+          />
         );
       default:
         return <p className="text-[#171717cc] dark:text-[#fafafacc]">Unsupported content type.</p>;

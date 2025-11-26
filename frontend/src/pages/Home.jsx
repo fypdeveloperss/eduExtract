@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, useScroll, useTransform, AnimatePresence } from "framer-motion";
-import demoVideo from "../assets/banner.mp4";
 import sectionImage from "../assets/section_image.jpg";
 import { Github, ArrowRight, Sparkles, Zap, Brain, BookOpen, Users, Star, ChevronDown, Play, CheckCircle, Rocket, Target, Lightbulb, MessageSquare, Chrome, MousePointer, Video, FileText, Download, ExternalLink, Puzzle, Bell } from "lucide-react";
 import { useNavigate, Link } from "react-router-dom";
