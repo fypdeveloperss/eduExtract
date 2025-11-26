@@ -1,3 +1,4 @@
+// const { pipeline } = require('@xenova/transformers');
 let pipeline;
 
 (async () => {
