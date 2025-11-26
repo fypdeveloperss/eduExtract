@@ -340,19 +340,30 @@ router.get('/flagged-content', verifyToken, async (req, res) => {
 
     const MarketplaceContent = require('../models/MarketplaceContent');
     
-    // Get flagged marketplace content
+    // Get flagged marketplace content (status = flagged OR has flags)
     const flaggedMarketplace = await MarketplaceContent.find({
-      status: 'pending'
-    }).sort({ createdAt: -1 }).limit(50);
+      $or: [
+        { status: 'flagged' },
+        { flagCount: { $gt: 0 } }
+      ]
+    }).sort({ flagCount: -1, createdAt: -1 }).limit(50);
     
-    // Format flagged content
+    // Format flagged content with detailed flag info
     const flaggedContent = flaggedMarketplace.map(item => ({
       _id: item._id,
       title: item.title,
-      type: 'marketplace',
-      reason: 'Pending review',
-      flaggedAt: item.createdAt,
-      userId: item.userId
+      type: item.contentType || 'marketplace',
+      category: item.category,
+      reason: item.flaggedBy?.length > 0 
+        ? item.flaggedBy[item.flaggedBy.length - 1].reason 
+        : 'Pending review',
+      flagCount: item.flagCount || 0,
+      flags: item.flaggedBy || [],
+      flaggedAt: item.flaggedBy?.length > 0 
+        ? item.flaggedBy[item.flaggedBy.length - 1].flaggedAt 
+        : item.createdAt,
+      userId: item.creatorId,
+      status: item.status
     }));
     
     res.json({
@@ -414,7 +425,7 @@ router.get('/recent-activity', verifyToken, async (req, res) => {
   }
 });
 
-// Content Actions (Approve/Reject)
+// Content Actions (Approve/Reject) - handles both pending and flagged content
 router.post('/content/:contentId/:action', verifyToken, async (req, res) => {
   try {
     const isAdminUser = await AdminService.isAdmin(req.user.uid);
@@ -424,28 +435,86 @@ router.post('/content/:contentId/:action', verifyToken, async (req, res) => {
     }
 
     const { contentId, action } = req.params;
+    const reason = req.body?.reason || ''; // Optional rejection reason
     const MarketplaceContent = require('../models/MarketplaceContent');
+    const SellerNotification = require('../models/SellerNotification');
     
-    if (action === 'approve') {
-      await MarketplaceContent.findByIdAndUpdate(contentId, {
-        status: 'approved',
-        reviewedAt: new Date(),
-        reviewedBy: req.user.uid
-      });
-    } else if (action === 'reject') {
-      await MarketplaceContent.findByIdAndUpdate(contentId, {
-        status: 'rejected',
-        reviewedAt: new Date(),
-        reviewedBy: req.user.uid
-      });
-    } else {
-      return res.status(400).json({ error: 'Invalid action. Use approve or reject' });
+    // Validate contentId format
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(contentId)) {
+      return res.status(400).json({ error: 'Invalid content ID format' });
     }
     
-    res.json({ success: true, message: `Content ${action}d successfully` });
+    // Find the content first
+    const content = await MarketplaceContent.findById(contentId);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+    
+    if (action === 'approve') {
+      // Approve content and clear all flags
+      content.status = 'approved';
+      content.approvedAt = new Date();
+      content.approvedBy = req.user.uid;
+      content.flaggedBy = [];
+      content.flagCount = 0;
+      content.rejectedAt = undefined;
+      content.rejectedBy = undefined;
+      content.rejectionReason = undefined;
+      await content.save();
+      
+      // Send approval notification to seller
+      try {
+        await SellerNotification.createApprovalNotification(
+          content.creatorId,
+          content._id,
+          content.title
+        );
+      } catch (notifError) {
+        console.error('Failed to create approval notification:', notifError);
+        // Don't fail the main operation if notification fails
+      }
+      
+      res.json({ success: true, message: 'Content approved successfully' });
+    } else if (action === 'reject') {
+      // Reject content
+      content.status = 'rejected';
+      content.rejectedAt = new Date();
+      content.rejectedBy = req.user.uid;
+      content.rejectionReason = reason || 'Content does not meet community guidelines';
+      await content.save();
+      
+      // Send rejection notification to seller
+      try {
+        await SellerNotification.createRejectionNotification(
+          content.creatorId,
+          content._id,
+          content.title,
+          content.rejectionReason
+        );
+      } catch (notifError) {
+        console.error('Failed to create rejection notification:', notifError);
+        // Don't fail the main operation if notification fails
+      }
+      
+      res.json({ success: true, message: 'Content rejected successfully' });
+    } else if (action === 'clear-flags') {
+      // Clear flags but keep current status
+      content.flaggedBy = [];
+      content.flagCount = 0;
+      if (content.status === 'flagged') {
+        content.status = 'approved';
+      }
+      await content.save();
+      
+      res.json({ success: true, message: 'Flags cleared successfully' });
+    } else {
+      return res.status(400).json({ error: 'Invalid action. Use approve, reject, or clear-flags' });
+    }
   } catch (error) {
     console.error(`Error ${req.params.action}ing content:`, error);
-    res.status(500).json({ error: `Failed to ${req.params.action} content` });
+    console.error('Error details:', error.message);
+    res.status(500).json({ error: `Failed to ${req.params.action} content: ${error.message}` });
   }
 });
 

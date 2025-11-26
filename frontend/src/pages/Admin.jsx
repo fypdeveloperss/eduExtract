@@ -22,7 +22,7 @@ const formatPercent = (value, fallback = "—%") => {
 const Admin = () => {
   const { user, isAdmin, adminLoading } = useAuth();
   const navigate = useNavigate();
-  const { error } = useCustomAlerts();
+  const { error, success } = useCustomAlerts();
   
   // Stats state
   const [stats, setStats] = useState({
@@ -135,11 +135,14 @@ const Admin = () => {
 
   const handleContentAction = async (contentId, action) => {
     try {
-      await api.post(`/api/admin/content/${contentId}/${action}`);
+      const response = await api.post(`/api/admin/content/${contentId}/${action}`);
+      if (response.data.success) {
+        success(response.data.message || `Content ${action}d successfully`, 'Action Complete');
+      }
       fetchDashboardData(); // Refresh data
     } catch (err) {
       console.error(`Error ${action}ing content:`, err);
-      error(`Failed to ${action} content`, 'Admin Action Failed');
+      error(err.response?.data?.error || `Failed to ${action} content`, 'Admin Action Failed');
     }
   };
 
@@ -732,7 +735,7 @@ const SystemAnalyticsTab = ({ analytics, loading }) => {
   );
 };
 
-const FlaggedContentTab = ({ content, loading, onAction }) => (
+const FlaggedContentTab = ({ content, loading, onAction, onRefresh }) => (
   <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-6 shadow-lg space-y-6">
     <div className="flex items-center justify-between">
       <div>
@@ -743,6 +746,14 @@ const FlaggedContentTab = ({ content, loading, onAction }) => (
           Flagged Content ({content.length})
         </h2>
       </div>
+      {onRefresh && (
+        <button
+          onClick={onRefresh}
+          className="px-3 py-1.5 text-sm rounded-lg border border-gray-200 dark:border-[#2E2E2E] hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
+        >
+          Refresh
+        </button>
+      )}
     </div>
     {loading ? (
       <div className="text-center py-8">
@@ -759,31 +770,73 @@ const FlaggedContentTab = ({ content, loading, onAction }) => (
             key={item._id}
             className="rounded-2xl border border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#1a1a1a] p-4"
           >
-            <div className="flex flex-wrap items-center justify-between gap-4">
-              <div>
-                <h3 className="text-lg font-semibold text-[#171717] dark:text-white">
-                  {item.title || 'Untitled content'}
-                </h3>
+            <div className="flex flex-wrap items-start justify-between gap-4">
+              <div className="flex-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <h3 className="text-lg font-semibold text-[#171717] dark:text-white">
+                    {item.title || 'Untitled content'}
+                  </h3>
+                  {item.flagCount > 0 && (
+                    <span className="px-2 py-0.5 text-xs font-medium bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full">
+                      {item.flagCount} {item.flagCount === 1 ? 'flag' : 'flags'}
+                    </span>
+                  )}
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                    item.status === 'flagged' 
+                      ? 'bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400'
+                      : item.status === 'approved'
+                      ? 'bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400'
+                      : 'bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400'
+                  }`}>
+                    {item.status}
+                  </span>
+                </div>
                 <p className="text-xs text-[#17171799] dark:text-[#fafafacc]">
-                  {item.type} · flagged {new Date(item.flaggedAt).toLocaleDateString()}
+                  {item.type || item.category} · Last flagged {new Date(item.flaggedAt).toLocaleDateString()}
                 </p>
                 {item.reason && (
-                  <p className="text-sm text-rose-600 dark:text-rose-300 mt-2">Reason: {item.reason}</p>
+                  <p className="text-sm text-rose-600 dark:text-rose-400 mt-2">
+                    <span className="font-medium">Latest reason:</span> {item.reason.replace('_', ' ')}
+                  </p>
+                )}
+                {item.flags && item.flags.length > 0 && (
+                  <details className="mt-2">
+                    <summary className="text-xs text-[#17171799] dark:text-[#fafafacc] cursor-pointer hover:text-[#171717] dark:hover:text-[#fafafa]">
+                      View all {item.flags.length} flag reports
+                    </summary>
+                    <div className="mt-2 space-y-1 pl-3 border-l-2 border-gray-200 dark:border-[#2E2E2E]">
+                      {item.flags.map((flag, idx) => (
+                        <div key={idx} className="text-xs text-[#17171799] dark:text-[#fafafacc]">
+                          <span className="font-medium capitalize">{flag.reason?.replace('_', ' ')}</span>
+                          {flag.description && <span> - {flag.description}</span>}
+                          <span className="text-[#17171766] dark:text-[#fafafa66]"> ({new Date(flag.flaggedAt).toLocaleDateString()})</span>
+                        </div>
+                      ))}
+                    </div>
+                  </details>
                 )}
               </div>
               <div className="flex flex-wrap gap-2">
                 <button
                   onClick={() => onAction(item._id, 'approve')}
-                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold"
+                  className="rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-sm font-semibold transition-colors"
                 >
                   Approve
                 </button>
                 <button
                   onClick={() => onAction(item._id, 'reject')}
-                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-sm font-semibold"
+                  className="rounded-lg bg-rose-600 hover:bg-rose-700 text-white px-4 py-2 text-sm font-semibold transition-colors"
                 >
                   Reject
                 </button>
+                {item.flagCount > 0 && (
+                  <button
+                    onClick={() => onAction(item._id, 'clear-flags')}
+                    className="rounded-lg border border-gray-300 dark:border-[#3E3E3E] bg-white dark:bg-[#2E2E2E] hover:bg-gray-50 dark:hover:bg-[#3E3E3E] text-[#171717] dark:text-[#fafafa] px-4 py-2 text-sm font-semibold transition-colors"
+                  >
+                    Clear Flags
+                  </button>
+                )}
               </div>
             </div>
           </div>

@@ -20,7 +20,12 @@ import {
   Wallet,
   CreditCard,
   X,
-  Plus
+  Plus,
+  Bell,
+  AlertTriangle,
+  CheckCircle2,
+  Flag,
+  Trash2
 } from 'lucide-react';
 
 function SellerDashboard() {
@@ -37,6 +42,9 @@ function SellerDashboard() {
   const [editingProduct, setEditingProduct] = useState(null);
   const [payoutHistory, setPayoutHistory] = useState([]);
   const [payoutLoading, setPayoutLoading] = useState(false);
+  const [notifications, setNotifications] = useState([]);
+  const [notificationsLoading, setNotificationsLoading] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
   const [analytics, setAnalytics] = useState({
     metrics: {
       totalProducts: 0,
@@ -63,6 +71,7 @@ function SellerDashboard() {
   useEffect(() => {
     if (user) {
       fetchAnalytics();
+      fetchNotifications();
       if (activeTab === 'payouts') {
         fetchPayoutHistory();
       }
@@ -80,6 +89,50 @@ function SellerDashboard() {
       setError('Failed to load your seller analytics');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchNotifications = async () => {
+    try {
+      setNotificationsLoading(true);
+      const response = await api.get('/api/marketplace/seller/notifications');
+      setNotifications(response.data.notifications || []);
+      setUnreadCount(response.data.unreadCount || 0);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    } finally {
+      setNotificationsLoading(false);
+    }
+  };
+
+  const handleMarkAsRead = async (notificationId) => {
+    try {
+      await api.put(`/api/marketplace/seller/notifications/${notificationId}/read`);
+      setNotifications(prev => 
+        prev.map(n => n._id === notificationId ? { ...n, isRead: true, readAt: new Date() } : n)
+      );
+      setUnreadCount(prev => Math.max(0, prev - 1));
+    } catch (error) {
+      console.error('Failed to mark notification as read:', error);
+    }
+  };
+
+  const handleMarkAllAsRead = async () => {
+    try {
+      await api.put('/api/marketplace/seller/notifications/read-all');
+      setNotifications(prev => prev.map(n => ({ ...n, isRead: true, readAt: new Date() })));
+      setUnreadCount(0);
+    } catch (error) {
+      console.error('Failed to mark all notifications as read:', error);
+    }
+  };
+
+  const handleDeleteNotification = async (notificationId) => {
+    try {
+      await api.delete(`/api/marketplace/seller/notifications/${notificationId}`);
+      setNotifications(prev => prev.filter(n => n._id !== notificationId));
+    } catch (error) {
+      console.error('Failed to delete notification:', error);
     }
   };
 
@@ -339,6 +392,24 @@ function SellerDashboard() {
           }`}
         >
           Payouts
+        </button>
+        <button
+          onClick={() => setActiveTab('notifications')}
+          className={`px-4 py-2 rounded-t-lg text-sm font-semibold transition-colors relative ${
+            activeTab === 'notifications'
+              ? 'bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] border-b-2 border-[#171717] dark:border-[#fafafa]'
+              : 'text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-100 dark:hover:bg-[#1f1f1f]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <Bell className="w-4 h-4" />
+            Notifications
+            {unreadCount > 0 && (
+              <span className="bg-red-500 text-white text-xs rounded-full px-1.5 py-0.5 min-w-[18px] text-center">
+                {unreadCount > 99 ? '99+' : unreadCount}
+              </span>
+            )}
+          </span>
         </button>
       </div>
 
@@ -625,6 +696,120 @@ function SellerDashboard() {
               </div>
             )}
           </div>
+        </div>
+      )}
+
+      {/* Notifications Tab */}
+      {activeTab === 'notifications' && (
+        <div className="bg-white dark:bg-[#171717] border border-[#fafafa1a] rounded-2xl p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-6">
+            <div className="flex items-center gap-3">
+              <Bell className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
+              <h2 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">
+                Notifications
+              </h2>
+              {unreadCount > 0 && (
+                <span className="bg-red-500 text-white text-xs rounded-full px-2 py-0.5">
+                  {unreadCount} unread
+                </span>
+              )}
+            </div>
+            {unreadCount > 0 && (
+              <button
+                onClick={handleMarkAllAsRead}
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+              >
+                Mark all as read
+              </button>
+            )}
+          </div>
+
+          {notificationsLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <LoaderSpinner size="lg" />
+            </div>
+          ) : notifications.length === 0 ? (
+            <div className="text-center py-12">
+              <Bell className="w-12 h-12 text-[#171717cc] dark:text-[#fafafacc] mx-auto mb-4 opacity-50" />
+              <p className="text-[#171717cc] dark:text-[#fafafacc]">No notifications yet</p>
+              <p className="text-sm text-[#17171799] dark:text-[#fafafacc99] mt-1">
+                You'll be notified about content status changes and sales
+              </p>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {notifications.map((notification) => (
+                <div
+                  key={notification._id}
+                  className={`border rounded-lg p-4 transition-colors ${
+                    notification.isRead
+                      ? 'border-[#fafafa1a] bg-transparent'
+                      : 'border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20'
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-3 flex-1">
+                      <div className={`p-2 rounded-lg ${
+                        notification.type === 'content_rejected'
+                          ? 'bg-red-100 dark:bg-red-900/30'
+                          : notification.type === 'content_approved'
+                          ? 'bg-green-100 dark:bg-green-900/30'
+                          : notification.type === 'content_flagged'
+                          ? 'bg-yellow-100 dark:bg-yellow-900/30'
+                          : 'bg-gray-100 dark:bg-gray-800'
+                      }`}>
+                        {notification.type === 'content_rejected' ? (
+                          <AlertTriangle className="w-5 h-5 text-red-600 dark:text-red-400" />
+                        ) : notification.type === 'content_approved' ? (
+                          <CheckCircle2 className="w-5 h-5 text-green-600 dark:text-green-400" />
+                        ) : notification.type === 'content_flagged' ? (
+                          <Flag className="w-5 h-5 text-yellow-600 dark:text-yellow-400" />
+                        ) : (
+                          <Bell className="w-5 h-5 text-[#171717cc] dark:text-[#fafafacc]" />
+                        )}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-[#171717] dark:text-[#fafafa]">
+                          {notification.title}
+                        </p>
+                        <p className="text-sm text-[#171717cc] dark:text-[#fafafacc] mt-1">
+                          {notification.message}
+                        </p>
+                        {notification.metadata?.rejectionReason && (
+                          <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+                            <p className="text-sm text-red-700 dark:text-red-300">
+                              <span className="font-semibold">Reason:</span> {notification.metadata.rejectionReason}
+                            </p>
+                          </div>
+                        )}
+                        <p className="text-xs text-[#17171799] dark:text-[#fafafacc99] mt-2">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      {!notification.isRead && (
+                        <button
+                          onClick={() => handleMarkAsRead(notification._id)}
+                          className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors"
+                          title="Mark as read"
+                        >
+                          <CheckCircle2 className="w-4 h-4" />
+                        </button>
+                      )}
+                      <button
+                        onClick={() => handleDeleteNotification(notification._id)}
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-colors"
+                        title="Delete notification"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
       )}
 

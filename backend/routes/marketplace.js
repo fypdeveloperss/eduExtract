@@ -610,6 +610,143 @@ router.post('/content/:id/review', verifyToken, async (req, res) => {
 });
 
 /**
+ * @route   POST /api/marketplace/content/:id/flag
+ * @desc    Flag content for review (any logged-in user can flag)
+ * @access  Private
+ */
+router.post('/content/:id/flag', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason, description } = req.body;
+    const userId = req.user.uid;
+
+    // Validate reason
+    const validReasons = ['inappropriate', 'copyright', 'spam', 'misleading', 'low_quality', 'other'];
+    if (!reason || !validReasons.includes(reason)) {
+      return res.status(400).json({ 
+        error: 'Invalid flag reason',
+        validReasons 
+      });
+    }
+
+    // Check if content exists
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    // Check if user is the creator (can't flag own content)
+    if (content.creatorId === userId) {
+      return res.status(400).json({ error: 'You cannot flag your own content' });
+    }
+
+    // Check if user already flagged this content
+    const existingFlag = content.flaggedBy?.find(flag => flag.userId === userId);
+    if (existingFlag) {
+      return res.status(400).json({ error: 'You have already flagged this content' });
+    }
+
+    // Add flag
+    if (!content.flaggedBy) {
+      content.flaggedBy = [];
+    }
+
+    content.flaggedBy.push({
+      userId,
+      reason,
+      description: description || '',
+      flaggedAt: new Date()
+    });
+
+    content.flagCount = (content.flagCount || 0) + 1;
+
+    // Note: Content stays visible in marketplace until admin takes action
+    // Admin will see flagged content in their panel and can approve/reject
+
+    await content.save();
+
+    res.json({
+      success: true,
+      message: 'Content has been flagged for review',
+      flagCount: content.flagCount
+    });
+
+  } catch (error) {
+    console.error('Flag content error:', error);
+    res.status(500).json({ error: 'Failed to flag content' });
+  }
+});
+
+/**
+ * @route   DELETE /api/marketplace/content/:id/flag
+ * @desc    Remove flag from content (user can unflag their own flag)
+ * @access  Private
+ */
+router.delete('/content/:id/flag', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.uid;
+
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    // Find and remove user's flag
+    const flagIndex = content.flaggedBy?.findIndex(flag => flag.userId === userId);
+    if (flagIndex === -1 || flagIndex === undefined) {
+      return res.status(400).json({ error: 'You have not flagged this content' });
+    }
+
+    content.flaggedBy.splice(flagIndex, 1);
+    content.flagCount = Math.max(0, (content.flagCount || 1) - 1);
+
+    // Note: Status is not changed here - admin controls content visibility
+
+    await content.save();
+
+    res.json({
+      success: true,
+      message: 'Flag removed successfully',
+      flagCount: content.flagCount
+    });
+
+  } catch (error) {
+    console.error('Unflag content error:', error);
+    res.status(500).json({ error: 'Failed to remove flag' });
+  }
+});
+
+/**
+ * @route   GET /api/marketplace/content/:id/flag-status
+ * @desc    Check if user has flagged this content
+ * @access  Private
+ */
+router.get('/content/:id/flag-status', verifyToken, async (req, res) => {
+  try {
+    const { id } = req.params;
+    const userId = req.user.uid;
+
+    const content = await MarketplaceContent.findById(id);
+    if (!content) {
+      return res.status(404).json({ error: 'Content not found' });
+    }
+
+    const userFlag = content.flaggedBy?.find(flag => flag.userId === userId);
+
+    res.json({
+      hasFlagged: !!userFlag,
+      userFlag: userFlag || null,
+      totalFlags: content.flagCount || 0
+    });
+
+  } catch (error) {
+    console.error('Flag status error:', error);
+    res.status(500).json({ error: 'Failed to get flag status' });
+  }
+});
+
+/**
  * @route   GET /api/marketplace/categories
  * @desc    Get available categories and subjects
  * @access  Public
@@ -1659,6 +1796,134 @@ router.get('/payouts/:payoutId', verifyToken, async (req, res) => {
   } catch (error) {
     console.error('Error fetching payout:', error);
     res.status(500).json({ error: 'Failed to fetch payout' });
+  }
+});
+
+// ==================== SELLER NOTIFICATIONS ====================
+
+/**
+ * @route   GET /api/marketplace/seller/notifications
+ * @desc    Get seller notifications
+ * @access  Private
+ */
+router.get('/seller/notifications', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { page = 1, limit = 20, unreadOnly = false } = req.query;
+    
+    const SellerNotification = require('../models/SellerNotification');
+    
+    const filter = { sellerId: userId };
+    if (unreadOnly === 'true') {
+      filter.isRead = false;
+    }
+    
+    const skip = (parseInt(page) - 1) * parseInt(limit);
+    
+    const [notifications, total, unreadCount] = await Promise.all([
+      SellerNotification.find(filter)
+        .sort({ createdAt: -1 })
+        .skip(skip)
+        .limit(parseInt(limit))
+        .lean(),
+      SellerNotification.countDocuments(filter),
+      SellerNotification.countDocuments({ sellerId: userId, isRead: false })
+    ]);
+    
+    res.json({
+      notifications,
+      unreadCount,
+      pagination: {
+        currentPage: parseInt(page),
+        totalPages: Math.ceil(total / parseInt(limit)),
+        totalItems: total,
+        hasNext: skip + notifications.length < total,
+        hasPrev: parseInt(page) > 1
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching seller notifications:', error);
+    res.status(500).json({ error: 'Failed to fetch notifications' });
+  }
+});
+
+/**
+ * @route   PUT /api/marketplace/seller/notifications/:id/read
+ * @desc    Mark a notification as read
+ * @access  Private
+ */
+router.put('/seller/notifications/:id/read', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { id } = req.params;
+    
+    const SellerNotification = require('../models/SellerNotification');
+    
+    const notification = await SellerNotification.findOneAndUpdate(
+      { _id: id, sellerId: userId },
+      { isRead: true, readAt: new Date() },
+      { new: true }
+    );
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    
+    res.json({ success: true, notification });
+  } catch (error) {
+    console.error('Error marking notification as read:', error);
+    res.status(500).json({ error: 'Failed to mark notification as read' });
+  }
+});
+
+/**
+ * @route   PUT /api/marketplace/seller/notifications/read-all
+ * @desc    Mark all notifications as read
+ * @access  Private
+ */
+router.put('/seller/notifications/read-all', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    
+    const SellerNotification = require('../models/SellerNotification');
+    
+    await SellerNotification.updateMany(
+      { sellerId: userId, isRead: false },
+      { isRead: true, readAt: new Date() }
+    );
+    
+    res.json({ success: true, message: 'All notifications marked as read' });
+  } catch (error) {
+    console.error('Error marking all notifications as read:', error);
+    res.status(500).json({ error: 'Failed to mark notifications as read' });
+  }
+});
+
+/**
+ * @route   DELETE /api/marketplace/seller/notifications/:id
+ * @desc    Delete a notification
+ * @access  Private
+ */
+router.delete('/seller/notifications/:id', verifyToken, async (req, res) => {
+  try {
+    const userId = req.user.uid;
+    const { id } = req.params;
+    
+    const SellerNotification = require('../models/SellerNotification');
+    
+    const notification = await SellerNotification.findOneAndDelete({
+      _id: id,
+      sellerId: userId
+    });
+    
+    if (!notification) {
+      return res.status(404).json({ error: 'Notification not found' });
+    }
+    
+    res.json({ success: true, message: 'Notification deleted' });
+  } catch (error) {
+    console.error('Error deleting notification:', error);
+    res.status(500).json({ error: 'Failed to delete notification' });
   }
 });
 

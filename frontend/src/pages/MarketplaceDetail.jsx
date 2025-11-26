@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/FirebaseAuthContext';
+import { Flag, AlertTriangle, X, Trash2 } from 'lucide-react';
 import api from '../utils/axios';
 import PaymentModal from '../components/PaymentModal';
 import ContentDetail from '../components/ContentDetail';
@@ -27,11 +28,20 @@ function MarketplaceDetail() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [confirmingCheckout, setConfirmingCheckout] = useState(false);
   const confirmingRef = useRef(false);
+  
+  // Flag states
+  const [showFlagModal, setShowFlagModal] = useState(false);
+  const [flagReason, setFlagReason] = useState('');
+  const [flagDescription, setFlagDescription] = useState('');
+  const [flagging, setFlagging] = useState(false);
+  const [hasFlagged, setHasFlagged] = useState(false);
+  const [flagSuccess, setFlagSuccess] = useState('');
 
   useEffect(() => {
     fetchContentDetails();
     if (user) {
       fetchAccessInfo();
+      fetchFlagStatus();
     }
   }, [id, user]);
 
@@ -67,6 +77,61 @@ function MarketplaceDetail() {
       setAccessInfo(response.data);
     } catch (error) {
       console.error('Failed to fetch access info:', error);
+    }
+  };
+
+  const fetchFlagStatus = async () => {
+    try {
+      const response = await api.get(`/api/marketplace/content/${id}/flag-status`);
+      setHasFlagged(response.data.hasFlagged);
+    } catch (error) {
+      console.error('Failed to fetch flag status:', error);
+    }
+  };
+
+  const handleFlag = async () => {
+    if (!flagReason) {
+      return;
+    }
+    
+    try {
+      setFlagging(true);
+      const response = await api.post(`/api/marketplace/content/${id}/flag`, {
+        reason: flagReason,
+        description: flagDescription
+      });
+      
+      if (response.data.success) {
+        setHasFlagged(true);
+        setShowFlagModal(false);
+        setFlagReason('');
+        setFlagDescription('');
+        setFlagSuccess('Content has been flagged for review. Thank you for helping keep our marketplace safe.');
+        setTimeout(() => setFlagSuccess(''), 5000);
+      }
+    } catch (error) {
+      console.error('Failed to flag content:', error);
+      setError(error.response?.data?.error || 'Failed to flag content');
+    } finally {
+      setFlagging(false);
+    }
+  };
+
+  const handleUnflag = async () => {
+    try {
+      setFlagging(true);
+      const response = await api.delete(`/api/marketplace/content/${id}/flag`);
+      
+      if (response.data.success) {
+        setHasFlagged(false);
+        setFlagSuccess('Your flag has been removed.');
+        setTimeout(() => setFlagSuccess(''), 3000);
+      }
+    } catch (error) {
+      console.error('Failed to unflag content:', error);
+      setError(error.response?.data?.error || 'Failed to remove flag');
+    } finally {
+      setFlagging(false);
     }
   };
 
@@ -245,15 +310,12 @@ function MarketplaceDetail() {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Are you sure you want to delete this content? This action cannot be undone.')) {
-      return;
-    }
-
     try {
       setDeleting(true);
       await api.delete(`/api/marketplace/content/${id}`);
       
       // Show success message and redirect
+      setShowDeleteConfirm(false);
       setError('Content deleted successfully. Redirecting to marketplace...');
       setTimeout(() => {
         navigate('/marketplace');
@@ -477,21 +539,43 @@ function MarketplaceDetail() {
                   </div>
                 )}
 
+                {flagSuccess && (
+                  <div className="text-xs text-blue-600 bg-blue-50 rounded-xl p-3 border border-blue-100">
+                    {flagSuccess}
+                  </div>
+                )}
+
                 {user && content.creatorId === user.uid && (
                   <button
-                    onClick={handleDelete}
+                    onClick={() => setShowDeleteConfirm(true)}
                     disabled={deleting}
-                    className="w-full px-6 py-2.5 border border-gray-200 bg-white text-[#171717cc] rounded-xl hover:bg-gray-50 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full px-6 py-2.5 border border-red-200 dark:border-red-800 bg-white dark:bg-[#171717] text-red-600 dark:text-red-400 rounded-xl hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors flex items-center justify-center gap-2 disabled:opacity-50"
                   >
-                    {deleting ? (
+                    <Trash2 size={16} />
+                    Delete Content
+                  </button>
+                )}
+
+                {/* Flag Button - visible for all logged-in users except content owner */}
+                {user && content.creatorId !== user.uid && (
+                  <button
+                    onClick={hasFlagged ? handleUnflag : () => setShowFlagModal(true)}
+                    disabled={flagging}
+                    className={`w-full px-6 py-2.5 border rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
+                      hasFlagged 
+                        ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' 
+                        : 'border-gray-200 bg-white text-[#171717cc] hover:bg-gray-50'
+                    }`}
+                  >
+                    {flagging ? (
                       <>
                         <LoaderSpinner size="sm" />
-                        Deleting...
+                        {hasFlagged ? 'Removing flag...' : 'Flagging...'}
                       </>
                     ) : (
                       <>
-                        <span>🗑️</span>
-                        Delete Content
+                        <Flag size={16} className={hasFlagged ? 'fill-red-500' : ''} />
+                        {hasFlagged ? 'Flagged - Click to Remove' : 'Report Content'}
                       </>
                     )}
                   </button>
@@ -665,6 +749,178 @@ function MarketplaceDetail() {
             onClose={() => setShowPaymentModal(false)}
             onSuccess={handlePurchaseSuccess}
           />
+        )}
+
+        {/* Delete Confirmation Modal */}
+        {showDeleteConfirm && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#171717] rounded-2xl max-w-md w-full shadow-2xl border border-gray-200 dark:border-[#2E2E2E] overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-[#2E2E2E] bg-red-50 dark:bg-red-900/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <Trash2 size={20} className="text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Delete Content</h3>
+                    <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">This action cannot be undone</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors disabled:opacity-50"
+                >
+                  <X size={20} className="text-[#171717cc] dark:text-[#fafafacc]" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-5 space-y-4">
+                <p className="text-[#171717cc] dark:text-[#fafafacc]">
+                  Are you sure you want to delete <span className="font-semibold text-[#171717] dark:text-[#fafafa]">"{content?.title}"</span>?
+                </p>
+                
+                <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3">
+                  <p className="text-xs text-red-800 dark:text-red-200 flex items-start gap-2">
+                    <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>
+                      This will permanently remove the content from the marketplace. All associated data including reviews and purchase records will be affected.
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 p-5 border-t border-gray-200 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#1E1E1E]">
+                <button
+                  onClick={() => setShowDeleteConfirm(false)}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] font-medium hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleDelete}
+                  disabled={deleting}
+                  className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {deleting ? (
+                    <>
+                      <LoaderSpinner size="sm" />
+                      Deleting...
+                    </>
+                  ) : (
+                    <>
+                      <Trash2 size={16} />
+                      Delete Content
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Flag Content Modal */}
+        {showFlagModal && (
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+            <div className="bg-white dark:bg-[#171717] rounded-2xl max-w-md w-full shadow-2xl border border-gray-200 dark:border-[#2E2E2E] overflow-hidden">
+              {/* Modal Header */}
+              <div className="flex items-center justify-between p-5 border-b border-gray-200 dark:border-[#2E2E2E] bg-red-50 dark:bg-red-900/20">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
+                    <AlertTriangle size={20} className="text-red-600 dark:text-red-400" />
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Report Content</h3>
+                    <p className="text-xs text-[#171717cc] dark:text-[#fafafacc]">Help us maintain quality</p>
+                  </div>
+                </div>
+                <button
+                  onClick={() => setShowFlagModal(false)}
+                  className="p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-[#2E2E2E] transition-colors"
+                >
+                  <X size={20} className="text-[#171717cc] dark:text-[#fafafacc]" />
+                </button>
+              </div>
+
+              {/* Modal Content */}
+              <div className="p-5 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
+                    Reason for reporting *
+                  </label>
+                  <select
+                    value={flagReason}
+                    onChange={(e) => setFlagReason(e.target.value)}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-red-500 transition-all"
+                  >
+                    <option value="">Select a reason</option>
+                    <option value="inappropriate">Inappropriate content</option>
+                    <option value="copyright">Copyright violation</option>
+                    <option value="spam">Spam or misleading</option>
+                    <option value="misleading">Misleading title/description</option>
+                    <option value="low_quality">Low quality content</option>
+                    <option value="other">Other</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-[#171717] dark:text-[#fafafa] mb-2">
+                    Additional details (optional)
+                  </label>
+                  <textarea
+                    value={flagDescription}
+                    onChange={(e) => setFlagDescription(e.target.value)}
+                    placeholder="Provide more context about the issue..."
+                    rows={3}
+                    maxLength={500}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#1E1E1E] text-[#171717] dark:text-[#fafafa] focus:outline-none focus:ring-2 focus:ring-red-500 transition-all resize-none"
+                  />
+                  <p className="text-xs text-[#171717cc] dark:text-[#fafafacc] mt-1 text-right">
+                    {flagDescription.length}/500
+                  </p>
+                </div>
+
+                <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-xl p-3">
+                  <p className="text-xs text-amber-800 dark:text-amber-200 flex items-start gap-2">
+                    <AlertTriangle size={14} className="mt-0.5 flex-shrink-0" />
+                    <span>
+                      False reports may result in account restrictions. Please only report genuine issues.
+                    </span>
+                  </p>
+                </div>
+              </div>
+
+              {/* Modal Footer */}
+              <div className="flex gap-3 p-5 border-t border-gray-200 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#1E1E1E]">
+                <button
+                  onClick={() => setShowFlagModal(false)}
+                  className="flex-1 px-4 py-3 rounded-xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] text-[#171717] dark:text-[#fafafa] font-medium hover:bg-gray-50 dark:hover:bg-[#2E2E2E] transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={handleFlag}
+                  disabled={!flagReason || flagging}
+                  className="flex-1 px-4 py-3 rounded-xl bg-red-600 text-white font-medium hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {flagging ? (
+                    <>
+                      <LoaderSpinner size="sm" />
+                      Submitting...
+                    </>
+                  ) : (
+                    <>
+                      <Flag size={16} />
+                      Submit Report
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
         )}
       </div>
   );

@@ -206,6 +206,32 @@ const marketplaceContentSchema = new mongoose.Schema({
     type: String,
     required: false,
     maxlength: 500
+  },
+
+  // Flag information
+  flaggedBy: [{
+    userId: {
+      type: String,
+      ref: 'User'
+    },
+    reason: {
+      type: String,
+      enum: ['inappropriate', 'copyright', 'spam', 'misleading', 'low_quality', 'other'],
+      required: true
+    },
+    description: {
+      type: String,
+      maxlength: 500
+    },
+    flaggedAt: {
+      type: Date,
+      default: Date.now
+    }
+  }],
+
+  flagCount: {
+    type: Number,
+    default: 0
   }
 });
 
