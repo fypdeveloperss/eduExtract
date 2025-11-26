@@ -190,7 +190,7 @@ const Admin = () => {
     }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 3);
-  const totalAlerts = (flaggedContent?.length || 0) + (stats.flaggedContent || 0);
+  const totalAlerts = stats.flaggedContent || 0;
   const queueLoad = stats.pendingReviews || 0;
   const healthScore = Math.max(
     45,
@@ -705,6 +705,71 @@ const SystemAnalyticsTab = ({ analytics, loading }) => {
     { label: 'Active This Month', value: formatNumber(metrics.thisMonth) }
   ];
 
+  // Prepare chart data
+  const userGrowth = analytics.userGrowth || [];
+  const contentTrends = analytics.contentTrends || [];
+  
+  // Combine and normalize data for the last 30 days
+  const chartData = [];
+  const now = new Date();
+  for (let i = 29; i >= 0; i--) {
+    const date = new Date(now);
+    date.setDate(date.getDate() - i);
+    const dateStr = date.toISOString().split('T')[0];
+    
+    const userData = userGrowth.find(item => item.date === dateStr);
+    const contentData = contentTrends.find(item => item.date === dateStr);
+    
+    chartData.push({
+      date: dateStr,
+      dateLabel: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      users: userData?.count || 0,
+      content: contentData?.count || 0
+    });
+  }
+
+  // Calculate max values for scaling
+  const maxUsers = Math.max(...chartData.map(d => d.users), 1);
+  const maxContent = Math.max(...chartData.map(d => d.content), 1);
+  const maxValue = Math.max(maxUsers, maxContent, 1);
+
+  // Generate SVG path for line chart
+  const chartWidth = 800;
+  const chartHeight = 300;
+  const padding = { top: 20, right: 20, bottom: 40, left: 60 };
+  const graphWidth = chartWidth - padding.left - padding.right;
+  const graphHeight = chartHeight - padding.top - padding.bottom;
+
+  const getX = (index) => padding.left + (index / (chartData.length - 1)) * graphWidth;
+  const getY = (value) => padding.top + graphHeight - (value / maxValue) * graphHeight;
+
+  // Generate path for users line
+  const usersPath = chartData
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d.users)}`)
+    .join(' ');
+
+  // Generate path for content line
+  const contentPath = chartData
+    .map((d, i) => `${i === 0 ? 'M' : 'L'} ${getX(i)} ${getY(d.content)}`)
+    .join(' ');
+
+  // Generate area path for users
+  const usersAreaPath = `${usersPath} L ${getX(chartData.length - 1)} ${getY(0)} L ${getX(0)} ${getY(0)} Z`;
+
+  // Generate area path for content
+  const contentAreaPath = `${contentPath} L ${getX(chartData.length - 1)} ${getY(0)} L ${getX(0)} ${getY(0)} Z`;
+
+  // Y-axis labels
+  const yAxisSteps = 5;
+  const yAxisLabels = [];
+  for (let i = 0; i <= yAxisSteps; i++) {
+    const value = Math.round((maxValue / yAxisSteps) * (yAxisSteps - i));
+    yAxisLabels.push({
+      value,
+      y: padding.top + (i / yAxisSteps) * graphHeight
+    });
+  }
+
   return (
     <div className="space-y-6">
       <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -723,13 +788,166 @@ const SystemAnalyticsTab = ({ analytics, loading }) => {
         ))}
       </div>
       <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-gradient-to-br from-white to-gray-50 dark:from-[#1a1a1a] dark:to-[#0f0f0f] p-6 shadow-lg">
-        <h2 className="text-xl font-semibold text-[#171717] dark:text-white mb-2">Activity Pulse</h2>
-        <p className="text-sm text-[#17171799] dark:text-[#fafafacc] mb-4">
-          Trends and peaks across the platform (placeholder for future chart integration).
-        </p>
-        <div className="rounded-2xl border border-dashed border-gray-300 dark:border-[#2E2E2E] p-8 text-center text-sm text-[#17171766] dark:text-[#fafafa66]">
-          Visualization coming soon
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h2 className="text-xl font-semibold text-[#171717] dark:text-white">Activity Pulse</h2>
+            <p className="text-sm text-[#17171799] dark:text-[#fafafacc] mt-1">
+              Trends and peaks across the platform over the last 30 days
+            </p>
+          </div>
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-indigo-500"></div>
+              <span className="text-xs text-[#17171799] dark:text-[#fafafacc]">Users</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-3 h-3 rounded-full bg-emerald-500"></div>
+              <span className="text-xs text-[#17171799] dark:text-[#fafafacc]">Content</span>
+            </div>
+          </div>
         </div>
+        {loading ? (
+          <div className="rounded-2xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-8 flex items-center justify-center h-[300px]">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#171717] dark:border-[#fafafa]"></div>
+          </div>
+        ) : chartData.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-gray-300 dark:border-[#2E2E2E] p-8 text-center text-sm text-[#17171766] dark:text-[#fafafa66]">
+            No activity data available yet
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-4 overflow-x-auto">
+            <svg width={chartWidth} height={chartHeight} className="w-full" viewBox={`0 0 ${chartWidth} ${chartHeight}`}>
+              {/* Grid lines */}
+              {yAxisLabels.map((label, i) => (
+                <g key={i}>
+                  <line
+                    x1={padding.left}
+                    y1={label.y}
+                    x2={chartWidth - padding.right}
+                    y2={label.y}
+                    stroke="currentColor"
+                    strokeWidth="1"
+                    className="text-gray-200 dark:text-[#2E2E2E]"
+                    opacity="0.5"
+                  />
+                </g>
+              ))}
+
+              {/* X-axis grid lines (every 5 days) */}
+              {chartData.map((d, i) => {
+                if (i % 5 === 0 || i === chartData.length - 1) {
+                  return (
+                    <line
+                      key={i}
+                      x1={getX(i)}
+                      y1={padding.top}
+                      x2={getX(i)}
+                      y2={chartHeight - padding.bottom}
+                      stroke="currentColor"
+                      strokeWidth="1"
+                      className="text-gray-200 dark:text-[#2E2E2E]"
+                      opacity="0.3"
+                    />
+                  );
+                }
+                return null;
+              })}
+
+              {/* Area fills */}
+              <path
+                d={usersAreaPath}
+                fill="url(#usersGradient)"
+                opacity="0.2"
+              />
+              <path
+                d={contentAreaPath}
+                fill="url(#contentGradient)"
+                opacity="0.2"
+              />
+
+              {/* Lines */}
+              <path
+                d={usersPath}
+                fill="none"
+                stroke="#6366f1"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d={contentPath}
+                fill="none"
+                stroke="#10b981"
+                strokeWidth="2.5"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+
+              {/* Data points */}
+              {chartData.map((d, i) => (
+                <g key={i}>
+                  <circle
+                    cx={getX(i)}
+                    cy={getY(d.users)}
+                    r="4"
+                    fill="#6366f1"
+                    className="hover:r-6 transition-all"
+                  />
+                  <circle
+                    cx={getX(i)}
+                    cy={getY(d.content)}
+                    r="4"
+                    fill="#10b981"
+                    className="hover:r-6 transition-all"
+                  />
+                </g>
+              ))}
+
+              {/* Y-axis labels */}
+              {yAxisLabels.map((label, i) => (
+                <text
+                  key={i}
+                  x={padding.left - 10}
+                  y={label.y + 4}
+                  textAnchor="end"
+                  className="text-xs fill-[#17171799] dark:fill-[#fafafacc]"
+                >
+                  {formatNumber(label.value)}
+                </text>
+              ))}
+
+              {/* X-axis labels */}
+              {chartData.map((d, i) => {
+                if (i % 5 === 0 || i === chartData.length - 1) {
+                  return (
+                    <text
+                      key={i}
+                      x={getX(i)}
+                      y={chartHeight - padding.bottom + 20}
+                      textAnchor="middle"
+                      className="text-xs fill-[#17171799] dark:fill-[#fafafacc]"
+                    >
+                      {d.dateLabel}
+                    </text>
+                  );
+                }
+                return null;
+              })}
+
+              {/* Gradients */}
+              <defs>
+                <linearGradient id="usersGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#6366f1" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#6366f1" stopOpacity="0" />
+                </linearGradient>
+                <linearGradient id="contentGradient" x1="0%" y1="0%" x2="0%" y2="100%">
+                  <stop offset="0%" stopColor="#10b981" stopOpacity="0.3" />
+                  <stop offset="100%" stopColor="#10b981" stopOpacity="0" />
+                </linearGradient>
+              </defs>
+            </svg>
+          </div>
+        )}
       </div>
     </div>
   );

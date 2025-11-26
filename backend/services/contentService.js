@@ -65,11 +65,17 @@ class ContentService {
       let pendingReviews = 0;
       try {
         const MarketplaceContent = require('../models/MarketplaceContent');
+        // Count items that are flagged (status = 'flagged' OR have flagCount > 0)
         flaggedContent = await MarketplaceContent.countDocuments({
-          status: { $in: ['pending', 'flagged'] }
+          $or: [
+            { status: 'flagged' },
+            { flagCount: { $gt: 0 } }
+          ]
         });
+        // Count items pending admin review (status = 'pending' and no flags)
         pendingReviews = await MarketplaceContent.countDocuments({
-          status: 'pending'
+          status: 'pending',
+          flagCount: { $lte: 0 }
         });
       } catch (error) {
         console.error('Error getting marketplace stats:', error);

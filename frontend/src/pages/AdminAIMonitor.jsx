@@ -9,8 +9,7 @@ import {
   ShieldCheck,
   Zap,
   Target,
-  Clock,
-  TrendingUp
+  Clock
 } from 'lucide-react';
 
 const formatNumber = (value, fallback = '—') => {
@@ -65,13 +64,14 @@ const AdminAIMonitor = () => {
 
   const contentBreakdown = useMemo(() => {
     if (!metrics?.byContentType) return [];
-    return Object.entries(metrics.byContentType).map(([type, data]) => ({
-      type,
-      count: data.count || 0,
-      success: data.success || 0,
-      avgTime: data.avgTime || 0,
-      trend: data.trend || 0
-    }));
+    return Object.entries(metrics.byContentType)
+      .map(([type, data]) => ({
+        type,
+        count: data.count || 0,
+        success: data.success || 0,
+        avgTime: data.avgTime || 0
+      }))
+      .filter(item => item.count > 0); // Only show content types that have data
   }, [metrics]);
 
   const totalRequests = metrics?.totalGenerations || 0;
@@ -233,7 +233,7 @@ const AdminAIMonitor = () => {
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid gap-6 lg:grid-cols-2">
         <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-6 shadow-lg">
           <div className="flex items-center justify-between mb-4">
             <h3 className="text-lg font-semibold text-[#171717] dark:text-white">Performance</h3>
@@ -286,17 +286,8 @@ const AdminAIMonitor = () => {
                     {formatNumber(item.success)} successful • {item.avgTime}ms avg
                   </p>
                 </div>
-                <span
-                  className={`text-xs font-semibold px-3 py-1 rounded-full ${
-                    item.trend > 0
-                      ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-                      : item.trend < 0
-                        ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-                        : 'bg-gray-100 text-gray-600 dark:bg-[#2E2E2E] dark:text-[#fafafa]'
-                  }`}
-                >
-                  {item.trend > 0 ? '+' : ''}
-                  {item.trend}%
+                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-gray-100 text-gray-600 dark:bg-[#2E2E2E] dark:text-[#fafafa]">
+                  {formatNumber(item.count)} req
                 </span>
               </div>
             ))}
@@ -306,41 +297,6 @@ const AdminAIMonitor = () => {
           </div>
         </div>
 
-        <div className="rounded-3xl border border-gray-200 dark:border-[#2E2E2E] bg-white dark:bg-[#171717] p-6 shadow-lg">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-lg font-semibold text-[#171717] dark:text-white">Alerts & Issues</h3>
-            <TrendingUp className="w-5 h-5 text-[#17171799] dark:text-[#fafafacc]" />
-          </div>
-          <div className="space-y-3">
-            <AlertRow
-              title="Latency watchdog"
-              status={latencyStatus}
-              description={
-                latencyStatus === 'Degraded'
-                  ? 'Investigate queue depth and GPU load.'
-                  : 'Response time is within target thresholds.'
-              }
-            />
-            <AlertRow
-              title="Error anomalies"
-              status={errorRate > 5 ? 'Elevated' : 'Clear'}
-              description={
-                errorRate > 5
-                  ? 'Spike detected across pipelines. Review logs.'
-                  : 'No unusual error patterns detected.'
-              }
-            />
-            <AlertRow
-              title="Usage pressure"
-              status={totalRequests > 2000 ? 'High' : 'Normal'}
-              description={
-                totalRequests > 2000
-                  ? 'Throughput nearing capacity. Monitor quotas.'
-                  : 'Ample headroom available.'
-              }
-            />
-          </div>
-        </div>
       </div>
     </div>
   );
@@ -359,26 +315,6 @@ const PerformanceRow = ({ icon: Icon, label, value, trend }) => (
   </li>
 );
 
-const AlertRow = ({ title, status, description }) => {
-  const isCritical = status === 'Elevated' || status === 'Degraded' || status === 'High';
-  return (
-    <div className="rounded-2xl border border-gray-100 dark:border-[#2E2E2E] bg-gray-50 dark:bg-[#1f1f1f] p-4">
-      <div className="flex items-center justify-between">
-        <p className="text-sm font-semibold text-[#171717] dark:text-white">{title}</p>
-        <span
-          className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-            isCritical
-              ? 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-300'
-              : 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300'
-          }`}
-        >
-          {status}
-        </span>
-      </div>
-      <p className="text-xs text-[#17171799] dark:text-[#fafafacc] mt-2">{description}</p>
-    </div>
-  );
-};
 
 export default AdminAIMonitor;
 

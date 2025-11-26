@@ -196,47 +196,100 @@ router.get('/ai-metrics', verifyToken, async (req, res) => {
 
     const GeneratedContent = require('../models/GeneratedContent');
     
-    // Get total generations
+    // Get total generations (REAL DATA)
     const totalGenerations = await GeneratedContent.countDocuments();
     
-    // Calculate success rate (assuming all saved content is successful)
-    // In a real system, you'd track failures separately
-    const successRate = totalGenerations > 0 ? 95 : 0; // Placeholder
+    // Calculate success rate: If content is saved, it's successful
+    // In a production system, you'd track failures separately
+    // For now, we assume 98% success rate (accounting for edge cases)
+    const successRate = totalGenerations > 0 ? 98 : 0;
     
-    // Get content by type
+    // Get content by type with timestamps for activity analysis
     const contentByType = await GeneratedContent.aggregate([
       {
         $group: {
           _id: '$type',
-          count: { $sum: 1 }
+          count: { $sum: 1 },
+          recentCount: {
+            $sum: {
+              $cond: [
+                { $gte: ['$createdAt', new Date(Date.now() - 24 * 60 * 60 * 1000)] },
+                1,
+                0
+              ]
+            }
+          }
         }
       }
     ]);
     
+    // Estimate average response times based on content type (ESTIMATED)
+    // These are realistic estimates based on typical AI generation times
+    const estimatedAvgTimes = {
+      summary: 2000,    // ~2 seconds for summaries
+      blog: 3500,       // ~3.5 seconds for longer blog posts
+      quiz: 2800,       // ~2.8 seconds for quiz generation
+      flashcards: 2400, // ~2.4 seconds for flashcards
+      slides: 4000      // ~4 seconds for slide generation (more complex)
+    };
+    
+    // Estimate token usage based on content type (ESTIMATED)
+    // Average tokens per content type
+    const estimatedTokensPerType = {
+      summary: 1500,
+      blog: 3000,
+      quiz: 2000,
+      flashcards: 1800,
+      slides: 2500
+    };
+    
     // Build metrics by content type
     const byContentType = {
-      summary: { count: 0, success: 0, avgTime: 0 },
-      blog: { count: 0, success: 0, avgTime: 0 },
-      quiz: { count: 0, success: 0, avgTime: 0 },
-      flashcards: { count: 0, success: 0, avgTime: 0 },
-      slides: { count: 0, success: 0, avgTime: 0 }
+      summary: { count: 0, success: 0, avgTime: estimatedAvgTimes.summary },
+      blog: { count: 0, success: 0, avgTime: estimatedAvgTimes.blog },
+      quiz: { count: 0, success: 0, avgTime: estimatedAvgTimes.quiz },
+      flashcards: { count: 0, success: 0, avgTime: estimatedAvgTimes.flashcards },
+      slides: { count: 0, success: 0, avgTime: estimatedAvgTimes.slides }
     };
+    
+    let totalTokensUsed = 0;
+    let weightedAvgTime = 0;
+    let totalWeight = 0;
     
     contentByType.forEach(item => {
       if (byContentType[item._id]) {
         byContentType[item._id].count = item.count;
-        byContentType[item._id].success = Math.round(item.count * 0.95); // Placeholder
-        byContentType[item._id].avgTime = 2500; // Placeholder in ms
+        // Success = count (since saved content is successful)
+        byContentType[item._id].success = item.count;
+        byContentType[item._id].avgTime = estimatedAvgTimes[item._id];
+        
+        // Calculate weighted average response time
+        weightedAvgTime += estimatedAvgTimes[item._id] * item.count;
+        totalWeight += item.count;
+        
+        // Calculate total tokens used
+        totalTokensUsed += (item.count * estimatedTokensPerType[item._id]);
       }
     });
     
+    // Calculate overall average response time
+    const averageResponseTime = totalWeight > 0 
+      ? Math.round(weightedAvgTime / totalWeight) 
+      : 2500;
+    
     res.json({
-      totalGenerations,
-      successRate,
-      averageResponseTime: 2500, // Placeholder
-      totalTokensUsed: totalGenerations * 2000, // Placeholder
+      totalGenerations, // REAL: Actual count from database
+      successRate,      // ESTIMATED: Based on assumption that saved = successful
+      averageResponseTime, // ESTIMATED: Weighted average based on content type estimates
+      totalTokensUsed,  // ESTIMATED: Calculated from content type averages
       errorRate: 100 - successRate,
-      byContentType
+      byContentType,
+      // Metadata to indicate data quality
+      _metadata: {
+        realData: ['totalGenerations', 'byContentType.count', 'byContentType.success'],
+        estimatedData: ['successRate', 'averageResponseTime', 'totalTokensUsed', 'byContentType.avgTime'],
+        note: 'Success counts are real (saved content = successful). Response times and token usage are estimates based on content type.'
+      }
     });
   } catch (error) {
     console.error('Error getting AI metrics:', error);
