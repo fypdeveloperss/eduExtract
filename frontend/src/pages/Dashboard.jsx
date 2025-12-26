@@ -15,7 +15,7 @@ import PasteModal from "../components/PasteModal";
 import FileUploadModal from "../components/FileUploadModal";
 import useContentContext from "../hooks/useContentContext";
 import "./Dashboard.css";
-import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot, Sparkles, TrendingUp, Clock, Zap } from "lucide-react";
+import { MessageCircle, BookOpen, ListChecks, FileText, StickyNote, Upload, Youtube, Link, Target, Bot, Sparkles, TrendingUp, Clock, Zap, History, Play, X } from "lucide-react";
 import { useAuth } from "../context/FirebaseAuthContext";
 import { useNotification } from "../context/NotificationContext";
 import AuthModal from "../components/AuthModal";
@@ -106,6 +106,9 @@ function Dashboard() {
   const [playlistProgress, setPlaylistProgress] = useState({ current: 0, total: 0, percentage: 0 });
   const [playlistContentType, setPlaylistContentType] = useState('');
   const [playlistGenerationMode, setPlaylistGenerationMode] = useState('combined');
+  
+  // Recent sources state (YouTube links history)
+  const [recentSources, setRecentSources] = useState([]);
   
   // Modal and chatbot states
   const [showPasteModal, setShowPasteModal] = useState(false);
@@ -267,6 +270,174 @@ function Dashboard() {
       });
       setFlashcards(aggregatedFlashcards);
       updateCurrentSessionContent('flashcards', aggregatedFlashcards, sharedMetadata);
+    }
+  };
+
+  // Load recent sources from localStorage on mount
+  useEffect(() => {
+    const savedSources = localStorage.getItem('recentSources');
+    if (savedSources) {
+      try {
+        setRecentSources(JSON.parse(savedSources));
+      } catch (e) {
+        console.error('Failed to parse recent sources:', e);
+      }
+    }
+  }, []);
+
+  // Function to save a source to recent sources
+  const saveToRecentSources = (sourceData) => {
+    const newSource = {
+      id: Date.now(),
+      url: sourceData.url,
+      title: sourceData.title || 'Untitled',
+      thumbnail: sourceData.thumbnail || null,
+      videoId: sourceData.videoId || null,
+      type: sourceData.type || 'youtube', // youtube, playlist, text
+      timestamp: new Date().toISOString()
+    };
+
+    setRecentSources(prev => {
+      // Remove duplicate URLs
+      const filtered = prev.filter(s => s.url !== newSource.url);
+      // Add new source at the beginning, limit to 10 items
+      const updated = [newSource, ...filtered].slice(0, 10);
+      localStorage.setItem('recentSources', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Function to remove a source from recent sources
+  const removeFromRecentSources = (sourceId) => {
+    setRecentSources(prev => {
+      const updated = prev.filter(s => s.id !== sourceId);
+      localStorage.setItem('recentSources', JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  // Function to handle clicking on a recent source
+  const handleRecentSourceClick = async (source) => {
+    if (source.type === 'youtube' || source.type === 'playlist') {
+      setUrl(source.url);
+      setUploadMode('youtube');
+      setShowPasteModal(false);
+      
+      // Check if we have existing content for this URL
+      if (user) {
+        try {
+          setIsLoading(true);
+          console.log('Checking for existing content for URL:', source.url);
+          const token = await user.getIdToken();
+          const response = await api.get('/api/content/by-url', {
+            params: { url: source.url },
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          
+          console.log('Content lookup response:', response.data);
+          
+          if (response.data.found && response.data.contentByType) {
+            const { contentByType, title } = response.data;
+            console.log('Found existing content:', contentByType);
+            
+            // Reset states first
+            setBlog("");
+            setPptxBase64("");
+            setSlides([]);
+            setFlashcards([]);
+            setQuiz([]);
+            setSummary("");
+            setError("");
+            setIsPlaylist(source.type === 'playlist');
+            
+            // Set video info for single videos
+            if (source.type === 'youtube' && source.videoId) {
+              setVideoId(source.videoId);
+              setShowVideo(true);
+            }
+            
+            // Load existing content
+            const loadedTypes = [];
+            let firstLoadedTab = null;
+            
+            if (contentByType.blog) {
+              const blogContent = contentByType.blog.contentData || contentByType.blog.content;
+              if (blogContent) {
+                setBlog(blogContent);
+                loadedTypes.push('blog');
+                if (!firstLoadedTab) firstLoadedTab = 'blog';
+              }
+            }
+            if (contentByType.summary) {
+              const summaryContent = contentByType.summary.contentData || contentByType.summary.content;
+              if (summaryContent) {
+                setSummary(summaryContent);
+                loadedTypes.push('summary');
+                if (!firstLoadedTab) firstLoadedTab = 'summary';
+              }
+            }
+            if (contentByType.flashcards) {
+              const flashcardsContent = contentByType.flashcards.contentData || contentByType.flashcards.content;
+              if (flashcardsContent) {
+                setFlashcards(Array.isArray(flashcardsContent) ? flashcardsContent : []);
+                loadedTypes.push('flashcards');
+                if (!firstLoadedTab) firstLoadedTab = 'flashcards';
+              }
+            }
+            if (contentByType.quiz) {
+              const quizContent = contentByType.quiz.contentData || contentByType.quiz.content;
+              if (quizContent) {
+                setQuiz(Array.isArray(quizContent) ? quizContent : []);
+                loadedTypes.push('quiz');
+                if (!firstLoadedTab) firstLoadedTab = 'quiz';
+              }
+            }
+            if (contentByType.slides) {
+              const slidesContent = contentByType.slides.contentData || contentByType.slides.content;
+              if (slidesContent) {
+                setSlides(Array.isArray(slidesContent) ? slidesContent : []);
+                loadedTypes.push('slides');
+                if (!firstLoadedTab) firstLoadedTab = 'slides';
+              }
+            }
+            
+            // Update loaded states
+            setLoaded({
+              blog: loadedTypes.includes('blog'),
+              slides: loadedTypes.includes('slides'),
+              flashcards: loadedTypes.includes('flashcards'),
+              quiz: loadedTypes.includes('quiz'),
+              summary: loadedTypes.includes('summary')
+            });
+            
+            // Set active tab to first loaded content
+            if (firstLoadedTab) {
+              setActiveTab(firstLoadedTab);
+            }
+            
+            // Show the content layout
+            setShowContentLayout(true);
+            setIsLoading(false);
+            
+            // Show info toast about loaded content
+            if (loadedTypes.length > 0) {
+              showInfo(`Loaded ${loadedTypes.length} previously generated content type${loadedTypes.length > 1 ? 's' : ''}: ${loadedTypes.join(', ')}`, {
+                title: 'Content Restored'
+              });
+            }
+            
+            return;
+          }
+        } catch (error) {
+          console.error('Error checking for existing content:', error);
+          // Fall through to normal processing
+        } finally {
+          setIsLoading(false);
+        }
+      }
+      
+      // No existing content found, trigger URL processing
+      handleUrlSubmit(source.url);
     }
   };
 
@@ -652,6 +823,15 @@ function Dashboard() {
           // Create or update user record
           await createOrUpdateUser();
           
+          // Save playlist to recent sources
+          saveToRecentSources({
+            url: urlToProcess,
+            title: response.data.playlist_title || 'YouTube Playlist',
+            videoId: null,
+            thumbnail: response.data.videos?.[0]?.thumbnail || null,
+            type: 'playlist'
+          });
+          
           // Show playlist info and wait for user to select content type
           setShowContentLayout(true);
           return;
@@ -758,6 +938,15 @@ function Dashboard() {
       setShowVideo(true);
       setShowContentLayout(true);
       setIsLoading(false);
+      
+      // Save to recent sources
+      saveToRecentSources({
+        url: urlToProcess,
+        title: `YouTube Video`,
+        videoId: extractedVideoId,
+        thumbnail: `https://img.youtube.com/vi/${extractedVideoId}/mqdefault.jpg`,
+        type: 'youtube'
+      });
     }, 100);
   };
 
@@ -1816,7 +2005,7 @@ function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-[#121212] relative">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-100 dark:from-[#0a0a0a] dark:via-[#121212] dark:to-[#0f0f0f] relative">
 
       {/* Main Content */}
       <div className={`relative z-10 ${showContentLayout ? 'px-4 py-8' : 'max-w-7xl mx-auto px-4 py-8'}`}>
@@ -2028,6 +2217,103 @@ function Dashboard() {
           </>
         )}
         
+
+        {/* Recent Sources Section */}
+        {!showContentLayout && recentSources.length > 0 && (
+          <motion.section
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="mb-8"
+          >
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-bold text-[#171717] dark:text-[#fafafa] flex items-center gap-2">
+                <History className="w-5 h-5 text-blue-600 dark:text-blue-400" />
+                Recent Sources
+              </h2>
+              <button
+                type="button"
+                onClick={() => {
+                  localStorage.removeItem('recentSources');
+                  setRecentSources([]);
+                }}
+                className="text-sm font-medium text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors flex items-center gap-1"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+                Clear History
+              </button>
+            </div>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-4">
+              {recentSources.map((source, index) => (
+                <motion.button
+                  key={source.url + source.timestamp}
+                  type="button"
+                  onClick={() => handleRecentSourceClick(source)}
+                  className="group relative bg-white dark:bg-[#1f1f1f] rounded-xl overflow-hidden border border-gray-200 dark:border-[#2a2a2a] hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 shadow-sm hover:shadow-lg"
+                  initial={{ opacity: 0, scale: 0.9 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ duration: 0.3, delay: index * 0.05 }}
+                  whileHover={{ scale: 1.03, y: -4 }}
+                  whileTap={{ scale: 0.98 }}
+                >
+                  {/* Thumbnail */}
+                  <div className="relative aspect-video bg-gray-100 dark:bg-[#171717]">
+                    {source.thumbnail ? (
+                      <img
+                        src={source.thumbnail}
+                        alt={source.title}
+                        className="w-full h-full object-cover"
+                      />
+                    ) : (
+                      <div className="w-full h-full flex items-center justify-center">
+                        <Youtube className="w-8 h-8 text-gray-400 dark:text-gray-600" />
+                      </div>
+                    )}
+                    {/* Type Badge */}
+                    <div className={`absolute top-2 left-2 px-2 py-0.5 rounded-full text-xs font-semibold ${
+                      source.type === 'playlist' 
+                        ? 'bg-purple-600 text-white' 
+                        : 'bg-red-600 text-white'
+                    }`}>
+                      {source.type === 'playlist' ? (
+                        <span className="flex items-center gap-1">
+                          <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M4 6H2v14c0 1.1.9 2 2 2h14v-2H4V6zm16-4H8c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm-8 12.5v-9l6 4.5-6 4.5z"/>
+                          </svg>
+                          {source.videoCount} videos
+                        </span>
+                      ) : 'Video'}
+                    </div>
+                    {/* Play overlay on hover */}
+                    <div className="absolute inset-0 bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center">
+                      <div className="w-12 h-12 rounded-full bg-white/90 flex items-center justify-center">
+                        <svg className="w-6 h-6 text-[#171717] ml-1" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      </div>
+                    </div>
+                  </div>
+                  {/* Info */}
+                  <div className="p-3">
+                    <h4 className="text-sm font-medium text-[#171717] dark:text-[#fafafa] line-clamp-2 text-left leading-tight">
+                      {source.title || 'YouTube Video'}
+                    </h4>
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
+                      {new Date(source.timestamp).toLocaleDateString(undefined, {
+                        month: 'short',
+                        day: 'numeric',
+                        hour: '2-digit',
+                        minute: '2-digit'
+                      })}
+                    </p>
+                  </div>
+                </motion.button>
+              ))}
+            </div>
+          </motion.section>
+        )}
 
         {/* Dashboard Overview */}
         {!showContentLayout && (
@@ -2245,44 +2531,74 @@ function Dashboard() {
 
         {/* Content Layout - only show after generate is clicked */}
         {showContentLayout && (
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-            {/* Left column: File Preview - Takes 2/3 of the space */}
-            <div className="lg:col-span-2 h-[500px] md:h-[520px] lg:h-[580px] flex flex-col">
-              {uploadMode === "youtube" && videoId && (
-                <div 
-                  ref={videoContainerRef}
-                  className={`bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden transition-all duration-300 ease-in-out flex flex-col h-full max-h-full ${
-                    showVideo 
-                      ? "opacity-100 transform translate-y-0" 
-                      : "opacity-0 transform -translate-y-10"
-                  }`}
-                >
-                  {/* Video Player - Proper aspect ratio */}
-                  <div className="relative w-full" style={{ aspectRatio: '16/9' }}>
-                    <iframe
-                      className="absolute inset-0 w-full h-full"
-                      src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
-                      frameBorder="0"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                    ></iframe>
-                  </div>
+          <>
+            {/* Breadcrumb Navigation */}
+            <nav className="mb-4">
+              <ol className="flex items-center space-x-2 text-sm text-[#171717cc] dark:text-[#fafafacc]">
+                <li>
+                  <button
+                    onClick={() => {
+                      setShowContentLayout(false);
+                      setActiveTab('');
+                    }}
+                    className="hover:text-[#171717] dark:hover:text-[#fafafa] transition-colors font-medium"
+                  >
+                    Dashboard
+                  </button>
+                </li>
+                <li className="text-[#171717cc] dark:text-[#fafafacc]">/</li>
+                <li className="text-[#171717] dark:text-[#fafafa] font-semibold truncate max-w-[300px]">
+                  {isPlaylist && playlistInfo 
+                    ? playlistInfo.playlist_title || 'Playlist'
+                    : uploadMode === "youtube" && videoId 
+                      ? 'YouTube Video'
+                      : uploadMode === "file" && selectedFile 
+                        ? selectedFile.name
+                        : originalSource?.type === 'text'
+                          ? 'Pasted Text'
+                          : 'Content'}
+                </li>
+              </ol>
+            </nav>
+
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+              {/* Left column: File Preview - Takes 2/3 of the space */}
+              <div className="lg:col-span-2 h-[500px] md:h-[520px] lg:h-[580px] flex flex-col">
+                {uploadMode === "youtube" && videoId && (
+                  <div 
+                    ref={videoContainerRef}
+                    className={`bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden transition-all duration-300 ease-in-out flex flex-col h-full max-h-full border-2 border-gray-200 dark:border-[#2a2a2a] ring-1 ring-gray-100 dark:ring-[#1a1a1a] ${
+                      showVideo 
+                        ? "opacity-100 transform translate-y-0" 
+                        : "opacity-0 transform -translate-y-10"
+                    }`}
+                  >
+                    {/* Video Player - Proper aspect ratio */}
+                    <div className="relative w-full border-b border-gray-200 dark:border-[#2a2a2a]" style={{ aspectRatio: '16/9' }}>
+                      <iframe
+                        className="absolute inset-0 w-full h-full"
+                        src={`https://www.youtube.com/embed/${videoId}?rel=0&modestbranding=1`}
+                        frameBorder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowFullScreen
+                      ></iframe>
+                    </div>
                   
                   {/* Video Info - Compact footer */}
-                  <div className="p-4 border-t border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E] flex-shrink-0">
+                  <div className="p-4 border-t-2 border-gray-100 dark:border-[#252525] bg-gradient-to-r from-gray-50 to-gray-100 dark:from-[#1a1a1a] dark:to-[#1E1E1E] flex-shrink-0">
                     <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                        <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">Ready for processing</span>
+                      <div className="flex items-center space-x-3 bg-green-50 dark:bg-green-900/20 px-3 py-1.5 rounded-full">
+                        <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                        <span className="text-sm text-green-700 dark:text-green-400 font-medium">Ready for processing</span>
                       </div>
                       
                       {/* Action Buttons - More professional */}
                       <div className="flex gap-2">
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#2E2E2E] transition-colors flex items-center space-x-1">
+                        <button className="px-4 py-2 rounded-xl bg-white dark:bg-[#252525] text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-all duration-200 flex items-center space-x-2 border border-gray-200 dark:border-[#333] hover:shadow-md">
                           <FileText size={14} />
                           <span>Chapters</span>
                         </button>
-                        <button className="px-3 py-1.5 rounded-lg bg-gray-100 dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] text-sm font-medium hover:bg-gray-200 dark:hover:bg-[#2E2E2E] transition-colors flex items-center space-x-1">
+                        <button className="px-4 py-2 rounded-xl bg-white dark:bg-[#252525] text-gray-700 dark:text-gray-300 text-sm font-medium hover:bg-gray-100 dark:hover:bg-[#2a2a2a] transition-all duration-200 flex items-center space-x-2 border border-gray-200 dark:border-[#333] hover:shadow-md">
                           <BookOpen size={14} />
                           <span>Transcript</span>
                         </button>
@@ -2295,7 +2611,7 @@ function Dashboard() {
               {/* Playlist Info Display */}
               {isPlaylist && playlistInfo && (
                 <div 
-                  className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full"
+                  className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full border-2 border-gray-200 dark:border-[#2a2a2a] ring-1 ring-gray-100 dark:ring-[#1a1a1a]"
                 >
                   {/* Playlist Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
@@ -2439,7 +2755,7 @@ function Dashboard() {
 
               {/* Text Preview - For pasted text content */}
               {originalSource?.type === 'text' && originalSource?.content && (
-                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full">
+                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full border-2 border-gray-200 dark:border-[#2a2a2a] ring-1 ring-gray-100 dark:ring-[#1a1a1a]">
                   {/* Text Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
                     <div className="flex items-center justify-between">
@@ -2521,7 +2837,7 @@ function Dashboard() {
               )}
 
               {uploadMode === "file" && selectedFile && (
-                <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden flex-1 flex flex-col h-full">
+                <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-xl overflow-hidden flex-1 flex flex-col h-full border-2 border-gray-200 dark:border-[#2a2a2a] ring-1 ring-gray-100 dark:ring-[#1a1a1a]">
                   {/* File Header */}
                   <div className="p-4 border-b border-gray-200 dark:border-[#fafafa1a] bg-gray-50 dark:bg-[#1E1E1E]">
                     <div className="flex items-center justify-between">
@@ -2639,67 +2955,91 @@ function Dashboard() {
         {/* Right column: Learning Materials Tabs - Takes 1/3 of the space */}
         <div className="lg:col-span-1 flex flex-col h-full">
           {/* Learning Materials Header */}
-          <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg p-4 h-full flex flex-col max-h-full overflow-hidden">
-            <div className="flex items-center justify-between mb-4">
+          <div className="bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-[#1a1a1a] dark:via-[#171717] dark:to-[#1a1f2e] rounded-2xl shadow-2xl p-5 h-full flex flex-col max-h-full overflow-hidden border-2 border-blue-200 dark:border-blue-900/50 ring-2 ring-blue-100/50 dark:ring-blue-900/20">
+            <div className="flex items-center justify-between mb-5 pb-4 border-b-2 border-blue-100 dark:border-blue-900/30">
               <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-gray-100 dark:bg-[#1E1E1E] rounded-xl flex items-center justify-center">
-                  <Target size={20} className="text-[#171717cc] dark:text-[#fafafacc]" />
+                <div className="w-12 h-12 bg-gradient-to-br from-blue-500 via-blue-600 to-indigo-700 rounded-xl flex items-center justify-center shadow-xl shadow-blue-500/40">
+                  <Target size={22} className="text-white" />
                 </div>
                 <div>
-                  <h3 className="text-lg font-semibold text-[#171717] dark:text-[#fafafa]">Learning Materials</h3>
-                  <p className="text-sm text-[#171717cc] dark:text-[#fafafacc]">Generate educational content from your source</p>
+                  <h3 className="text-lg font-bold text-gray-800 dark:text-white">Learning Materials</h3>
+                  <p className="text-sm text-blue-600 dark:text-blue-400 font-medium">Generate educational content</p>
                 </div>
               </div>
-              <div className="flex items-center space-x-2">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <span className="text-sm text-[#171717cc] dark:text-[#fafafacc] font-medium">AI Ready</span>
+              <div className="flex items-center space-x-2 bg-green-100 dark:bg-green-900/30 px-3 py-1.5 rounded-full border border-green-300 dark:border-green-700">
+                <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                <span className="text-sm text-green-700 dark:text-green-400 font-semibold">AI Ready</span>
               </div>
             </div>
             
             {/* Professional Content Generation Grid */}
-            <div className="flex-1 flex flex-col gap-3 overflow-y-auto min-h-0">
+            <div className="flex-1 flex flex-col gap-3 overflow-y-auto min-h-0 pr-1">
               {[
                 { 
                   id: "chat", 
                   label: "Chat", 
                   description: "AI tutor conversation",
                   icon: Bot,
-                  color: "text-gray-600"
+                  gradient: "from-violet-500 to-purple-600",
+                  bgLight: "bg-violet-50",
+                  bgDark: "dark:bg-violet-900/20",
+                  borderLight: "border-violet-200",
+                  borderDark: "dark:border-violet-800"
                 },
                 { 
                   id: "summary", 
                   label: "Summary", 
                   description: "Key points and overview",
                   icon: FileText,
-                  color: "text-gray-600"
+                  gradient: "from-emerald-500 to-teal-600",
+                  bgLight: "bg-emerald-50",
+                  bgDark: "dark:bg-emerald-900/20",
+                  borderLight: "border-emerald-200",
+                  borderDark: "dark:border-emerald-800"
                 },
                 { 
                   id: "blog", 
                   label: "Blog Post", 
                   description: "Detailed article format",
                   icon: BookOpen,
-                  color: "text-gray-600"
+                  gradient: "from-blue-500 to-cyan-600",
+                  bgLight: "bg-blue-50",
+                  bgDark: "dark:bg-blue-900/20",
+                  borderLight: "border-blue-200",
+                  borderDark: "dark:border-blue-800"
                 },
                 { 
                   id: "slides", 
                   label: "Presentation", 
                   description: "Slide deck with visuals",
                   icon: StickyNote,
-                  color: "text-gray-600"
+                  gradient: "from-orange-500 to-amber-600",
+                  bgLight: "bg-orange-50",
+                  bgDark: "dark:bg-orange-900/20",
+                  borderLight: "border-orange-200",
+                  borderDark: "dark:border-orange-800"
                 },
                 { 
                   id: "flashcards", 
                   label: "Flashcards", 
                   description: "Study cards for memorization",
                   icon: ListChecks,
-                  color: "text-gray-600"
+                  gradient: "from-pink-500 to-rose-600",
+                  bgLight: "bg-pink-50",
+                  bgDark: "dark:bg-pink-900/20",
+                  borderLight: "border-pink-200",
+                  borderDark: "dark:border-pink-800"
                 },
                 { 
                   id: "quiz", 
                   label: "Quiz", 
                   description: "Test comprehension",
                   icon: MessageCircle,
-                  color: "text-gray-600"
+                  gradient: "from-indigo-500 to-blue-600",
+                  bgLight: "bg-indigo-50",
+                  bgDark: "dark:bg-indigo-900/20",
+                  borderLight: "border-indigo-200",
+                  borderDark: "dark:border-indigo-800"
                 },
               ].map((tab) => {
                 const isActive = activeTab === tab.id;
@@ -2710,26 +3050,28 @@ function Dashboard() {
                 return (
                   <button
                     key={tab.id}
-                    className={`p-3 rounded-lg text-left transition-all duration-200 border ${
+                    className={`p-4 rounded-xl text-left transition-all duration-300 border-2 group ${
                       isDisabled
-                        ? "bg-gray-50 dark:bg-[#1E1E1E] text-gray-400 dark:text-[#fafafacc] cursor-not-allowed border-gray-200 dark:border-[#fafafa1a]"
+                        ? "bg-gray-100 dark:bg-[#1a1a1a] text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-200 dark:border-[#252525] opacity-60"
                         : isActive
-                        ? "bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800 shadow-sm"
-                        : "bg-white dark:bg-[#171717] text-[#171717cc] dark:text-[#fafafacc] border-gray-200 dark:border-[#fafafa1a] hover:border-gray-300 dark:hover:border-[#fafafa2a] hover:shadow-sm"
+                        ? `${tab.bgLight} ${tab.bgDark} ${tab.borderLight} ${tab.borderDark} shadow-lg ring-2 ring-offset-1 ring-blue-300 dark:ring-blue-700 dark:ring-offset-[#171717]`
+                        : `bg-white dark:bg-[#1e1e1e] border-gray-200 dark:border-[#333] hover:bg-gray-50 dark:hover:bg-[#252525] hover:border-gray-300 dark:hover:border-[#444] hover:shadow-lg hover:scale-[1.02] active:scale-[0.98]`
                     }`}
                     onClick={() => !isDisabled && handleTabClick(tab.id)}
                     disabled={isDisabled}
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-3">
-                        <div className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isActive ? 'bg-blue-100 dark:bg-blue-900/20' : 'bg-gray-100 dark:bg-[#1E1E1E]'
+                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all duration-300 shadow-md ${
+                          isActive 
+                            ? `bg-gradient-to-br ${tab.gradient} shadow-lg` 
+                            : `bg-gradient-to-br from-gray-100 to-gray-200 dark:from-[#2a2a2a] dark:to-[#333] group-hover:from-gray-200 group-hover:to-gray-300 dark:group-hover:from-[#333] dark:group-hover:to-[#3a3a3a]`
                         }`}>
-                          <tab.icon size={16} className={isActive ? 'text-blue-600 dark:text-blue-400' : tab.color} />
+                          <tab.icon size={20} className={isActive ? 'text-white' : 'text-gray-600 dark:text-gray-400'} />
                         </div>
                         <div>
-                          <div className="font-medium text-sm">{tab.label}</div>
-                          <div className="text-xs text-[#171717cc] dark:text-[#fafafacc]">{tab.description}</div>
+                          <div className={`font-bold text-sm ${isActive ? 'text-gray-800 dark:text-white' : 'text-gray-700 dark:text-gray-200'}`}>{tab.label}</div>
+                          <div className={`text-xs ${isActive ? 'text-gray-600 dark:text-gray-300' : 'text-gray-500 dark:text-gray-500'}`}>{tab.description}</div>
                         </div>
                       </div>
                       
@@ -2738,10 +3080,21 @@ function Dashboard() {
                           <LoaderSpinner size="sm" />
                         )}
                         {hasError && (
-                          <div className="text-red-500 text-xs">Error</div>
+                          <div className="text-red-600 text-xs font-bold bg-red-100 dark:bg-red-900/30 px-2 py-1 rounded-md border border-red-300 dark:border-red-700">Error</div>
                         )}
-                        {isActive && (
-                          <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        {isActive && !isLoading && (
+                          <div className={`w-7 h-7 bg-gradient-to-br ${tab.gradient} rounded-full flex items-center justify-center shadow-lg`}>
+                            <svg className="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                            </svg>
+                          </div>
+                        )}
+                        {!isActive && !isDisabled && !isLoading && (
+                          <div className="w-7 h-7 border-2 border-gray-300 dark:border-gray-600 rounded-full flex items-center justify-center group-hover:border-gray-400 dark:group-hover:border-gray-500 transition-colors">
+                            <svg className="w-3.5 h-3.5 text-gray-400 group-hover:text-gray-500 transition-colors" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                            </svg>
+                          </div>
                         )}
                       </div>
                     </div>
@@ -2752,15 +3105,16 @@ function Dashboard() {
           </div>
         </div>
       </div>
+        </>
         )}
       </div>
       
       {/* Generated Content Section - Full width below main container */}
       {hasContent && activeTab && (
-        <div className="w-full px-4 py-4">
+        <div className="w-full px-4 py-6">
           <div className="max-w-7xl mx-auto">
-            <div className="bg-white dark:bg-[#171717] rounded-xl shadow-lg overflow-hidden">
-              <div className="p-4">
+            <div className="bg-white dark:bg-[#171717] rounded-2xl shadow-2xl overflow-hidden border-2 border-gray-200 dark:border-[#2a2a2a] ring-1 ring-gray-100 dark:ring-[#1a1a1a]">
+              <div className="p-6">
                 {activeTab === "blog" && (
                   <div>
                     {loadingStates.blog && (

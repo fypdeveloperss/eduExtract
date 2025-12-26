@@ -433,28 +433,28 @@ function MarketplaceDetail() {
         </nav>
 
         {/* Hero + Summary */}
-        <section className="bg-gradient-to-br from-[#171717] via-[#1f1f1f] to-[#2b2b2b] text-white rounded-3xl shadow-2xl border border-[#2a2a2a] p-8">
+        <section className="bg-gradient-to-br from-gray-100 via-gray-50 to-white dark:from-[#171717] dark:via-[#1f1f1f] dark:to-[#2b2b2b] text-[#171717] dark:text-white rounded-3xl shadow-2xl border border-gray-200 dark:border-[#2a2a2a] p-8">
           <div className="flex flex-col lg:flex-row gap-8">
             <div className="flex-1">
               <div className="flex flex-wrap items-center gap-3 mb-4">
                 <span className="text-4xl">{getCategoryIcon(content.category)}</span>
-                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-200/60 dark:bg-white/10 border border-gray-300 dark:border-white/20 text-xs font-semibold capitalize">
                   {content.category || 'Uncategorized'}
                 </span>
                 {content.difficulty && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-200/60 dark:bg-white/10 border border-gray-300 dark:border-white/20 text-xs font-semibold capitalize">
                     {content.difficulty}
                   </span>
                 )}
                 {content.contentType && (
-                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 text-xs font-semibold capitalize">
+                  <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-200/60 dark:bg-white/10 border border-gray-300 dark:border-white/20 text-xs font-semibold capitalize">
                     {content.contentType}
                   </span>
                 )}
               </div>
 
               <h1 className="text-3xl md:text-4xl font-bold mb-3">{content.title}</h1>
-              <p className="text-base md:text-lg text-white/80 leading-relaxed mb-6">
+              <p className="text-base md:text-lg text-[#171717cc] dark:text-white/80 leading-relaxed mb-6">
                 {content.description}
               </p>
 
@@ -462,26 +462,26 @@ function MarketplaceDetail() {
                 {highlightStats.map((stat) => (
                   <div
                     key={stat.label}
-                    className="p-3 rounded-2xl bg-white/5 border border-white/10"
+                    className="p-3 rounded-2xl bg-gray-200/50 dark:bg-white/5 border border-gray-300/50 dark:border-white/10"
                   >
-                    <p className="text-xs uppercase tracking-wide text-white/60">{stat.label}</p>
+                    <p className="text-xs uppercase tracking-wide text-[#17171799] dark:text-white/60">{stat.label}</p>
                     <p className="text-lg font-semibold">{stat.value}</p>
-                    <p className="text-[11px] text-white/60">{stat.hint}</p>
+                    <p className="text-[11px] text-[#17171799] dark:text-white/60">{stat.hint}</p>
                   </div>
                 ))}
               </div>
             </div>
 
             <div className="w-full lg:max-w-sm">
-              <div className="bg-white text-[#171717] rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-100">
+              <div className="bg-white dark:bg-[#1a1a1a] text-[#171717] dark:text-[#fafafa] rounded-2xl shadow-2xl p-6 space-y-4 border border-gray-200 dark:border-[#333]">
                 <div>
-                  <p className="text-xs font-semibold text-[#17171799] uppercase tracking-wide">
+                  <p className="text-xs font-semibold text-[#17171799] dark:text-[#fafafa99] uppercase tracking-wide">
                     Access this resource
                   </p>
                   <p className="text-4xl font-bold mt-2">
                     {formatPrice(content.price, content.currency)}
                   </p>
-                  <p className="text-sm text-[#17171799]">
+                  <p className="text-sm text-[#17171799] dark:text-[#fafafa99]">
                     {content.price === 0 ? 'Instant download' : 'One-time premium purchase'}
                   </p>
                 </div>
@@ -489,7 +489,7 @@ function MarketplaceDetail() {
                 {!user ? (
                   <button
                     onClick={() => navigate('/login')}
-                    className="w-full px-6 py-3 bg-[#171717] text-white rounded-xl hover:opacity-90 transition-opacity font-semibold"
+                    className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-xl hover:opacity-90 transition-opacity font-semibold"
                   >
                     Sign in to Access
                   </button>
@@ -497,7 +497,7 @@ function MarketplaceDetail() {
                   <button
                     onClick={handleDownload}
                     disabled={downloading}
-                    className="w-full px-6 py-3 bg-[#171717] text-white rounded-xl hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
+                    className="w-full px-6 py-3 bg-[#171717] dark:bg-[#fafafa] text-white dark:text-[#171717] rounded-xl hover:opacity-90 transition-opacity font-semibold disabled:opacity-50 flex items-center justify-center gap-2"
                   >
                     {downloading ? (
                       <>
@@ -519,7 +519,7 @@ function MarketplaceDetail() {
                   <button
                     onClick={() => setShowPaymentModal(true)}
                     disabled={confirmingCheckout}
-                    className="w-full px-6 py-3 border border-gray-200 bg-white text-[#171717] rounded-xl hover:bg-gray-50 transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
+                    className="w-full px-6 py-3 border border-gray-200 dark:border-[#444] bg-white dark:bg-[#252525] text-[#171717] dark:text-[#fafafa] rounded-xl hover:bg-gray-50 dark:hover:bg-[#333] transition-colors font-semibold flex items-center justify-center gap-2 disabled:opacity-50"
                   >
                     <span>💳</span>
                     {confirmingCheckout ? 'Confirming purchase...' : 'Purchase Now'}
@@ -527,20 +527,20 @@ function MarketplaceDetail() {
                 )}
 
                 {confirmingCheckout && (
-                  <p className="text-xs text-[#17171799] flex items-center gap-2">
+                  <p className="text-xs text-[#17171799] dark:text-[#fafafa99] flex items-center gap-2">
                     <LoaderSpinner size="sm" />
                     Finalizing your payment...
                   </p>
                 )}
 
                 {purchaseSuccess && (
-                  <div className="text-xs text-emerald-600 bg-emerald-50 rounded-xl p-3 border border-emerald-100">
+                  <div className="text-xs text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl p-3 border border-emerald-100 dark:border-emerald-800">
                     {purchaseSuccess}
                   </div>
                 )}
 
                 {flagSuccess && (
-                  <div className="text-xs text-blue-600 bg-blue-50 rounded-xl p-3 border border-blue-100">
+                  <div className="text-xs text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-xl p-3 border border-blue-100 dark:border-blue-800">
                     {flagSuccess}
                   </div>
                 )}
@@ -563,8 +563,8 @@ function MarketplaceDetail() {
                     disabled={flagging}
                     className={`w-full px-6 py-2.5 border rounded-xl transition-colors flex items-center justify-center gap-2 disabled:opacity-50 ${
                       hasFlagged 
-                        ? 'border-red-200 bg-red-50 text-red-600 hover:bg-red-100' 
-                        : 'border-gray-200 bg-white text-[#171717cc] hover:bg-gray-50'
+                        ? 'border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30' 
+                        : 'border-gray-200 dark:border-[#444] bg-white dark:bg-[#252525] text-[#171717cc] dark:text-[#fafafacc] hover:bg-gray-50 dark:hover:bg-[#333]'
                     }`}
                   >
                     {flagging ? (

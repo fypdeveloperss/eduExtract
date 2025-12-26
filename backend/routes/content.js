@@ -111,6 +111,96 @@ router.get('/', verifyToken, async (req, res) => {
   }
 });
 
+// Helper function to extract video ID from YouTube URL
+function extractVideoId(url) {
+  if (!url) return null;
+  
+  // Match various YouTube URL formats
+  const patterns = [
+    /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/|youtube\.com\/v\/)([a-zA-Z0-9_-]{11})/,
+    /[?&]v=([a-zA-Z0-9_-]{11})/
+  ];
+  
+  for (const pattern of patterns) {
+    const match = url.match(pattern);
+    if (match && match[1]) {
+      return match[1];
+    }
+  }
+  return null;
+}
+
+// Get content by source URL - returns all content types generated from a specific URL
+router.get('/by-url', verifyToken, async (req, res) => {
+  try {
+    const { url } = req.query;
+    
+    if (!url) {
+      return res.status(400).json({ error: 'URL parameter is required' });
+    }
+
+    console.log('Searching for content by URL:', url);
+    console.log('User ID:', req.user.uid);
+
+    // Extract video ID from the URL
+    const videoId = extractVideoId(url);
+    console.log('Extracted video ID:', videoId);
+
+    let content = [];
+    
+    // First try exact URL match
+    content = await GeneratedContent.find({
+      userId: req.user.uid,
+      url: url
+    }).sort({ createdAt: -1 }).lean();
+    
+    console.log('Exact URL match results:', content.length);
+
+    // If no exact match and we have a video ID, try to find by video ID pattern
+    if (content.length === 0 && videoId) {
+      // Search for URLs containing this video ID
+      content = await GeneratedContent.find({
+        userId: req.user.uid,
+        url: { $regex: videoId, $options: 'i' }
+      }).sort({ createdAt: -1 }).lean();
+      
+      console.log('Video ID pattern match results:', content.length);
+    }
+
+    if (!content || content.length === 0) {
+      console.log('No content found for this URL/video');
+      return res.json({ found: false, content: [] });
+    }
+
+    // Group content by type for easy access
+    const contentByType = {
+      blog: null,
+      summary: null,
+      flashcards: null,
+      quiz: null,
+      slides: null
+    };
+
+    content.forEach(item => {
+      if (item.type && !contentByType[item.type]) {
+        contentByType[item.type] = item;
+      }
+    });
+
+    console.log('Found content types:', Object.keys(contentByType).filter(k => contentByType[k]));
+
+    res.json({ 
+      found: true, 
+      content: content,
+      contentByType: contentByType,
+      title: content[0]?.title || 'Untitled'
+    });
+  } catch (error) {
+    console.error('Error retrieving content by URL:', error);
+    res.status(500).json({ error: 'Failed to retrieve content' });
+  }
+});
+
 // Generate content from text
 router.post('/text', verifyToken, async (req, res) => {
   try {

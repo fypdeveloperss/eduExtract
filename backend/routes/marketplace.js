@@ -268,6 +268,35 @@ router.get('/content', async (req, res) => {
       .limit(parseInt(limit))
       .lean();
 
+    // Fetch ratings for each content item
+    const contentIds = content.map(c => c._id);
+    const ratingsAggregation = await ContentReview.aggregate([
+      { $match: { contentId: { $in: contentIds } } },
+      { 
+        $group: { 
+          _id: '$contentId', 
+          averageRating: { $avg: '$rating' },
+          ratingsCount: { $sum: 1 }
+        } 
+      }
+    ]);
+
+    // Create a map for quick lookup
+    const ratingsMap = {};
+    ratingsAggregation.forEach(r => {
+      ratingsMap[r._id.toString()] = {
+        averageRating: Math.round(r.averageRating * 10) / 10,
+        ratingsCount: r.ratingsCount
+      };
+    });
+
+    // Merge ratings into content
+    const contentWithRatings = content.map(c => ({
+      ...c,
+      averageRating: ratingsMap[c._id.toString()]?.averageRating || 0,
+      ratingsCount: ratingsMap[c._id.toString()]?.ratingsCount || 0
+    }));
+
     // Get total count for pagination
     const total = await MarketplaceContent.countDocuments(filter);
 
@@ -277,7 +306,7 @@ router.get('/content', async (req, res) => {
     const hasPrev = page > 1;
 
     res.json({
-      content,
+      content: contentWithRatings,
       pagination: {
         currentPage: parseInt(page),
         totalPages,

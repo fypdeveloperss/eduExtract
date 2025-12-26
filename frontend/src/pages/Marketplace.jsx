@@ -7,6 +7,7 @@ import MarketplaceContentSelectionModal from '../components/MarketplaceContentSe
 import { authenticatedFetch } from '../utils/auth';
 import PageLoader from '../components/PageLoader';
 import LoaderSpinner from '../components/LoaderSpinner';
+import { Eye, Star } from 'lucide-react';
 
 function Marketplace() {
   const { user } = useAuth();
@@ -534,17 +535,22 @@ function Marketplace() {
                       </>
                     ) : (
                       <>
-                        <span className="flex items-center">
-                          <span className="mr-1">👁️</span>
-                          {contentItem.views || 0} views
+                        <span className="flex items-center gap-1">
+                          <Eye size={14} className="text-gray-500 dark:text-gray-400" />
+                          <span>{contentItem.views || 0} views</span>
                         </span>
-                        <span className="flex items-center">
-                          <span className="mr-1">❤️</span>
-                          {contentItem.likes || 0} likes
-                        </span>
-                        <span className="flex items-center">
-                          <span className="mr-1">⭐</span>
-                          {contentItem.averageRating ? `${contentItem.averageRating}/5` : 'No ratings'}
+                        <span className="flex items-center gap-1">
+                          <Star size={14} className="text-yellow-500 fill-yellow-500" />
+                          <span>
+                            {contentItem.averageRating > 0 
+                              ? Number(contentItem.averageRating).toFixed(1)
+                              : 'No ratings'}
+                            {contentItem.ratingsCount > 0 && (
+                              <span className="text-[10px] ml-0.5 opacity-70">
+                                ({contentItem.ratingsCount})
+                              </span>
+                            )}
+                          </span>
                         </span>
                       </>
                     )}
