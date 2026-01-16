@@ -12,7 +12,11 @@ backend/node_modules/
 frontend/node_modules/
 
 # Environment files
-# backend/.env
+.env
+.env.*
+!.env.example
+backend/.env
+frontend/.env
 
 # Build outputs
 frontend/dist/
